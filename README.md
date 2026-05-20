@@ -1,16 +1,323 @@
-# React + Vite
+# Counter-POS
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, web-based Point-of-Sale terminal built with React. Designed for fast retail and restaurant checkout — barcode scanning, cart management, multiple payment modes, and a clean keyboard-friendly interface.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What It Does
 
-## React Compiler
+Counter-POS is the cashier-facing POS terminal. The cashier logs in, scans or types product barcodes, manages the cart, and processes payments. The UI is purpose-built for speed — numpad entry, one-click payment modes, and a full-screen layout with no distractions.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Current State:** Fully functional UI with local/mocked data. Backend API integration is ready to be wired in.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Tech Stack
+
+| Technology | Version | Purpose |
+|---|---|---|
+| React | 19.2 | UI rendering |
+| Vite | 8 | Dev server + build tool |
+| React Router | 7.15 | Page routing (Login → POS) |
+| Zustand | 5.0 | Global state (cart, session, totals) |
+| TanStack Query | 5.100 | Server state caching (ready, not yet used) |
+| Tailwind CSS | 4.3 | Utility-first styling |
+| Radix UI | — | Headless UI primitives (dialog, tabs, scroll) |
+| Lucide React | 1.16 | SVG icons |
+| Zod | 4.4 | Schema validation (ready, not yet used) |
+
+---
+
+## Project Structure
+
+```
+Counter-pos/
+├── public/                    # Static assets, favicon
+├── src/
+│   ├── main.jsx               # React entry point
+│   ├── App.jsx                # Router setup (2 routes: / and /pos)
+│   ├── index.css              # Design tokens + Tailwind import + Google Fonts
+│   ├── lib/
+│   │   └── utils.js           # cn() class helper, fmt2()/fmt3() number formatters
+│   ├── store/
+│   │   └── posStore.js        # Zustand store — all POS state and actions
+│   ├── pages/
+│   │   ├── LoginPage.jsx      # Cashier login screen
+│   │   └── POSPage.jsx        # Main POS interface
+│   └── components/
+│       └── pos/
+│           ├── BarcodeInput.jsx    # Qty × Barcode entry bar
+│           ├── BillSummary.jsx     # Totals + payment input footer
+│           ├── FunctionButtons.jsx # POS function tabs (Functions/Features/Delivery/Session)
+│           ├── ItemPreview.jsx     # Selected cart item detail bar
+│           ├── ItemsGrid.jsx       # Cart table (all line items)
+│           ├── NumPad.jsx          # 0–9 numpad + ENTER button
+│           └── PaymentButtons.jsx  # Cash / Card / Credit / Multi Pay selector
+├── index.html
+├── vite.config.js
+├── eslint.config.js
+└── package.json
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18 or higher
+- npm
+
+### Install and Run
+
+```bash
+# From the Counter-pos folder
+npm install
+npm run dev
+```
+
+Opens at `http://localhost:5174` (or next available port).
+
+### Available Scripts
+
+| Script | What It Does |
+|---|---|
+| `npm run dev` | Start dev server with hot reload |
+| `npm run build` | Build for production → `dist/` |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | Run ESLint checks |
+
+---
+
+## Application Flow
+
+### 1. Login Page (`/`)
+
+The cashier opens the app and sees the login screen.
+
+- Toggle between **LOCAL** and **SERVER** database mode (UI toggle — backend switching to be implemented)
+- Enter username and password
+- Use the **on-screen numpad** for numeric password entry or type directly
+- Click **LOGIN** → navigates to `/pos` and sets cashier session in store
+
+### 2. POS Page (`/pos`)
+
+The main working screen. Full-screen layout split into these sections:
+
+```
+┌──────────────── HEADER ─────────────────────┐
+│ Shop name | Counter | Date | Time | Bill No  │
+├──────────────────────────────────────────────┤
+│ ITEM PREVIEW — selected item details         │
+├─────────────────────────┬────────────────────┤
+│                         │  PAYMENT BUTTONS   │
+│   ITEMS GRID            │  (Cash/Card/etc.)  │
+│   (cart table)          │                    │
+│                         │  NUMPAD            │
+│   BARCODE INPUT         │  (0–9 + ENTER)     │
+│   (qty × barcode)       │                    │
+│                         │  FUNCTION BUTTONS  │
+│                         │  (tabs)            │
+├─────────────────────────┴────────────────────┤
+│ BILL SUMMARY — customer | totals | payment   │
+├──────────────────────────────────────────────┤
+│ FOOTER — version | currency | status         │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+## How to Add Items to a Bill
+
+1. **Type a barcode** in the barcode input field (or scan with a USB barcode scanner — it types automatically)
+2. Optionally **set quantity** first — click the qty pill on the left, enter a number on the numpad
+3. Press **ENTER** (numpad or keyboard) — item appears in the cart
+4. To **remove an item**, hover the row and click the delete icon
+5. To **clear everything**, use the **Clear All** function button
+
+---
+
+## Cart & State
+
+All POS state lives in a single Zustand store (`posStore.js`). State resets when the page is refreshed (RAM only — no localStorage persistence yet).
+
+### What the Store Manages
+
+| Category | Fields |
+|---|---|
+| **Session** | `cashier` (name + id), `counterNo`, `currency`, `shopName` |
+| **Bill** | `billNo`, `billDate`, `cartItems[]`, `selectedRowKey` |
+| **Totals** | `subTotal`, `discountAmt`, `taxableAmt`, `taxAmt`, `roundOff`, `netAmount` |
+| **Payment** | `paidAmount`, `balanceAmount`, `paymentMode` |
+| **Customer** | `customerName`, `customerCode`, `osAmount` (outstanding balance) |
+| **Input** | `inputMode` (barcode/qty), `qtyBuffer`, `barcodeBuffer` |
+
+### Cart Item Structure
+
+```js
+{
+  slNo: 1,
+  barcode: "12345",
+  description: "Product Name",
+  qty: 2,
+  unitPrice: 10.00,
+  discount: 0,
+  lineTotal: 20.00,
+  vatPer: 5,
+  vatAmt: 1.00
+}
+```
+
+### How Totals Are Calculated
+
+Every time an item is added or removed, `recalc()` runs automatically:
+
+```
+subTotal     = sum of all (unitPrice × qty)
+taxableAmt   = subTotal - discountAmt
+taxAmt       = sum of all vatAmt per line
+netAmount    = taxableAmt + taxAmt  (rounded to 2 decimal)
+roundOff     = netAmount - exact value
+balanceAmt   = paidAmount - netAmount
+```
+
+---
+
+## Payment Modes
+
+| Mode | Behavior |
+|---|---|
+| **Cash** | Auto-fills paid amount = net total; shows change |
+| **Card** | Auto-fills paid amount = net total |
+| **Credit** | Manual amount entry; tracks outstanding balance |
+| **Multi Pay** | Manual split entry |
+
+Balance shown in **green** if change is due, **red** if amount is short.
+
+---
+
+## Function Buttons
+
+The right panel has 4 tabs:
+
+| Tab | Buttons |
+|---|---|
+| **Functions** | Clear All, Clear Line, Return, Qty Mode, Hold Bill, Recall Bill, Print Bill, Reprint, Open Drawer, Price Check, Notes, No Sale, Decimal, Manager |
+| **Features** | Privilege, Packet Scan, Discount, Reports, Customer Balance, Loyalty, Gift Card, Item Edit, Price Level, Split Bill, Transfer, Cancel, Exchange |
+| **Delivery** | Price Level, Save Delivery, Settlement |
+| **Session** | Logout (returns to login), Exit |
+
+Most function buttons are UI stubs ready for backend logic to be attached.
+
+---
+
+## Design System
+
+### Colors
+
+| Variable | Value | Used For |
+|---|---|---|
+| `--brand` | `#5c0000` | Primary brand color (buttons, accents) |
+| `--brand-2` | `#8b0000` | Brand hover state |
+| `--bg` | `#f7f6f3` | Page background |
+| `--surface` | `#ffffff` | Cards, panels |
+| `--text-1` | `#1c1a17` | Primary text |
+| `--green` | `#15803d` | Success, balance positive |
+| `--blue` | `#1d4ed8` | Info, card payment |
+| `--amber` | `#b45309` | Warning, credit payment |
+| `--purple` | `#6d28d9` | Multi pay |
+
+### Fonts
+
+- **UI text:** Outfit (Google Fonts) — clean, modern sans-serif
+- **Numbers:** DM Mono — monospace, tabular digits for price alignment
+
+---
+
+## Connecting to the Backend API
+
+The app is currently mocked. To wire it to the real backend:
+
+### 1. Create environment file
+
+```env
+# Counter-pos/.env
+VITE_API_BASE_URL=http://localhost:5000
+```
+
+### 2. Add proxy to vite.config.js (optional for dev)
+
+```js
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:5000'
+    }
+  }
+})
+```
+
+### 3. Replace login mock in LoginPage.jsx
+
+```js
+// Replace the fake setTimeout login with:
+const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/pos/login`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username, password })
+})
+const data = await res.json()
+// data.accessToken, data.cashier, data.stationId
+```
+
+### 4. Replace barcode lookup in POSPage.jsx
+
+```js
+// In handleEnter(), replace dummy product with:
+const res = await fetch(`/api/products/barcode/${barcodeBuffer}`, {
+  headers: { Authorization: `Bearer ${token}` }
+})
+const product = await res.json()
+addItem(product)
+```
+
+### 5. Add bill settlement logic
+
+```js
+// In FunctionButtons settlement handler:
+await fetch('/api/pos/settlement', {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${token}` },
+  body: JSON.stringify({ billNo, cartItems, netAmount, paidAmount, paymentMode })
+})
+```
+
+---
+
+## Build for Production
+
+```bash
+npm run build
+```
+
+Output goes to `dist/`. Deploy to any static web host or serve via Express static middleware.
+
+---
+
+## Known Limitations
+
+| Limitation | Notes |
+|---|---|
+| No backend integration | All data is mocked; login accepts anything |
+| No cart persistence | Cart resets on page refresh (no localStorage) |
+| DB mode toggle is UI only | LOCAL/SERVER switch has no actual effect yet |
+| Print / receipt | Button exists, no print logic implemented |
+| Most function buttons are stubs | UI only, no business logic attached |
+| Barcode scanner | Works with USB HID scanners (they type into the input field automatically) |
+
+---
+
+## Part of MOIF ERP
+
+Counter-POS is one application in the larger MOIF ERP platform. It connects to the same backend API (`api/`) and PostgreSQL database as the main ERP frontend, Flutter desktop POS, and marketing site. See the root `README.md` for full platform documentation.
