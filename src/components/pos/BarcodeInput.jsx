@@ -3,12 +3,12 @@ import { ScanLine, Hash, Delete } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 
 export default function BarcodeInput({ onEnter }) {
-  const qtyBuffer = usePosStore(s => s.qtyBuffer)
-  const barcodeBuffer = usePosStore(s => s.barcodeBuffer)
-  const inputMode = usePosStore(s => s.inputMode)
-  const setQtyBuffer = usePosStore(s => s.setQtyBuffer)
+  const qtyBuffer      = usePosStore(s => s.qtyBuffer)
+  const barcodeBuffer  = usePosStore(s => s.barcodeBuffer)
+  const inputMode      = usePosStore(s => s.inputMode)
+  const setQtyBuffer   = usePosStore(s => s.setQtyBuffer)
   const setBarcodeBuffer = usePosStore(s => s.setBarcodeBuffer)
-  const barcodeRef = useRef()
+  const barcodeRef     = useRef()
 
   useEffect(() => { barcodeRef.current?.focus() }, [])
 
@@ -17,79 +17,97 @@ export default function BarcodeInput({ onEnter }) {
     else setBarcodeBuffer(p => p.slice(0, -1))
   }
 
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 10px', height: '100%' }}>
+  const qtyActive     = inputMode === 'qty'
+  const barcodeActive = inputMode === 'barcode'
 
-      {/* Qty pill */}
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', height: '100%' }}>
+
+      {/* ── QTY pill ──────────────────────────── */}
       <div
-        onClick={() => usePosStore.setState({ inputMode: 'qty' })}
         role="button"
-        aria-label="Quantity field"
+        aria-label="Quantity input — click to type quantity"
+        onClick={() => usePosStore.setState({ inputMode: 'qty' })}
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          background: inputMode === 'qty' ? 'var(--brand-bg)' : 'var(--bg)',
-          border: `1.5px solid ${inputMode === 'qty' ? 'var(--brand)' : 'var(--border)'}`,
-          borderRadius: 10, padding: '0 14px', height: 46, cursor: 'pointer',
-          flexShrink: 0, minWidth: 80, transition: 'all 0.15s',
-          boxShadow: inputMode === 'qty' ? '0 0 0 3px rgba(92,0,0,0.08)' : 'none',
+          background: qtyActive ? 'var(--brand-bg)' : 'var(--surface-2)',
+          border: `1.5px solid ${qtyActive ? 'var(--brand)' : 'var(--border)'}`,
+          borderRadius: 'var(--r-md)', padding: '0 12px', height: 42, cursor: 'pointer',
+          flexShrink: 0, minWidth: 76,
+          boxShadow: qtyActive ? '0 0 0 3px var(--brand-glow)' : 'none',
+          transition: 'all 0.13s',
         }}
       >
-        <Hash size={13} color={inputMode === 'qty' ? 'var(--brand)' : 'var(--text-3)'} />
+        <Hash size={12} color={qtyActive ? 'var(--brand)' : 'var(--text-3)'} />
         <span style={{
-          fontSize: 21, fontWeight: 800, minWidth: 24, textAlign: 'right',
+          fontSize: 22, fontWeight: 800, minWidth: 22, textAlign: 'right',
           fontVariantNumeric: 'tabular-nums',
-          color: inputMode === 'qty' ? 'var(--brand)' : 'var(--text-1)',
+          fontFamily: "'JetBrains Mono', monospace",
+          color: qtyActive ? 'var(--brand)' : 'var(--text-1)',
+          lineHeight: 1,
         }}>
           {qtyBuffer}
         </span>
       </div>
 
-      <span style={{ color: 'var(--text-3)', fontSize: 20, fontWeight: 300, flexShrink: 0 }}>×</span>
+      {/* Multiply symbol */}
+      <span style={{ color: 'var(--text-4)', fontSize: 18, fontWeight: 300, flexShrink: 0, lineHeight: 1 }}>×</span>
 
-      {/* Barcode field */}
+      {/* ── BARCODE field ─────────────────────── */}
       <div
         onClick={() => { usePosStore.setState({ inputMode: 'barcode' }); barcodeRef.current?.focus() }}
         style={{
-          flex: 1, display: 'flex', alignItems: 'center', gap: 10,
-          background: inputMode === 'barcode' ? 'var(--surface)' : 'var(--bg)',
-          border: `1.5px solid ${inputMode === 'barcode' ? 'var(--brand)' : 'var(--border)'}`,
-          borderRadius: 10, padding: '0 14px', height: 46, cursor: 'text',
-          transition: 'all 0.15s',
-          boxShadow: inputMode === 'barcode' ? '0 0 0 3px rgba(92,0,0,0.08)' : 'none',
+          flex: 1, display: 'flex', alignItems: 'center', gap: 9,
+          background: barcodeActive ? 'var(--surface)' : 'var(--surface-2)',
+          border: `1.5px solid ${barcodeActive ? 'var(--brand)' : 'var(--border)'}`,
+          borderRadius: 'var(--r-md)', padding: '0 12px', height: 42, cursor: 'text',
+          boxShadow: barcodeActive ? '0 0 0 3px var(--brand-glow)' : 'none',
+          transition: 'all 0.13s',
         }}
       >
-        <ScanLine size={16} color={inputMode === 'barcode' ? 'var(--brand)' : 'var(--text-3)'} style={{ flexShrink: 0 }} />
+        <ScanLine size={15} color={barcodeActive ? 'var(--brand)' : 'var(--text-3)'} style={{ flexShrink: 0 }} />
         <input
           ref={barcodeRef}
           value={barcodeBuffer}
           onChange={e => setBarcodeBuffer(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && onEnter?.()}
           onClick={() => usePosStore.setState({ inputMode: 'barcode' })}
-          placeholder="Scan barcode or type product code..."
+          placeholder="Scan barcode or type product code…"
           style={{
             flex: 1, background: 'none', border: 'none', outline: 'none',
-            fontSize: 14, fontWeight: 500, color: 'var(--text-1)',
+            fontSize: 13.5, fontWeight: 500, color: 'var(--text-1)',
             fontFamily: 'inherit',
           }}
         />
+        {barcodeActive && barcodeBuffer && (
+          <span style={{
+            fontSize: 10, fontWeight: 700, color: 'var(--brand)',
+            background: 'var(--brand-tint)', borderRadius: 4,
+            padding: '2px 6px', letterSpacing: 0.3, flexShrink: 0,
+          }}>
+            ENTER ↵
+          </span>
+        )}
       </div>
 
-      {/* Backspace */}
+      {/* ── BACKSPACE button ──────────────────── */}
       <button
         onClick={handleBackspace}
         aria-label="Backspace"
         style={{
-          height: 46, width: 46, borderRadius: 10,
-          border: '1.5px solid var(--border)', background: 'var(--bg)',
-          cursor: 'pointer', flexShrink: 0, display: 'flex',
-          alignItems: 'center', justifyContent: 'center',
-          color: 'var(--text-2)', transition: 'all 0.15s',
+          height: 42, width: 42, borderRadius: 'var(--r-md)', flexShrink: 0,
+          border: '1.5px solid var(--border)', background: 'var(--surface-2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--text-3)', transition: 'all 0.12s',
         }}
-        onMouseEnter={e => { e.currentTarget.style.background = '#fff5f5'; e.currentTarget.style.borderColor = 'var(--brand)'; e.currentTarget.style.color = 'var(--brand)' }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-2)' }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--red-bg)'; e.currentTarget.style.borderColor = 'var(--red-border)'; e.currentTarget.style.color = 'var(--red)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-3)' }}
+        onMouseDown={e => e.currentTarget.style.transform = 'scale(0.93)'}
+        onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
       >
-        <Delete size={16} />
+        <Delete size={14} />
       </button>
+
     </div>
   )
 }
