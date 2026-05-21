@@ -3,51 +3,70 @@ import { ScanLine, Hash, Delete } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 
 export default function BarcodeInput({ onEnter }) {
-  const qtyBuffer      = usePosStore(s => s.qtyBuffer)
-  const barcodeBuffer  = usePosStore(s => s.barcodeBuffer)
-  const inputMode      = usePosStore(s => s.inputMode)
-  const setQtyBuffer   = usePosStore(s => s.setQtyBuffer)
+  const qtyBuffer        = usePosStore(s => s.qtyBuffer)
+  const barcodeBuffer    = usePosStore(s => s.barcodeBuffer)
+  const inputMode        = usePosStore(s => s.inputMode)
+  const setQtyBuffer     = usePosStore(s => s.setQtyBuffer)
   const setBarcodeBuffer = usePosStore(s => s.setBarcodeBuffer)
-  const barcodeRef     = useRef()
+  const barcodeRef       = useRef()
+  const qtyRef           = useRef()
 
   useEffect(() => { barcodeRef.current?.focus() }, [])
 
   const handleBackspace = () => {
-    if (inputMode === 'qty') setQtyBuffer(p => p.slice(0, -1) || '1')
+    if (inputMode === 'qty') setQtyBuffer(p => p.slice(0, -1) || '0')
     else setBarcodeBuffer(p => p.slice(0, -1))
+  }
+
+  const handleQtyChange = (e) => {
+    const val = e.target.value
+    if (/^\d*\.?\d*$/.test(val)) setQtyBuffer(val || '1')
+  }
+
+  const handleQtyKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault()
+      usePosStore.setState({ inputMode: 'barcode' })
+      barcodeRef.current?.focus()
+    }
   }
 
   const qtyActive     = inputMode === 'qty'
   const barcodeActive = inputMode === 'barcode'
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', height: '100%' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: '100%', width: '100%' }}>
 
-      {/* ── QTY pill ──────────────────────────── */}
+      {/* ── QTY input ─────────────────────────── */}
       <div
-        role="button"
-        aria-label="Quantity input — click to type quantity"
-        onClick={() => usePosStore.setState({ inputMode: 'qty' })}
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
           background: qtyActive ? 'var(--brand-bg)' : 'var(--surface-2)',
           border: `1.5px solid ${qtyActive ? 'var(--brand)' : 'var(--border)'}`,
-          borderRadius: 'var(--r-md)', padding: '0 12px', height: 42, cursor: 'pointer',
-          flexShrink: 0, minWidth: 76,
+          borderRadius: 'var(--r-md)', padding: '0 10px', height: 42,
+          flexShrink: 0, minWidth: 80,
           boxShadow: qtyActive ? '0 0 0 3px var(--brand-glow)' : 'none',
-          transition: 'all 0.13s',
+          transition: 'all 0.13s', cursor: 'text',
         }}
+        onClick={() => { usePosStore.setState({ inputMode: 'qty' }); qtyRef.current?.focus() }}
       >
-        <Hash size={12} color={qtyActive ? 'var(--brand)' : 'var(--text-3)'} />
-        <span style={{
-          fontSize: 22, fontWeight: 800, minWidth: 22, textAlign: 'right',
-          fontVariantNumeric: 'tabular-nums',
-          fontFamily: "'JetBrains Mono', monospace",
-          color: qtyActive ? 'var(--brand)' : 'var(--text-1)',
-          lineHeight: 1,
-        }}>
-          {qtyBuffer}
-        </span>
+        <Hash size={12} color={qtyActive ? 'var(--brand)' : 'var(--text-3)'} style={{ flexShrink: 0 }} />
+        <input
+          ref={qtyRef}
+          value={qtyBuffer}
+          onChange={handleQtyChange}
+          onFocus={() => usePosStore.setState({ inputMode: 'qty' })}
+          onKeyDown={handleQtyKeyDown}
+          inputMode="decimal"
+          style={{
+            width: 38, background: 'none', border: 'none', outline: 'none',
+            fontSize: 20, fontWeight: 800, textAlign: 'right',
+            fontVariantNumeric: 'tabular-nums',
+            fontFamily: "'JetBrains Mono', monospace",
+            color: qtyActive ? 'var(--brand)' : 'var(--text-1)',
+            lineHeight: 1, cursor: 'text',
+          }}
+        />
       </div>
 
       {/* Multiply symbol */}
@@ -69,9 +88,12 @@ export default function BarcodeInput({ onEnter }) {
         <input
           ref={barcodeRef}
           value={barcodeBuffer}
-          onChange={e => setBarcodeBuffer(e.target.value)}
+          onChange={e => {
+            if (usePosStore.getState().qtyBuffer === '0') setQtyBuffer('1')
+            setBarcodeBuffer(e.target.value)
+          }}
+          onFocus={() => usePosStore.setState({ inputMode: 'barcode' })}
           onKeyDown={e => e.key === 'Enter' && onEnter?.()}
-          onClick={() => usePosStore.setState({ inputMode: 'barcode' })}
           placeholder="Scan barcode or type product code…"
           style={{
             flex: 1, background: 'none', border: 'none', outline: 'none',
@@ -102,8 +124,8 @@ export default function BarcodeInput({ onEnter }) {
         }}
         onMouseEnter={e => { e.currentTarget.style.background = 'var(--red-bg)'; e.currentTarget.style.borderColor = 'var(--red-border)'; e.currentTarget.style.color = 'var(--red)' }}
         onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-3)' }}
-        onMouseDown={e => e.currentTarget.style.transform = 'scale(0.93)'}
-        onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+        onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.93)' }}
+        onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
       >
         <Delete size={14} />
       </button>

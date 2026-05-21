@@ -35,7 +35,7 @@ export const usePosStore = create((set, get) => ({
 
   // Input state
   inputMode: 'barcode', // 'barcode' | 'qty'
-  qtyBuffer: '1',
+  qtyBuffer: '0',
   barcodeBuffer: '',
 
   // UI state
@@ -81,7 +81,7 @@ export const usePosStore = create((set, get) => ({
       subTotal: 0, discountAmt: 0, taxableAmt: 0,
       taxAmt: 0, roundOff: 0, netAmount: 0,
       paidAmount: 0, balanceAmount: 0,
-      qtyBuffer: '1', barcodeBuffer: '',
+      qtyBuffer: '0', barcodeBuffer: '',
       customerName: '', customerCode: '', osAmount: 0,
     })
   },

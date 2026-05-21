@@ -8,6 +8,7 @@ const MODES = [
   { key: 'MULTI',  label: 'Multi Pay', icon: Layers,     color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
 ]
 
+/* Compact 4-button strip — kept for standalone use if needed */
 export default function PaymentButtons() {
   const paymentMode    = usePosStore(s => s.paymentMode)
   const netAmount      = usePosStore(s => s.netAmount)
@@ -15,7 +16,7 @@ export default function PaymentButtons() {
   const setPayment     = usePosStore(s => s.setPayment)
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 5, padding: '8px 7px 6px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 5, padding: '6px 8px' }}>
       {MODES.map(m => {
         const Icon   = m.icon
         const active = paymentMode === m.key
@@ -27,35 +28,36 @@ export default function PaymentButtons() {
               if (m.key === 'CASH' || m.key === 'CARD') setPayment(netAmount)
             }}
             style={{
-              padding: '10px 6px', borderRadius: 'var(--r-md)',
+              padding: '9px 4px', borderRadius: 'var(--r-md)',
               border: `1.5px solid ${active ? m.border : 'var(--border)'}`,
               background: active ? m.bg : 'var(--surface)',
               color: active ? m.color : 'var(--text-2)',
               cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              fontWeight: active ? 700 : 500, fontSize: 12,
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              gap: 4, fontWeight: active ? 800 : 600, fontSize: 10,
               boxShadow: active ? 'var(--shadow-sm)' : 'var(--shadow-xs)',
               transition: 'all 0.13s',
             }}
             onMouseEnter={e => {
               if (!active) {
-                e.currentTarget.style.background    = m.bg
-                e.currentTarget.style.color         = m.color
-                e.currentTarget.style.borderColor   = m.border
+                e.currentTarget.style.background  = m.bg
+                e.currentTarget.style.color       = m.color
+                e.currentTarget.style.borderColor = m.border
               }
             }}
             onMouseLeave={e => {
               if (!active) {
-                e.currentTarget.style.background    = 'var(--surface)'
-                e.currentTarget.style.color         = 'var(--text-2)'
-                e.currentTarget.style.borderColor   = 'var(--border)'
+                e.currentTarget.style.background  = 'var(--surface)'
+                e.currentTarget.style.color       = 'var(--text-2)'
+                e.currentTarget.style.borderColor = 'var(--border)'
               }
             }}
-            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.96)'}
-            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.95)' }}
+            onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
           >
-            <Icon size={13} />
-            {m.label}
+            <Icon size={14} />
+            <span style={{ lineHeight: 1.1, textAlign: 'center' }}>{m.label}</span>
           </button>
         )
       })}
