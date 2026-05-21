@@ -1,12 +1,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import GroupModal from './GroupModal'
+import GroupModal from '../popup/GroupModal'
+import ProductLookupModal from '../popup/ProductLookupModal'
+import RecallHoldModal from '../popup/RecallHoldModal'
+import BillReprintModal from '../popup/BillReprintModal'
+import PrivilegeCustomerModal from '../popup/PrivilegeCustomerModal'
+import PriceEnquiryModal from '../popup/PriceEnquiryModal'
 import {
   ShoppingCart, PauseCircle, Archive, Printer, Receipt,
   RefreshCw, Trash2, Minus, RotateCcw, LogOut,
   Search, Tag, Grid3x3, Percent, DollarSign,
   User, BarChart2, ArrowLeftRight, FileText, Package,
-  Lock, Layers, Save, Hash, Plus,
+  Lock, Layers, Save, Hash, Plus, Crown,
 } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 
@@ -30,9 +35,10 @@ const FEATURE_BUTTONS = [
   { label: 'Price Change', icon: Tag,           color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
   { label: 'Group',        icon: Grid3x3,       color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
   { label: 'Discount',     icon: Percent,       color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Price Check',  icon: Search,        color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Price Enquiry',icon: Search,        color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
   { label: 'Currency',     icon: DollarSign,    color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
   { label: 'Sales Man',    icon: User,          color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Privilege',   icon: Crown,         color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
   { label: 'Report',       icon: BarChart2,     color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
   { label: 'Cash In/Out',  icon: ArrowLeftRight,color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
   { label: 'Receipt',      icon: FileText,      color: 'var(--text-2)', bg: 'var(--surface-2)', border: 'var(--border)' },
@@ -49,27 +55,43 @@ const FEATURE_BUTTONS = [
    SideNav — narrow icon-only left sidebar
    ───────────────────────────────────────────────────────────── */
 export function SideNav() {
-  const navigate  = useNavigate()
-  const clearAll  = usePosStore(s => s.clearAll)
+  const navigate              = useNavigate()
+  const clearAll              = usePosStore(s => s.clearAll)
+  const [recallOpen,  setRecallOpen]  = useState(false)
+  const [reprintOpen, setReprintOpen] = useState(false)
+  const [activeLabel, setActiveLabel] = useState('POS')
 
   return (
+    <>
     <div style={{
       display: 'flex', flexDirection: 'column',
       height: '100%', overflowY: 'auto', overflowX: 'hidden',
       padding: '6px 0',
     }}>
       {SIDE_BUTTONS.map((btn, i) => {
-        const Icon = btn.icon
-        const isPOS = btn.isPOS
+        const Icon      = btn.icon
+        const isActive  = activeLabel === btn.label
+        const isDanger  = btn.danger
 
         const handleClick = () => {
-          if (btn.label === 'Clear All') { clearAll(); return }
+          if (btn.label === 'Clear All')  { clearAll(); setActiveLabel(btn.label); return }
           if (btn.label === 'Clear Line') {
             const { selectedRowKey, removeItem } = usePosStore.getState()
             if (selectedRowKey) removeItem(selectedRowKey)
+            setActiveLabel(btn.label)
             return
           }
+          if (btn.label === 'Recall')  { setRecallOpen(true);  setActiveLabel(btn.label); return }
+          if (btn.label === 'Reprint') { setReprintOpen(true); setActiveLabel(btn.label); return }
+          setActiveLabel(btn.label)
         }
+
+        const activeBg     = isDanger ? 'var(--red)'        : 'var(--brand)'
+        const activeBorder = isDanger ? 'var(--red)'        : 'var(--brand)'
+        const activeColor  = '#fff'
+        const hoverBg      = isDanger ? 'var(--red-bg)'     : 'var(--brand-bg)'
+        const hoverBorder  = isDanger ? 'var(--red-border)' : 'var(--brand-border)'
+        const hoverColor   = isDanger ? 'var(--red)'        : 'var(--brand)'
 
         return (
           <button
@@ -80,31 +102,34 @@ export function SideNav() {
               justifyContent: 'center', gap: 4,
               padding: '10px 4px', margin: '1px 5px',
               borderRadius: 'var(--r-md)',
-              border: isPOS ? '1.5px solid var(--brand-border)' : '1px solid transparent',
-              background: isPOS ? 'var(--brand-bg)' : 'transparent',
-              color: isPOS ? 'var(--brand)' : btn.danger ? 'var(--red)' : 'var(--text-2)',
-              fontSize: 9, fontWeight: isPOS ? 800 : 600, lineHeight: 1.2,
+              border: isActive ? `1.5px solid ${activeBorder}` : '1px solid transparent',
+              background: isActive ? activeBg : 'transparent',
+              color: isActive ? activeColor : isDanger ? 'var(--red)' : 'var(--text-2)',
+              fontSize: 9, fontWeight: isActive ? 800 : 600, lineHeight: 1.2,
               textAlign: 'center', cursor: 'pointer',
-              transition: 'all 0.1s',
+              transition: 'all 0.15s ease',
               userSelect: 'none',
               WebkitTapHighlightColor: 'transparent',
+              boxShadow: isActive ? '0 2px 10px rgba(0,0,0,0.15)' : 'none',
             }}
             onMouseEnter={e => {
-              if (!isPOS) {
-                const bg = btn.danger ? 'var(--red-bg)' : 'var(--surface-2)'
-                const bc = btn.danger ? 'var(--red-border)' : 'var(--border)'
-                e.currentTarget.style.background  = bg
-                e.currentTarget.style.borderColor  = bc
-              }
+              if (isActive) return
+              e.currentTarget.style.background   = hoverBg
+              e.currentTarget.style.borderColor  = hoverBorder
+              e.currentTarget.style.color        = hoverColor
+              e.currentTarget.style.borderWidth  = '1.5px'
+              e.currentTarget.style.transform    = 'translateX(2px)'
             }}
             onMouseLeave={e => {
-              if (!isPOS) {
-                e.currentTarget.style.background  = 'transparent'
-                e.currentTarget.style.borderColor  = 'transparent'
-              }
+              if (isActive) return
+              e.currentTarget.style.background   = 'transparent'
+              e.currentTarget.style.borderColor  = 'transparent'
+              e.currentTarget.style.color        = isDanger ? 'var(--red)' : 'var(--text-2)'
+              e.currentTarget.style.borderWidth  = '1px'
+              e.currentTarget.style.transform    = 'translateX(0)'
             }}
             onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.93)' }}
-            onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+            onMouseUp={e => { e.currentTarget.style.transform = isActive ? 'scale(1)' : 'translateX(2px)' }}
           >
             <Icon size={17} style={{ flexShrink: 0 }} />
             <span style={{ fontSize: 8.5, letterSpacing: 0.2, maxWidth: 56, wordBreak: 'break-word' }}>
@@ -125,10 +150,10 @@ export function SideNav() {
           borderRadius: 'var(--r-md)',
           border: '1px solid transparent', background: 'transparent',
           color: 'var(--text-3)', fontSize: 8.5, fontWeight: 600, cursor: 'pointer',
-          transition: 'all 0.1s',
+          transition: 'all 0.15s ease',
         }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'var(--red-bg)'; e.currentTarget.style.color = 'var(--red)' }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-3)' }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--red-bg)'; e.currentTarget.style.color = 'var(--red)'; e.currentTarget.style.borderColor = 'var(--red-border)'; e.currentTarget.style.borderWidth = '1.5px'; e.currentTarget.style.transform = 'translateX(2px)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-3)'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.transform = 'translateX(0)' }}
         onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.93)' }}
         onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
       >
@@ -136,6 +161,17 @@ export function SideNav() {
         <span>Logout</span>
       </button>
     </div>
+
+    {recallOpen && (
+      <RecallHoldModal
+        onClose={() => setRecallOpen(false)}
+        onRecall={(bill) => { setRecallOpen(false) }}
+      />
+    )}
+    {reprintOpen && (
+      <BillReprintModal onClose={() => setReprintOpen(false)} />
+    )}
+    </>
   )
 }
 
@@ -143,7 +179,10 @@ export function SideNav() {
    FeatureGrid — horizontal button strip at center bottom
    ───────────────────────────────────────────────────────────── */
 export function FeatureGrid() {
-  const [groupOpen, setGroupOpen] = useState(false)
+  const [groupOpen,      setGroupOpen]      = useState(false)
+  const [lookupOpen,     setLookupOpen]     = useState(false)
+  const [privilegeOpen,  setPrivilegeOpen]  = useState(false)
+  const [priceEnqOpen,   setPriceEnqOpen]   = useState(false)
 
   return (
     <>
@@ -154,11 +193,14 @@ export function FeatureGrid() {
     }}>
       {FEATURE_BUTTONS.map((btn, i) => {
         const Icon = btn.icon
-        const isGroup = btn.label === 'Group'
+        const isGroup     = btn.label === 'Group'
+        const isLookup    = btn.label === 'Look Up'
+        const isPrivilege = btn.label === 'Privilege'
+        const isPriceEnq  = btn.label === 'Price Enquiry'
         return (
           <button
             key={i}
-            onClick={isGroup ? () => setGroupOpen(true) : undefined}
+            onClick={isGroup ? () => setGroupOpen(true) : isLookup ? () => setLookupOpen(true) : isPrivilege ? () => setPrivilegeOpen(true) : isPriceEnq ? () => setPriceEnqOpen(true) : undefined}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               justifyContent: 'center', gap: 5,
@@ -219,6 +261,21 @@ export function FeatureGrid() {
         onClose={() => setGroupOpen(false)}
         onSelect={({ group }) => { setGroupOpen(false) }}
       />
+    )}
+    {lookupOpen && (
+      <ProductLookupModal
+        onClose={() => setLookupOpen(false)}
+        onSelect={(row) => { setLookupOpen(false) }}
+      />
+    )}
+    {privilegeOpen && (
+      <PrivilegeCustomerModal
+        onClose={() => setPrivilegeOpen(false)}
+        onApply={(customer) => { setPrivilegeOpen(false) }}
+      />
+    )}
+    {priceEnqOpen && (
+      <PriceEnquiryModal onClose={() => setPriceEnqOpen(false)} />
     )}
     </>
   )

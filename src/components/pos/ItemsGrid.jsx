@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Trash2, Minus, Plus, Save } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { fmt3 } from '../../lib/utils'
-import ItemDetailModal from './ItemDetailModal'
+import ItemDetailModal from '../popup/ItemDetailModal'
 
 const COLS = [
   { key: 'slNo',        label: '#',         w: 36,  align: 'center' },
@@ -55,8 +55,8 @@ export default function ItemsGrid() {
       {/* ── Column headers ──────────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center',
-        background: 'var(--surface-2)',
-        borderBottom: '2px solid var(--border)',
+        background: 'var(--brand-bg)',
+        borderBottom: '1.5px solid var(--brand-border)',
         flexShrink: 0,
       }}>
         {COLS.map(col => (
@@ -64,7 +64,7 @@ export default function ItemsGrid() {
             padding: '8px 10px',
             textAlign: col.align || 'left',
             fontSize: 10, fontWeight: 700, letterSpacing: 0.6,
-            color: 'var(--text-3)', whiteSpace: 'nowrap',
+            color: 'var(--brand)', whiteSpace: 'nowrap',
             textTransform: 'uppercase',
             ...(col.flex ? { flex: 1, minWidth: 0 } : { width: col.w, flexShrink: 0 }),
           }}>
@@ -104,14 +104,14 @@ export default function ItemsGrid() {
               style={{
                 display: 'flex', alignItems: 'center', cursor: 'pointer',
                 background: selected
-                  ? 'var(--brand-tint)'
+                  ? 'rgba(107,0,0,0.06)'
                   : idx % 2 === 0 ? 'var(--surface)' : '#fafaf8',
-                borderBottom: '1px solid var(--border)',
+                borderBottom: `1px solid ${selected ? 'rgba(107,0,0,0.12)' : 'var(--border)'}`,
                 borderLeft: `3px solid ${selected ? 'var(--brand)' : 'transparent'}`,
                 transition: 'background 0.1s',
                 minHeight: 40,
               }}
-              onMouseEnter={e => { if (!selected) e.currentTarget.style.background = 'var(--brand-bg)' }}
+              onMouseEnter={e => { if (!selected) e.currentTarget.style.background = '#f5f5f5' }}
               onMouseLeave={e => { if (!selected) e.currentTarget.style.background = idx % 2 === 0 ? 'var(--surface)' : '#fafaf8' }}
             >
               {COLS.map(col => {

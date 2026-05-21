@@ -55,7 +55,7 @@ export default function ItemDetailModal({ item, onClose }) {
       <div style={{
         width: 440, maxWidth: '92vw',
         background: '#fff',
-        borderRadius: 20,
+        borderRadius: 24,
         boxShadow: '0 32px 80px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.06)',
         overflow: 'hidden',
         animation: 'mi-slide 0.18s cubic-bezier(.22,.68,0,1.2)',
@@ -91,19 +91,20 @@ export default function ItemDetailModal({ item, onClose }) {
         </div>
 
         {/* ── Stats row ── */}
-        <div style={{ display: 'flex', gap: 0, padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', gap: 8, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
           {[
             { label: 'Unit Price', value: fmt3(item.unitPrice) },
-            { label: 'VAT',        value: (item.vatPer || 0) + '%' },
+            { label: 'VAT %',      value: (item.vatPer || 0) + '%' },
             { label: 'Sub Total',  value: fmt3(subTotal) },
             { label: 'Total',      value: fmt3(lineTotal), accent: true },
-          ].map((s, i, arr) => (
+          ].map(s => (
             <div key={s.label} style={{
               flex: 1, textAlign: 'center',
-              borderRight: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
-              padding: '0 4px',
+              padding: '8px 6px', borderRadius: 8,
+              border: `1px solid ${s.accent ? 'var(--blue-border, #c3d9f0)' : 'var(--border)'}`,
+              background: s.accent ? 'var(--blue-bg, #f0f6fd)' : 'var(--surface-2)',
             }}>
-              <p style={{ fontSize: 9.5, fontWeight: 600, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 4 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, color: s.accent ? 'var(--blue)' : 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 4 }}>
                 {s.label}
               </p>
               <p style={{

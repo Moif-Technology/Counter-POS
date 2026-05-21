@@ -36,7 +36,7 @@ export default function GroupModal({ onClose, onSelect }) {
     onClose()
   }
 
-  const numKeys = ['7','8','9','4','5','6','1','2','3','0','.','C']
+  const numKeys = ['7','8','9','4','5','6','1','2','3']
 
   return (
     <div
@@ -58,7 +58,7 @@ export default function GroupModal({ onClose, onSelect }) {
 
       <div style={{
         width: 700, maxWidth: '95vw', maxHeight: '88vh',
-        background: '#fff', borderRadius: 20, overflow: 'hidden',
+        background: '#fff', borderRadius: 24, overflow: 'hidden',
         boxShadow: '0 32px 80px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.06)',
         display: 'flex', flexDirection: 'column',
         animation: 'gm-slide 0.18s cubic-bezier(.22,.68,0,1.2)',
@@ -156,20 +156,20 @@ export default function GroupModal({ onClose, onSelect }) {
           </div>
 
           {/* RIGHT — unit price + numpad */}
-          <div style={{ width: 220, flexShrink: 0, display: 'flex', flexDirection: 'column', padding: '14px 14px 0' }}>
+          <div style={{ width: 210, flexShrink: 0, display: 'flex', flexDirection: 'column', padding: '10px 12px 0' }}>
 
             {/* Unit price display */}
-            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 }}>
+            <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }}>
               Unit Price
             </p>
             <div style={{
-              height: 48, borderRadius: 10, marginBottom: 12,
+              height: 40, borderRadius: 8, marginBottom: 8,
               border: '1.5px solid var(--border)', background: 'var(--surface-2)',
               display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-              padding: '0 14px',
+              padding: '0 12px',
             }}>
               <span style={{
-                fontSize: price ? 22 : 16, fontWeight: 800,
+                fontSize: price ? 20 : 14, fontWeight: 800,
                 color: price ? 'var(--text-1)' : 'var(--text-4)',
                 fontFamily: "'JetBrains Mono', monospace",
                 fontVariantNumeric: 'tabular-nums',
@@ -179,41 +179,87 @@ export default function GroupModal({ onClose, onSelect }) {
             </div>
 
             {/* Numpad */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6, flex: 1 }}>
-              {numKeys.map(k => {
-                const isClear  = k === 'C'
-                return (
-                  <button
-                    key={k}
-                    onClick={() => pressNum(k)}
-                    style={{
-                      height: 44, borderRadius: 10,
-                      border: `1.5px solid ${isClear ? 'var(--red-border)' : 'var(--border)'}`,
-                      background: isClear ? 'var(--red-bg)' : 'var(--surface)',
-                      color: isClear ? 'var(--red)' : 'var(--text-1)',
-                      fontSize: isClear ? 13 : 18, fontWeight: 700,
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: "'JetBrains Mono', monospace",
-                      boxShadow: 'var(--shadow-xs)',
-                      transition: 'transform 0.07s, background 0.08s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = isClear ? 'var(--red)' : 'var(--surface-2)'; if (isClear) e.currentTarget.style.color = '#fff' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = isClear ? 'var(--red-bg)' : 'var(--surface)'; if (isClear) e.currentTarget.style.color = 'var(--red)' }}
-                    onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)' }}
-                    onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-                  >
-                    {isClear ? <Delete size={15} /> : k}
-                  </button>
-                )
-              })}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {[['7','8','9'],['4','5','6'],['1','2','3']].map(row => (
+                <div key={row[0]} style={{ display: 'flex', gap: 4 }}>
+                  {row.map(k => (
+                    <button
+                      key={k}
+                      onClick={() => pressNum(k)}
+                      style={{
+                        flex: 1, height: 38, borderRadius: 8,
+                        border: '1.5px solid var(--border)', background: 'var(--surface)',
+                        color: 'var(--text-1)', fontSize: 16, fontWeight: 700,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontFamily: "'JetBrains Mono', monospace",
+                        boxShadow: 'var(--shadow-xs)', transition: 'transform 0.07s, background 0.08s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)' }}
+                      onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)' }}
+                      onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+                    >{k}</button>
+                  ))}
+                </div>
+              ))}
+
+              {/* Row: . | 0 (wide) | Clear */}
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  onClick={() => pressNum('.')}
+                  style={{
+                    flex: 1, height: 38, borderRadius: 8,
+                    border: '1.5px solid var(--border)', background: 'var(--surface)',
+                    color: 'var(--text-1)', fontSize: 18, fontWeight: 700,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    boxShadow: 'var(--shadow-xs)', transition: 'transform 0.07s, background 0.08s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)' }}
+                  onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)' }}
+                  onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+                >.</button>
+                <button
+                  onClick={() => pressNum('0')}
+                  style={{
+                    flex: 2, height: 38, borderRadius: 8,
+                    border: '1.5px solid var(--border)', background: 'var(--surface)',
+                    color: 'var(--text-1)', fontSize: 16, fontWeight: 700,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    boxShadow: 'var(--shadow-xs)', transition: 'transform 0.07s, background 0.08s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)' }}
+                  onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)' }}
+                  onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+                >0</button>
+                <button
+                  onClick={() => pressNum('C')}
+                  style={{
+                    flex: 1, height: 38, borderRadius: 8,
+                    border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
+                    color: 'var(--red)', fontSize: 11, fontWeight: 700,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                    boxShadow: 'var(--shadow-xs)', transition: 'background 0.08s, color 0.08s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--red)'; e.currentTarget.style.color = '#fff' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'var(--red-bg)'; e.currentTarget.style.color = 'var(--red)' }}
+                  onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)' }}
+                  onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+                >
+                  <Delete size={12} />
+                </button>
+              </div>
             </div>
 
             {/* Done / Cancel */}
-            <div style={{ display: 'flex', gap: 8, padding: '12px 0 14px' }}>
+            <div style={{ display: 'flex', gap: 6, padding: '8px 0 10px' }}>
               <button
                 onClick={onClose}
                 style={{
-                  flex: 1, height: 40, borderRadius: 10,
+                  flex: 1, height: 36, borderRadius: 8,
                   border: '1.5px solid var(--border)', background: 'var(--surface-2)',
                   color: 'var(--text-2)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
                   transition: 'background 0.12s',
@@ -226,7 +272,7 @@ export default function GroupModal({ onClose, onSelect }) {
               <button
                 onClick={handleDone}
                 style={{
-                  flex: 1, height: 40, borderRadius: 10, border: 'none',
+                  flex: 1, height: 36, borderRadius: 8, border: 'none',
                   background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
                   color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer',
                   boxShadow: '0 4px 14px rgba(107,0,0,0.22)',
