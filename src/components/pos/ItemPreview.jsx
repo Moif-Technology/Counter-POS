@@ -38,7 +38,6 @@ export default function ItemPreview() {
       height: '100%', display: 'flex', alignItems: 'center', gap: 20,
       padding: '0 14px',
       background: 'linear-gradient(90deg, var(--brand-bg) 0%, var(--surface) 100%)',
-      borderLeft: '3px solid var(--brand)',
     }}>
 
       {/* Item name — fills space */}
@@ -57,9 +56,6 @@ export default function ItemPreview() {
       <Cell label="Qty"        value={item.qty} mono />
       <Cell label="Unit Price" value={fmt3(item.unitPrice)} mono />
       <Cell label="VAT %"      value={(item.vatPer || 0).toFixed(2) + '%'} mono />
-
-      {/* Divider */}
-      <div style={{ width: 1, height: 26, background: 'var(--border-2)', flexShrink: 0 }} />
 
       <Cell label="Line Total" value={fmt3(item.lineTotal)} accent mono />
     </div>

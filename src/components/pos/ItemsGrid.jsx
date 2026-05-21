@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Trash2, Minus, Plus, Save } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { fmt3 } from '../../lib/utils'
-import ItemDetailModal from './ItemDetailModal'
+import ItemDetailModal from '../popup/ItemDetailModal'
 
 const COLS = [
   { key: 'slNo',        label: '#',         w: 36,  align: 'center' },
@@ -20,18 +20,14 @@ const COLS = [
 const NUM_KEYS = new Set(['unitPrice', 'discount', '_sub', 'vatPer', 'lineTotal'])
 
 /* Update qty directly via store state + recalc */
-function rowKey(item) {
-  return item.productId != null ? `pid_${item.productId}` : `bc_${item.barcode}`
-}
-
-function changeQty(key, delta) {
+function changeQty(barcode, delta) {
   const state = usePosStore.getState()
-  const item = state.cartItems.find(i => rowKey(i) === key)
+  const item = state.cartItems.find(i => i.barcode === barcode)
   if (!item) return
   const newQty = +(item.qty + delta).toFixed(3)
-  if (newQty <= 0) { state.removeItem(key); return }
+  if (newQty <= 0) { state.removeItem(barcode); return }
   const newItems = state.cartItems.map(i =>
-    rowKey(i) === key
+    i.barcode === barcode
       ? {
           ...i,
           qty: newQty,
@@ -59,8 +55,8 @@ export default function ItemsGrid() {
       {/* ── Column headers ──────────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center',
-        background: 'var(--surface-2)',
-        borderBottom: '2px solid var(--border)',
+        background: 'var(--brand-bg)',
+        borderBottom: '1.5px solid var(--brand-border)',
         flexShrink: 0,
       }}>
         {COLS.map(col => (
@@ -68,7 +64,7 @@ export default function ItemsGrid() {
             padding: '8px 10px',
             textAlign: col.align || 'left',
             fontSize: 10, fontWeight: 700, letterSpacing: 0.6,
-            color: 'var(--text-3)', whiteSpace: 'nowrap',
+            color: 'var(--brand)', whiteSpace: 'nowrap',
             textTransform: 'uppercase',
             ...(col.flex ? { flex: 1, minWidth: 0 } : { width: col.w, flexShrink: 0 }),
           }}>
@@ -99,24 +95,23 @@ export default function ItemsGrid() {
             <div style={{ fontSize: 11.5, color: 'var(--text-4)' }}>Scan or type a barcode to start</div>
           </div>
         ) : cartItems.map((row, idx) => {
-          const rk = rowKey(row)
-          const selected = rk === selectedRowKey
+          const selected = row.barcode === selectedRowKey
           return (
             <div
-              key={rk}
-              onClick={() => usePosStore.setState({ selectedRowKey: rk })}
+              key={row.barcode}
+              onClick={() => usePosStore.setState({ selectedRowKey: row.barcode })}
               onDoubleClick={() => setModalItem(row)}
               style={{
                 display: 'flex', alignItems: 'center', cursor: 'pointer',
                 background: selected
-                  ? 'var(--brand-tint)'
+                  ? 'rgba(107,0,0,0.06)'
                   : idx % 2 === 0 ? 'var(--surface)' : '#fafaf8',
-                borderBottom: '1px solid var(--border)',
+                borderBottom: `1px solid ${selected ? 'rgba(107,0,0,0.12)' : 'var(--border)'}`,
                 borderLeft: `3px solid ${selected ? 'var(--brand)' : 'transparent'}`,
                 transition: 'background 0.1s',
                 minHeight: 40,
               }}
-              onMouseEnter={e => { if (!selected) e.currentTarget.style.background = 'var(--brand-bg)' }}
+              onMouseEnter={e => { if (!selected) e.currentTarget.style.background = '#f5f5f5' }}
               onMouseLeave={e => { if (!selected) e.currentTarget.style.background = idx % 2 === 0 ? 'var(--surface)' : '#fafaf8' }}
             >
               {COLS.map(col => {
@@ -125,7 +120,7 @@ export default function ItemsGrid() {
                 if (col.key === '_del') return (
                   <div key="_del" style={{ width: 34, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
                     <button
-                      onClick={e => { e.stopPropagation(); removeItem(rk) }}
+                      onClick={e => { e.stopPropagation(); removeItem(row.barcode) }}
                       aria-label="Remove item"
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
@@ -153,7 +148,7 @@ export default function ItemsGrid() {
                       overflow: 'hidden', background: 'var(--surface)',
                     }}>
                       <button
-                        onClick={e => { e.stopPropagation(); changeQty(rk, -1) }}
+                        onClick={e => { e.stopPropagation(); changeQty(row.barcode, -1) }}
                         style={{
                           width: 24, height: 26, border: 'none',
                           borderRight: '1px solid var(--border)',
@@ -175,7 +170,7 @@ export default function ItemsGrid() {
                         {row.qty % 1 === 0 ? row.qty : row.qty.toFixed(3)}
                       </span>
                       <button
-                        onClick={e => { e.stopPropagation(); changeQty(rk, 1) }}
+                        onClick={e => { e.stopPropagation(); changeQty(row.barcode, 1) }}
                         style={{
                           width: 24, height: 26, border: 'none',
                           borderLeft: '1px solid var(--border)',

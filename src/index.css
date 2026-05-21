@@ -3,13 +3,14 @@
 
 /* ─── Design Tokens ──────────────────────────────────────────── */
 :root {
-  /* Layout skeleton — locked proportions */
+  /* Layout skeleton */
   --header-h:   52px;
   --footer-h:   28px;
-  --sidebar-w:  310px;
-  --right-w:    330px;
-  --barcode-h:  58px;
-  --preview-h:  46px;
+  --sidebar-w:  70px;     /* narrow icon-only nav */
+  --right-w:    324px;
+  --topbar-h:   54px;     /* customer + barcode row */
+  --preview-h:  36px;     /* selected item strip */
+  --fn-h:       92px;     /* bottom feature buttons */
 
   /* Surfaces */
   --bg:        #f4f3ef;
@@ -27,7 +28,7 @@
   --text-3: #8c8980;
   --text-4: #b3b0a8;
 
-  /* Brand — crimson, used as accent */
+  /* Brand — crimson */
   --brand:        #6b0000;
   --brand-2:      #990000;
   --brand-light:  #c10000;
@@ -36,7 +37,7 @@
   --brand-border: #f5b8b8;
   --brand-glow:   rgba(107, 0, 0, 0.10);
 
-  /* Semantic states */
+  /* Semantic */
   --green:         #157a3a;
   --green-bg:      #f0fdf4;
   --green-border:  #a7f3c0;
@@ -101,9 +102,7 @@ button { cursor: pointer; border: none; background: none; }
 ::-webkit-scrollbar-thumb   { background: var(--border-2); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-4); }
 
-/* ─── POS Layout Skeleton ────────────────────────────────────── */
-/*  left (products) | right (payment) — hotbar below body        */
-
+/* ─── POS Root ───────────────────────────────────────────────── */
 .pos-root {
   display: flex;
   flex-direction: column;
@@ -112,17 +111,19 @@ button { cursor: pointer; border: none; background: none; }
   overflow: hidden;
 }
 
+/* ─── Header ─────────────────────────────────────────────────── */
 .pos-header {
   height: var(--header-h);
   flex-shrink: 0;
   background: linear-gradient(145deg, var(--brand) 0%, var(--brand-2) 100%);
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 14px;
   gap: 10px;
   border-bottom: 2px solid rgba(0,0,0,0.18);
 }
 
+/* ─── Body ───────────────────────────────────────────────────── */
 .pos-body {
   flex: 1;
   display: flex;
@@ -130,18 +131,18 @@ button { cursor: pointer; border: none; background: none; }
   min-height: 0;
 }
 
-/* LEFT SIDEBAR — function buttons panel */
+/* ─── Left Sidebar — narrow icon nav ─────────────────────────── */
 .pos-sidebar {
   width: var(--sidebar-w);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--bg);
+  background: var(--surface);
   border-right: 1px solid var(--border);
 }
 
-/* CENTER — products area, fills remaining width */
+/* ─── Center ─────────────────────────────────────────────────── */
 .pos-center {
   flex: 1;
   display: flex;
@@ -149,28 +150,47 @@ button { cursor: pointer; border: none; background: none; }
   overflow: hidden;
   min-width: 0;
   border-right: 1px solid var(--border);
+  background: var(--bg);
 }
 
+/* Customer + barcode row */
+.pos-topbar {
+  height: var(--topbar-h);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* Selected item preview strip */
 .pos-preview {
   height: var(--preview-h);
   flex-shrink: 0;
   border-bottom: 1px solid var(--border);
+  background: var(--surface);
 }
 
+/* Items table — fills remaining height */
 .pos-grid {
   flex: 1;
   overflow: hidden;
   min-height: 0;
-}
-
-.pos-barcode {
-  height: var(--barcode-h);
-  flex-shrink: 0;
-  border-top: 2px solid var(--border);
   background: var(--surface);
 }
 
-/* RIGHT PANEL — bill + payment + numpad */
+/* Bottom feature buttons */
+.pos-fn-grid {
+  height: var(--fn-h);
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  overflow-x: auto;
+}
+
+/* ─── Right Panel ────────────────────────────────────────────── */
 .pos-right {
   width: var(--right-w);
   flex-shrink: 0;
@@ -180,11 +200,10 @@ button { cursor: pointer; border: none; background: none; }
   background: var(--surface);
 }
 
-.pos-bill-zone   { flex: 1; overflow-y: auto; min-height: 0; border-bottom: 1px solid var(--border); }
-.pos-pay-zone    { flex-shrink: 0; border-bottom: 1px solid var(--border); }
-.pos-numpad-zone { flex-shrink: 0; }
+.pos-bill-zone   { flex: 1; overflow-y: auto; min-height: 0; }
+.pos-numpad-zone { flex-shrink: 0; border-top: 1px solid var(--border); }
 
-/* FOOTER */
+/* ─── Footer ─────────────────────────────────────────────────── */
 .pos-footer {
   height: var(--footer-h);
   flex-shrink: 0;
