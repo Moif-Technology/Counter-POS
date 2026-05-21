@@ -1,40 +1,76 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Monitor, Server } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
+import { api } from '../lib/api'
+import { getEnrollment, clearEnrollment } from '../lib/device'
 
-const NUMPAD = ['7','8','9','4','5','6','1','2','3','.','0','⌫']
+const NUMPAD = ['7','8','9','4','5','6','1','2','3','C','0','⌫']
 
 export default function LoginPage() {
   const navigate   = useNavigate()
   const setSession = usePosStore(s => s.setSession)
   const setBillNo  = usePosStore(s => s.setBillNo)
 
-  const [active,   setActive]   = useState('password')
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPwd,  setShowPwd]  = useState(false)
-  const [dbMode,   setDbMode]   = useState('LOCAL')
-  const [error,    setError]    = useState('')
-  const [loading,  setLoading]  = useState(false)
+  const enrollment = getEnrollment()
 
-  const numPress = (k) => {
-    const setter = active === 'username' ? setUsername : setPassword
-    if (k === '⌫') { setter(p => p.slice(0, -1)); return }
-    setter(p => p + k)
-  }
+  const [pin,     setPin]     = useState('')
+  const [error,   setError]   = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const pressKey = useCallback((k) => {
+    if (k === '⌫' || k === 'Backspace') { setPin(p => p.slice(0, -1)); return }
+    if (k === 'C' || k === 'Escape')    { setPin(''); setError(''); return }
+    if (/^\d$/.test(k) && pin.length < 6) setPin(p => p + k)
+  }, [pin])
+
+  // Keyboard support
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Enter') { login(); return }
+      pressKey(e.key)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [pressKey])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = async () => {
     setError('')
-    if (!username.trim()) { setError('Enter a username to continue'); return }
-    if (!password.trim()) { setError('Enter your password to continue'); return }
+    if (pin.length < 4) { setError('PIN must be 4–6 digits'); return }
+    if (!enrollment)    { navigate('/enroll'); return }
+
     setLoading(true)
-    await new Promise(r => setTimeout(r, 500))
-    setLoading(false)
-    setSession({ name: username, id: username }, '01')
-    setBillNo('B-00001')
-    navigate('/pos')
+    try {
+      const { accessToken, refreshToken, session } = await api.counterPos.pinLogin({
+        pin,
+        companyId: enrollment.companyId,
+      })
+
+      const cashier = {
+        staffId:   session.user.staffId,
+        name:      session.user.staffName,
+        staffCode: session.user.staffCode ?? '',
+        role:      session.user.role,
+        roleName:  session.user.roleName,
+      }
+      setSession(
+        cashier,
+        String(enrollment.branchId),
+        accessToken,
+        refreshToken,
+        enrollment.companyId,
+        enrollment.branchId,
+      )
+      setBillNo(`B-${String(Date.now()).slice(-5)}`)
+      navigate('/pos')
+    } catch (err) {
+      setError(err.message)
+      setPin('')
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const pinDots = Array.from({ length: 6 }, (_, i) => i < pin.length)
 
   return (
     <div style={{
@@ -51,17 +87,14 @@ export default function LoginPage() {
         alignItems: 'center', justifyContent: 'center',
         padding: '48px 40px', position: 'relative', overflow: 'hidden',
       }}>
-        {/* Background grid texture */}
         <div style={{
           position: 'absolute', inset: 0,
           backgroundImage: `
             linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
             linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)
           `,
-          backgroundSize: '28px 28px',
-          pointerEvents: 'none',
+          backgroundSize: '28px 28px', pointerEvents: 'none',
         }} />
-        {/* Glow orb */}
         <div style={{
           position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)',
           width: 240, height: 240, borderRadius: '50%',
@@ -69,7 +102,6 @@ export default function LoginPage() {
           pointerEvents: 'none',
         }} />
 
-        {/* Logo */}
         <div style={{
           width: 72, height: 72, borderRadius: 20,
           background: 'rgba(255,255,255,0.14)',
@@ -92,18 +124,10 @@ export default function LoginPage() {
           Counter Sales System
         </div>
 
-        <div style={{
-          width: 40, height: 1,
-          background: 'rgba(255,255,255,0.2)',
-          margin: '28px 0', position: 'relative',
-        }} />
+        <div style={{ width: 40, height: 1, background: 'rgba(255,255,255,0.2)', margin: '28px 0', position: 'relative' }} />
 
         <div style={{ position: 'relative', textAlign: 'center' }}>
-          {[
-            'Instant barcode scanning',
-            'Multi-payment support',
-            'Real-time VAT calculation',
-          ].map((feat, i) => (
+          {['Instant barcode scanning', 'Multi-payment support', 'Real-time VAT calculation'].map((feat, i) => (
             <div key={i} style={{
               display: 'flex', alignItems: 'center', gap: 8,
               marginBottom: 10, color: 'rgba(255,255,255,0.6)', fontSize: 11.5, fontWeight: 500,
@@ -114,29 +138,39 @@ export default function LoginPage() {
           ))}
         </div>
 
-        {/* Bottom version */}
-        <div style={{
-          position: 'absolute', bottom: 20,
-          color: 'rgba(255,255,255,0.25)', fontSize: 10, letterSpacing: 0.5,
-        }}>
-          Moif Technology © {new Date().getFullYear()} · v2.0
-        </div>
+        {enrollment && (
+          <div style={{
+            position: 'absolute', bottom: 20,
+            color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: 0.4,
+            textAlign: 'center', lineHeight: 1.6,
+          }}>
+            {enrollment.label || `Branch ${enrollment.branchId}`} · Co. {enrollment.companyId}
+            <br />
+            <button
+              onClick={() => { clearEnrollment(); navigate('/enroll') }}
+              style={{
+                color: 'rgba(255,255,255,0.28)', fontSize: 10,
+                textDecoration: 'underline', marginTop: 2, background: 'none', border: 'none', cursor: 'pointer',
+              }}
+            >
+              Re-enroll device
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* ── RIGHT FORM PANEL ──────────────────── */}
+      {/* ── RIGHT PIN PANEL ──────────────────── */}
       <div style={{
         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '32px 40px', overflowY: 'auto',
       }}>
-        <div style={{ width: '100%', maxWidth: 380 }}>
+        <div style={{ width: '100%', maxWidth: 320 }}>
 
-          {/* Heading */}
           <div style={{ marginBottom: 28 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.1 }}>Sign in</h1>
-            <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 5, fontWeight: 400 }}>Enter your credentials to open a session</p>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.1 }}>Staff Sign In</h1>
+            <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 5 }}>Enter your PIN to continue</p>
           </div>
 
-          {/* Error */}
           {error && (
             <div style={{
               background: 'var(--red-bg)', border: '1px solid var(--red-border)',
@@ -151,112 +185,48 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* DB Mode toggle */}
-          <div style={{ marginBottom: 18 }}>
-            <label style={{ display: 'block', fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.8, marginBottom: 7 }}>
-              DATABASE MODE
+          {/* PIN dots */}
+          <div style={{ marginBottom: 22 }}>
+            <label style={{ display: 'block', fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.8, marginBottom: 10 }}>
+              PIN
             </label>
             <div style={{
-              display: 'flex', gap: 4, background: 'var(--surface-2)',
-              borderRadius: 'var(--r-md)', padding: 4,
-              border: '1px solid var(--border)',
+              display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center',
+              padding: '18px 18px', borderRadius: 'var(--r-md)',
+              background: 'var(--surface)', border: '1.5px solid var(--brand)',
+              boxShadow: '0 0 0 3px var(--brand-glow)',
             }}>
-              {['LOCAL','SERVER'].map(m => (
-                <button key={m}
-                  onClick={() => setDbMode(m)}
-                  style={{
-                    flex: 1, padding: '7px 0', borderRadius: 7,
-                    background: dbMode === m ? 'var(--surface)' : 'transparent',
-                    color: dbMode === m ? 'var(--brand)' : 'var(--text-3)',
-                    fontWeight: dbMode === m ? 700 : 500, fontSize: 11.5,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                    boxShadow: dbMode === m ? 'var(--shadow-sm)' : 'none',
-                    transition: 'all 0.14s', border: 'none',
-                  }}
-                >
-                  {m === 'LOCAL' ? <Monitor size={11} /> : <Server size={11} />}
-                  {m}
-                </button>
+              {pinDots.map((filled, i) => (
+                <div key={i} style={{
+                  width: 16, height: 16, borderRadius: '50%',
+                  background: filled ? 'var(--brand)' : 'var(--border)',
+                  transition: 'background 0.12s',
+                }} />
               ))}
             </div>
           </div>
 
-          {/* Username */}
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.8, marginBottom: 7 }}>USERNAME</label>
-            <input
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              onFocus={() => setActive('username')}
-              onKeyDown={e => e.key === 'Enter' && login()}
-              placeholder="Enter username"
-              style={{
-                width: '100%', padding: '11px 14px', borderRadius: 'var(--r-md)',
-                background: 'var(--surface)', border: `1.5px solid ${active === 'username' ? 'var(--brand)' : 'var(--border)'}`,
-                color: 'var(--text-1)', fontSize: 14, fontWeight: 500,
-                boxShadow: active === 'username' ? '0 0 0 3px var(--brand-glow)' : 'none',
-                transition: 'border-color 0.14s, box-shadow 0.14s',
-              }}
-            />
-          </div>
-
-          {/* Password */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: 'block', fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.8, marginBottom: 7 }}>PASSWORD</label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPwd ? 'text' : 'password'}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                onFocus={() => setActive('password')}
-                onKeyDown={e => e.key === 'Enter' && login()}
-                placeholder="Enter password"
-                style={{
-                  width: '100%', padding: '11px 42px 11px 14px', borderRadius: 'var(--r-md)',
-                  background: 'var(--surface)', border: `1.5px solid ${active === 'password' ? 'var(--brand)' : 'var(--border)'}`,
-                  color: 'var(--text-1)', fontSize: 14, fontWeight: 500,
-                  boxShadow: active === 'password' ? '0 0 0 3px var(--brand-glow)' : 'none',
-                  transition: 'border-color 0.14s, box-shadow 0.14s',
-                }}
-              />
-              <button
-                onClick={() => setShowPwd(p => !p)}
-                aria-label={showPwd ? 'Hide password' : 'Show password'}
-                style={{
-                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                  color: 'var(--text-3)', padding: 6, borderRadius: 6, display: 'flex',
-                  transition: 'color 0.12s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-2)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}
-              >
-                {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
-              </button>
-            </div>
-          </div>
-
           {/* Numpad */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6, marginBottom: 18 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 7, marginBottom: 18 }}>
             {NUMPAD.map(k => {
-              const isDel = k === '⌫'
+              const isAction = k === '⌫' || k === 'C'
               return (
                 <button
                   key={k}
-                  onClick={() => numPress(k)}
+                  onClick={() => pressKey(k)}
                   style={{
-                    padding: '12px 0', borderRadius: 'var(--r-md)',
-                    border: `1.5px solid ${isDel ? 'var(--red-border)' : 'var(--border)'}`,
-                    background: isDel ? 'var(--red-bg)' : 'var(--surface)',
-                    color: isDel ? 'var(--red)' : 'var(--text-1)',
-                    fontSize: isDel ? 14 : 17, fontWeight: 700,
-                    fontFamily: isDel ? 'inherit' : "'JetBrains Mono', monospace",
+                    padding: '15px 0', borderRadius: 'var(--r-md)',
+                    border: `1.5px solid ${isAction ? 'var(--red-border)' : 'var(--border)'}`,
+                    background: isAction ? 'var(--red-bg)' : 'var(--surface)',
+                    color: isAction ? 'var(--red)' : 'var(--text-1)',
+                    fontSize: isAction ? 13 : 20, fontWeight: 700,
+                    fontFamily: k === '⌫' ? 'inherit' : "'JetBrains Mono', monospace",
                     boxShadow: 'var(--shadow-xs)',
-                    transition: 'transform 0.08s, box-shadow 0.08s, background 0.1s',
+                    transition: 'transform 0.08s, background 0.1s',
+                    cursor: 'pointer',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = isDel ? '#fee2e2' : 'var(--surface-2)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = isDel ? 'var(--red-bg)' : 'var(--surface)' }}
-                  onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.94)'; e.currentTarget.style.boxShadow = 'none' }}
-                  onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'var(--shadow-xs)' }}
+                  onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.93)' }}
+                  onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
                 >
                   {k}
                 </button>
@@ -269,7 +239,7 @@ export default function LoginPage() {
             onClick={login}
             disabled={loading}
             style={{
-              width: '100%', padding: '14px 0', borderRadius: 'var(--r-lg)',
+              width: '100%', padding: '15px 0', borderRadius: 'var(--r-lg)',
               background: loading
                 ? 'var(--surface-3)'
                 : 'linear-gradient(145deg, var(--brand) 0%, var(--brand-2) 100%)',
@@ -279,10 +249,6 @@ export default function LoginPage() {
               boxShadow: loading ? 'none' : '0 4px 18px rgba(107,0,0,0.28)',
               transition: 'all 0.18s',
             }}
-            onMouseEnter={e => { if (!loading) e.currentTarget.style.boxShadow = '0 6px 24px rgba(107,0,0,0.38)' }}
-            onMouseLeave={e => { if (!loading) e.currentTarget.style.boxShadow = '0 4px 18px rgba(107,0,0,0.28)' }}
-            onMouseDown={e => { if (!loading) e.currentTarget.style.transform = 'scale(0.99)' }}
-            onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
           >
             {loading
               ? <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
@@ -297,7 +263,6 @@ export default function LoginPage() {
 
         </div>
       </div>
-
     </div>
   )
 }

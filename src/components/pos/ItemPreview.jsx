@@ -21,7 +21,7 @@ function Cell({ label, value, accent, mono }) {
 export default function ItemPreview() {
   const cartItems      = usePosStore(s => s.cartItems)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
-  const item           = cartItems.find(i => i.barcode === selectedRowKey)
+  const item           = cartItems.find(i => (i.productId != null ? `pid_${i.productId}` : `bc_${i.barcode}`) === selectedRowKey)
 
   if (!item) return (
     <div style={{
