@@ -58,6 +58,11 @@ export default function PacketScanModal({ onClose }) {
       <style>{`
         @keyframes ps-fade  { from{opacity:0} to{opacity:1} }
         @keyframes ps-slide { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @media (max-width: 640px) {
+          .ps-body { flex-direction: column !important; }
+          .ps-left { border-right: none !important; border-bottom: 1px solid var(--border) !important; min-height: 180px; }
+          .ps-right { width: 100% !important; }
+        }
       `}</style>
 
       <div style={{
@@ -104,10 +109,10 @@ export default function PacketScanModal({ onClose }) {
         </div>
 
         {/* ── Body ── */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div className="ps-body" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
           {/* LEFT — table */}
-          <div style={{ flex: 1, padding: '16px 16px', display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden' }}>
+          <div className="ps-left" style={{ flex: 1, padding: '16px 16px', display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden' }}>
             <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', border: '1px solid rgba(0,0,0,0.18)', borderRadius: 10 }}>
               <Table
                 columns={COLUMNS}
@@ -119,7 +124,7 @@ export default function PacketScanModal({ onClose }) {
           </div>
 
           {/* RIGHT — barcode input + numpad */}
-          <div style={{ width: 220, flexShrink: 0, padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="ps-right" style={{ width: 220, flexShrink: 0, padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
             {/* BarCode field */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

@@ -57,6 +57,11 @@ export default function CurrencyModal({ onClose }) {
         @keyframes cu-fade  { from{opacity:0} to{opacity:1} }
         @keyframes cu-slide { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
         .cu-row:hover { background: var(--brand-bg) !important; cursor: pointer; }
+        @media (max-width: 640px) {
+          .cu-body { flex-direction: column !important; }
+          .cu-left { border-right: none !important; border-bottom: 1px solid var(--border) !important; max-height: 220px; }
+          .cu-right { width: 100% !important; border-top: none !important; padding: 12px !important; }
+        }
       `}</style>
 
       <div style={{
@@ -103,10 +108,10 @@ export default function CurrencyModal({ onClose }) {
         </div>
 
         {/* ── Body ── */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div className="cu-body" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
           {/* LEFT — currency table */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--border)' }}>
+          <div className="cu-left" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--border)' }}>
 
             {/* Table heading */}
             <div style={{
@@ -158,7 +163,7 @@ export default function CurrencyModal({ onClose }) {
           </div>
 
           {/* RIGHT — fields + numpad */}
-          <div style={{ width: 260, flexShrink: 0, padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="cu-right" style={{ width: 260, flexShrink: 0, padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
             {/* Selected currency badge */}
             <div style={{

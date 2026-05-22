@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import CounterReadingModal from './CounterReadingModal'
 import {
   X, BarChart2,
   ClipboardList, Users, Star, Grid3x3,
@@ -74,6 +75,7 @@ const SHORTCUT_MAP = {
 }
 
 export default function ReportsModal({ onClose, onSelect }) {
+  const [counterReadingOpen, setCounterReadingOpen] = useState(false)
   const overlayRef = useRef()
 
   useEffect(() => {
@@ -91,11 +93,13 @@ export default function ReportsModal({ onClose, onSelect }) {
   }, [onClose])
 
   function handleSelect(itemKey) {
+    if (itemKey === 0) { setCounterReadingOpen(true); return }
     onSelect?.(itemKey)
     onClose()
   }
 
   return (
+    <>
     <div
       ref={overlayRef}
       onClick={e => e.target === overlayRef.current && onClose()}
@@ -335,5 +339,10 @@ export default function ReportsModal({ onClose, onSelect }) {
 
       </div>
     </div>
+
+    {counterReadingOpen && (
+      <CounterReadingModal onClose={() => setCounterReadingOpen(false)} />
+    )}
+    </>
   )
 }

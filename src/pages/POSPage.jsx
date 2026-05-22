@@ -203,17 +203,17 @@ export default function POSPage() {
         </div>
 
         {/* Center — counter / date / time */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 0 }}>
           <HeaderChip icon={Monitor}  label={`Counter ${counterNo}`} dropdown />
-          <HeaderChip icon={Calendar} label={dateStr} />
+          <span className="header-hide-sm"><HeaderChip icon={Calendar} label={dateStr} /></span>
           <HeaderChip icon={Clock}    label={timeStr} />
         </div>
 
         {/* Right — bill / actions / user */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <div style={{
             background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: 7, padding: '5px 11px',
+            borderRadius: 7, padding: '5px 11px', flexShrink: 0,
           }}>
             <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.4 }}>BILL </span>
             <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: "'JetBrains Mono', monospace" }}>
@@ -221,16 +221,15 @@ export default function POSPage() {
             </span>
           </div>
 
-          <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.18)' }} />
-
-          <HeaderIconBtn icon={Search} />
-          <HeaderIconBtn icon={Maximize2} />
+          <div className="header-hide-md" style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.18)' }} />
+          <span className="header-hide-md"><HeaderIconBtn icon={Search} /></span>
+          <span className="header-hide-md"><HeaderIconBtn icon={Maximize2} /></span>
           <HeaderIconBtn icon={Bell} badge={3} />
 
           <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.18)' }} />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 600 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span className="header-hide-sm" style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: 90, textOverflow: 'ellipsis' }}>
               {cashier?.name}
             </span>
             <div style={{

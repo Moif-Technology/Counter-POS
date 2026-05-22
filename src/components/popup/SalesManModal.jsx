@@ -85,6 +85,11 @@ export default function SalesManModal({ onClose, onApply }) {
       <style>{`
         @keyframes sm-fade  { from{opacity:0} to{opacity:1} }
         @keyframes sm-slide { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @media (max-width: 640px) {
+          .sm-body { flex-direction: column !important; }
+          .sm-left { border-right: none !important; border-bottom: 1px solid var(--border) !important; min-height: 160px; }
+          .sm-right { width: 100% !important; max-height: 340px; }
+        }
       `}</style>
 
       <div style={{
@@ -131,10 +136,10 @@ export default function SalesManModal({ onClose, onApply }) {
         </div>
 
         {/* ── Body ── */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div className="sm-body" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
           {/* LEFT — table */}
-          <div style={{ flex: 1, padding: '14px', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--border)' }}>
+          <div className="sm-left" style={{ flex: 1, padding: '14px', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--border)' }}>
             <Table
               columns={COLUMNS}
               rows={filteredRows}
@@ -146,7 +151,7 @@ export default function SalesManModal({ onClose, onApply }) {
           </div>
 
           {/* RIGHT — inputs + numpad */}
-          <div style={{ width: 252, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div className="sm-right" style={{ width: 252, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
             {/* Fields */}
             <div style={{ padding: '14px 14px 10px', display: 'flex', flexDirection: 'column', gap: 10 }}>

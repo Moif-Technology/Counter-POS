@@ -86,6 +86,11 @@ export default function ReceiptModal({ onClose }) {
       <style>{`
         @keyframes rc-fade  { from{opacity:0} to{opacity:1} }
         @keyframes rc-slide { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @media (max-width: 640px) {
+          .rc-body { flex-direction: column !important; }
+          .rc-left { border-right: none !important; border-bottom: 1px solid var(--border) !important; min-height: 180px; }
+          .rc-right { width: 100% !important; border-top: none !important; max-height: 320px; }
+        }
       `}</style>
 
       <div style={{
@@ -132,10 +137,10 @@ export default function ReceiptModal({ onClose }) {
         </div>
 
         {/* ── Body ── */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div className="rc-body" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
           {/* LEFT — table */}
-          <div style={{ flex: 1, padding: '14px 14px', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--border)' }}>
+          <div className="rc-left" style={{ flex: 1, padding: '14px 14px', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--border)' }}>
             <Table
               columns={COLUMNS}
               rows={filteredRows}
@@ -147,7 +152,7 @@ export default function ReceiptModal({ onClose }) {
           </div>
 
           {/* RIGHT — inputs + numpad */}
-          <div style={{ width: 256, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div className="rc-right" style={{ width: 256, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
             {/* Fields */}
             <div style={{ padding: '14px 14px 10px', display: 'flex', flexDirection: 'column', gap: 10 }}>

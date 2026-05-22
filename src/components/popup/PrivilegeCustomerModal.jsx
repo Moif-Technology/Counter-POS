@@ -113,6 +113,11 @@ export default function PrivilegeCustomerModal({ onClose, onApply }) {
       <style>{`
         @keyframes pc-fade  { from{opacity:0} to{opacity:1} }
         @keyframes pc-slide { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @media (max-width: 640px) {
+          .pc-body { flex-direction: column !important; }
+          .pc-left { border-right: none !important; border-bottom: 1px solid var(--border) !important; min-height: 180px; }
+          .pc-right { width: 100% !important; padding: 12px !important; }
+        }
       `}</style>
 
       <div style={{
@@ -146,10 +151,10 @@ export default function PrivilegeCustomerModal({ onClose, onApply }) {
         </div>
 
         {/* ── Body ── */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div className="pc-body" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
           {/* ── Left: customer list ── */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden', padding: '12px' }}>
+          <div className="pc-left" style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden', padding: '12px' }}>
             {/* Table with outer border + curved corners */}
             <div style={{
               flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
@@ -211,7 +216,7 @@ export default function PrivilegeCustomerModal({ onClose, onApply }) {
           </div>
 
           {/* ── Right: inputs + numpad ── */}
-          <div style={{ width: 260, display: 'flex', flexDirection: 'column', padding: '14px 14px 0', gap: 10, flexShrink: 0 }}>
+          <div className="pc-right" style={{ width: 260, display: 'flex', flexDirection: 'column', padding: '14px 14px 0', gap: 10, flexShrink: 0 }}>
 
             {/* Fields */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
