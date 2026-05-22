@@ -41,9 +41,9 @@ export default function TouchKeyboard({ onKey, onClose, caps = true }) {
     return (
       <button
         onClick={() => onKey(keyVal ?? label)}
-        onMouseDown={press}
+        onMouseDown={e => { e.preventDefault(); press(e) }}
         onMouseUp={release}
-        onTouchStart={press}
+        onTouchStart={e => { e.preventDefault(); press(e) }}
         onTouchEnd={release}
         onMouseEnter={e => {
           if (variant === 'enter') { e.currentTarget.style.filter = 'brightness(1.1)'; return }
@@ -120,7 +120,7 @@ export default function TouchKeyboard({ onKey, onClose, caps = true }) {
         <Key label="SPACE" keyVal=" " flex={5} variant="action" />
         <button
           onClick={onClose}
-          onMouseDown={press}
+          onMouseDown={e => { e.preventDefault(); press(e) }}
           onMouseUp={release}
           style={{
             flex: 1.8, height: 46, borderRadius: 9, border: 'none',
