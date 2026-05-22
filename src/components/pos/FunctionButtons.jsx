@@ -10,6 +10,7 @@ import PriceChangeModal from '../popup/PriceChangeModal'
 import QtyChangeModal from '../popup/QtyChangeModal'
 import PacketScanModal from '../popup/PacketScanModal'
 import CashInOutModal from '../popup/CashInOutModal'
+import ReportsModal from '../popup/ReportsModal'
 import {
   ShoppingCart, PauseCircle, Archive, Printer, Receipt,
   RefreshCw, Trash2, Minus, RotateCcw, LogOut,
@@ -249,6 +250,7 @@ export function FeatureGrid() {
   const [qtyChangeOpen,   setQtyChangeOpen]   = useState(false)
   const [packetScanOpen,  setPacketScanOpen]  = useState(false)
   const [cashInOutOpen,   setCashInOutOpen]   = useState(false)
+  const [reportsOpen, setReportsOpen] = useState(false)
   const addGroupItem = usePosStore(s => s.addGroupItem)
   const qtyBuffer = usePosStore(s => s.qtyBuffer)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
@@ -279,6 +281,7 @@ export function FeatureGrid() {
         const isQtyChange   = btn.label === 'Qty Change'
         const isPacketScan  = btn.label === 'Packet Scan'
         const isCashInOut   = btn.label === 'Cash In/Out'
+        const isReport      = btn.label === 'Report'
         const handleClick =
           isGroup       ? () => setGroupOpen(true) :
           isLookup      ? () => setLookupOpen(true) :
@@ -288,6 +291,7 @@ export function FeatureGrid() {
           isQtyChange   ? () => { if (selectedRowKey) setQtyChangeOpen(true) } :
           isPacketScan  ? () => setPacketScanOpen(true) :
           isCashInOut   ? () => setCashInOutOpen(true) :
+          isReport      ? () => setReportsOpen(true) :
           undefined
         return (
           <button
@@ -380,6 +384,12 @@ export function FeatureGrid() {
     )}
     {cashInOutOpen && (
       <CashInOutModal onClose={() => setCashInOutOpen(false)} />
+    )}
+    {reportsOpen && (
+      <ReportsModal
+        onClose={() => setReportsOpen(false)}
+        onSelect={(_key) => {}}
+      />
     )}
     </>
   )
