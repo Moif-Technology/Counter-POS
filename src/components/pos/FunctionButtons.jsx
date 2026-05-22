@@ -10,6 +10,8 @@ import PriceChangeModal from '../popup/PriceChangeModal'
 import QtyChangeModal from '../popup/QtyChangeModal'
 import PacketScanModal from '../popup/PacketScanModal'
 import CashInOutModal from '../popup/CashInOutModal'
+import CommentsModal from '../popup/CommentsModal'
+import CurrencyModal from '../popup/CurrencyModal'
 import {
   ShoppingCart, PauseCircle, Archive, Printer, Receipt,
   RefreshCw, Trash2, Minus, RotateCcw, LogOut,
@@ -47,9 +49,9 @@ const FEATURE_BUTTONS = [
   { label: 'Privilege',   icon: Crown,         color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
   { label: 'Report',       icon: BarChart2,     color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
   { label: 'Cash In/Out',  icon: ArrowLeftRight,color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { label: 'Receipt',      icon: FileText,      color: 'var(--text-2)', bg: 'var(--surface-2)', border: 'var(--border)' },
-  { label: 'Comments',     icon: FileText,      color: 'var(--text-2)', bg: 'var(--surface-2)', border: 'var(--border)' },
-  { label: 'NP Scale',     icon: Hash,          color: 'var(--text-2)', bg: 'var(--surface-2)', border: 'var(--border)' },
+  { label: 'Receipt',      icon: FileText,      color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Comments',     icon: FileText,      color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+  { label: 'NP Scale',     icon: Hash,          color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
   { label: 'Lock',         icon: Lock,          color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)' },
   { label: 'Price Level',  icon: Layers,        color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
   { label: 'Save Delivery',icon: Save,          color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
@@ -192,6 +194,8 @@ export function FeatureGrid() {
   const [qtyChangeOpen,   setQtyChangeOpen]   = useState(false)
   const [packetScanOpen,  setPacketScanOpen]  = useState(false)
   const [cashInOutOpen,   setCashInOutOpen]   = useState(false)
+  const [commentsOpen,    setCommentsOpen]    = useState(false)
+  const [currencyOpen,    setCurrencyOpen]    = useState(false)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
 
   return (
@@ -211,6 +215,8 @@ export function FeatureGrid() {
         const isQtyChange   = btn.label === 'Qty Change'
         const isPacketScan  = btn.label === 'Packet Scan'
         const isCashInOut   = btn.label === 'Cash In/Out'
+        const isComments    = btn.label === 'Comments'
+        const isCurrency    = btn.label === 'Currency'
         const handleClick =
           isGroup       ? () => setGroupOpen(true) :
           isLookup      ? () => setLookupOpen(true) :
@@ -220,6 +226,8 @@ export function FeatureGrid() {
           isQtyChange   ? () => { if (selectedRowKey) setQtyChangeOpen(true) } :
           isPacketScan  ? () => setPacketScanOpen(true) :
           isCashInOut   ? () => setCashInOutOpen(true) :
+          isComments    ? () => setCommentsOpen(true) :
+          isCurrency    ? () => setCurrencyOpen(true) :
           undefined
         return (
           <button
@@ -312,6 +320,12 @@ export function FeatureGrid() {
     )}
     {cashInOutOpen && (
       <CashInOutModal onClose={() => setCashInOutOpen(false)} />
+    )}
+    {commentsOpen && (
+      <CommentsModal onClose={() => setCommentsOpen(false)} onSave={text => console.log('Comment:', text)} />
+    )}
+    {currencyOpen && (
+      <CurrencyModal onClose={() => setCurrencyOpen(false)} />
     )}
     </>
   )
