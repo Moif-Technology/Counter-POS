@@ -6,12 +6,16 @@ import RecallHoldModal from '../popup/RecallHoldModal'
 import BillReprintModal from '../popup/BillReprintModal'
 import PrivilegeCustomerModal from '../popup/PrivilegeCustomerModal'
 import PriceEnquiryModal from '../popup/PriceEnquiryModal'
+import PriceChangeModal from '../popup/PriceChangeModal'
+import QtyChangeModal from '../popup/QtyChangeModal'
+import PacketScanModal from '../popup/PacketScanModal'
+import CashInOutModal from '../popup/CashInOutModal'
 import {
   ShoppingCart, PauseCircle, Archive, Printer, Receipt,
   RefreshCw, Trash2, Minus, RotateCcw, LogOut,
   Search, Tag, Grid3x3, Percent, DollarSign,
   User, BarChart2, ArrowLeftRight, FileText, Package,
-  Lock, Layers, Save, Hash, Plus, Crown,
+  Lock, Layers, Save, Hash, Plus, Crown, SlidersHorizontal,
 } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { api } from '../../lib/api'
@@ -32,9 +36,11 @@ const SIDE_BUTTONS = [
 
 /* ─── Bottom feature grid button data ───────────────────────── */
 const FEATURE_BUTTONS = [
-  { label: 'Look Up',      icon: Search,        color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { label: 'Price Change', icon: Tag,           color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Group',        icon: Grid3x3,       color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Look Up',      icon: Search,           color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Price Change', icon: Tag,              color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+  { label: 'Qty Change',   icon: SlidersHorizontal,color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+  { label: 'Group',        icon: Grid3x3,          color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Packet Scan',  icon: Package,       color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
   { label: 'Discount',     icon: Percent,       color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
   { label: 'Price Enquiry',icon: Search,        color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
   { label: 'Currency',     icon: DollarSign,    color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
@@ -44,7 +50,6 @@ const FEATURE_BUTTONS = [
   { label: 'Cash In/Out',  icon: ArrowLeftRight,color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
   { label: 'Receipt',      icon: FileText,      color: 'var(--text-2)', bg: 'var(--surface-2)', border: 'var(--border)' },
   { label: 'Comments',     icon: FileText,      color: 'var(--text-2)', bg: 'var(--surface-2)', border: 'var(--border)' },
-  { label: 'Packet Scan',  icon: Package,       color: 'var(--text-2)', bg: 'var(--surface-2)', border: 'var(--border)' },
   { label: 'NP Scale',     icon: Hash,          color: 'var(--text-2)', bg: 'var(--surface-2)', border: 'var(--border)' },
   { label: 'Lock',         icon: Lock,          color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)' },
   { label: 'Price Level',  icon: Layers,        color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
@@ -236,12 +241,17 @@ export function SideNav() {
    FeatureGrid — horizontal button strip at center bottom
    ───────────────────────────────────────────────────────────── */
 export function FeatureGrid() {
-  const [groupOpen,      setGroupOpen]      = useState(false)
-  const [lookupOpen,     setLookupOpen]     = useState(false)
-  const [privilegeOpen,  setPrivilegeOpen]  = useState(false)
-  const [priceEnqOpen,   setPriceEnqOpen]   = useState(false)
+  const [groupOpen,       setGroupOpen]       = useState(false)
+  const [lookupOpen,      setLookupOpen]      = useState(false)
+  const [privilegeOpen,   setPrivilegeOpen]   = useState(false)
+  const [priceEnqOpen,    setPriceEnqOpen]    = useState(false)
+  const [priceChangeOpen, setPriceChangeOpen] = useState(false)
+  const [qtyChangeOpen,   setQtyChangeOpen]   = useState(false)
+  const [packetScanOpen,  setPacketScanOpen]  = useState(false)
+  const [cashInOutOpen,   setCashInOutOpen]   = useState(false)
   const addGroupItem = usePosStore(s => s.addGroupItem)
-  const qtyBuffer    = usePosStore(s => s.qtyBuffer)
+  const qtyBuffer = usePosStore(s => s.qtyBuffer)
+  const selectedRowKey = usePosStore(s => s.selectedRowKey)
 
   function handleGroupSelect({ group, unitPrice, mode }) {
     if (mode === 'price_entry') {
@@ -261,14 +271,28 @@ export function FeatureGrid() {
     }}>
       {FEATURE_BUTTONS.map((btn, i) => {
         const Icon = btn.icon
-        const isGroup     = btn.label === 'Group'
-        const isLookup    = btn.label === 'Look Up'
-        const isPrivilege = btn.label === 'Privilege'
-        const isPriceEnq  = btn.label === 'Price Enquiry'
+        const isGroup       = btn.label === 'Group'
+        const isLookup      = btn.label === 'Look Up'
+        const isPrivilege   = btn.label === 'Privilege'
+        const isPriceEnq    = btn.label === 'Price Enquiry'
+        const isPriceChange = btn.label === 'Price Change'
+        const isQtyChange   = btn.label === 'Qty Change'
+        const isPacketScan  = btn.label === 'Packet Scan'
+        const isCashInOut   = btn.label === 'Cash In/Out'
+        const handleClick =
+          isGroup       ? () => setGroupOpen(true) :
+          isLookup      ? () => setLookupOpen(true) :
+          isPrivilege   ? () => setPrivilegeOpen(true) :
+          isPriceEnq    ? () => setPriceEnqOpen(true) :
+          isPriceChange ? () => { if (selectedRowKey) setPriceChangeOpen(true) } :
+          isQtyChange   ? () => { if (selectedRowKey) setQtyChangeOpen(true) } :
+          isPacketScan  ? () => setPacketScanOpen(true) :
+          isCashInOut   ? () => setCashInOutOpen(true) :
+          undefined
         return (
           <button
             key={i}
-            onClick={isGroup ? () => setGroupOpen(true) : isLookup ? () => setLookupOpen(true) : isPrivilege ? () => setPrivilegeOpen(true) : isPriceEnq ? () => setPriceEnqOpen(true) : undefined}
+            onClick={handleClick}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               justifyContent: 'center', gap: 5,
@@ -344,6 +368,18 @@ export function FeatureGrid() {
     )}
     {priceEnqOpen && (
       <PriceEnquiryModal onClose={() => setPriceEnqOpen(false)} />
+    )}
+    {priceChangeOpen && (
+      <PriceChangeModal onClose={() => setPriceChangeOpen(false)} />
+    )}
+    {qtyChangeOpen && (
+      <QtyChangeModal onClose={() => setQtyChangeOpen(false)} />
+    )}
+    {packetScanOpen && (
+      <PacketScanModal onClose={() => setPacketScanOpen(false)} />
+    )}
+    {cashInOutOpen && (
+      <CashInOutModal onClose={() => setCashInOutOpen(false)} />
     )}
     </>
   )

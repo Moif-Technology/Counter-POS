@@ -192,12 +192,12 @@ export default function PriceEnquiryModal({ onClose }) {
 
           {/* ── LEFT: table ── */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '12px 6px 12px 12px' }}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', border: '1.5px solid var(--brand-border)', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', border: '1px solid rgba(0,0,0,0.18)', borderRadius: 10, overflow: 'hidden' }}>
 
               {/* Heading */}
               <div style={{
                 display: 'grid', gridTemplateColumns: COLS,
-                background: 'var(--brand-bg)', borderBottom: '1.5px solid var(--brand-border)',
+                background: 'var(--brand-bg)', borderBottom: '1px solid rgba(0,0,0,0.18)',
                 padding: '8px 10px', flexShrink: 0, borderRadius: '8px 8px 0 0',
               }}>
                 {HEADS.map(h => (
