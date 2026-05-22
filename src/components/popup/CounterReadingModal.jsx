@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
-import { X, ClipboardList, Printer, XCircle } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { X, ClipboardList, Printer, XCircle, RefreshCw } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
+import { api } from '../../lib/api'
+import { fmt3 } from '../../lib/utils'
 
 const DENOMS = [
   { label: '1000', value: 1000  },
@@ -20,46 +22,91 @@ const DENOMS = [
 const initCounts = () => Object.fromEntries(DENOMS.map(d => [d.label, '']))
 
 export default function CounterReadingModal({ onClose }) {
-  const storeTotal = usePosStore(s => s.total ?? 0)
+  const accessToken = usePosStore(s => s.accessToken)
+  const counterNo   = usePosStore(s => s.counterNo)
 
-  const SUMMARY = [
-    { label: 'Total Cash',                  value: (945.735).toFixed(3), accent: false },
-    { label: 'Credits Received',            value: (0).toFixed(3),       accent: false },
-    { label: 'Refund Amt',                  value: (0).toFixed(3),       accent: false },
-    { label: 'Petty Cash',                  value: (0).toFixed(3),       accent: false },
-    { label: 'Total Cash IN',               value: '0',                  accent: false },
-    { label: 'Total Cash Out',              value: '0',                  accent: false },
-    { label: 'Cash To Be Collected',        value: (945.735).toFixed(3), accent: 'blue', large: true },
-    { label: 'Credit Amt',                  value: (0).toFixed(3),       accent: false },
-    { label: 'Credit Card Amt',             value: (624.61).toFixed(3),  accent: false },
-    { label: 'Credit Received - C.Card',    value: (0).toFixed(3),       accent: false },
-    { label: 'Voucher Amt',                 value: (0).toFixed(3),       accent: false },
-    { label: 'Total Sales',                 value: (1570.345).toFixed(3),accent: 'brand', large: true },
-    { label: 'Tax Amount',                  value: (0).toFixed(3),       accent: false },
-  ]
+  const [summary,     setSummary]     = useState(null)
+  const [loading,     setLoading]     = useState(true)
+  const [error,       setError]       = useState(null)
+  const [submitting,  setSubmitting]  = useState(null) // 'X' | 'Z' | null
+  const [closeResult, setCloseResult] = useState(null) // last close response
 
-  const cashToCollect = 945.735
-
-  const [counts,      setCounts]      = useState(initCounts)
-  const [activeDenom, setActiveDenom] = useState('1000')
+  const [counts,       setCounts]      = useState(initCounts)
+  const [activeDenom,  setActiveDenom] = useState('1000')
+  const [manualInput,  setManualInput] = useState('')   // direct cash entry overrides denom total
+  const [zClosed,      setZClosed]     = useState(false) // true after Z Report saved — block re-submit
   const overlayRef = useRef()
 
+  const fetchSummary = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await api.counterPos.counterSummary(counterNo, accessToken)
+      setSummary(data)
+    } catch (err) {
+      setError(err.message ?? 'Failed to load summary')
+    } finally {
+      setLoading(false)
+    }
+  }, [counterNo, accessToken])
+
+  useEffect(() => { fetchSummary() }, [fetchSummary])
+
   useEffect(() => {
-    const onKey = e => { if (e.key === 'Escape') onClose() }
+    const onKey = e => {
+      // Don't close if user is typing in an input/textarea
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return
+      if (e.key === 'Escape') onClose()
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const collectedAmount = DENOMS.reduce((sum, d) => {
+  const denomTotal = DENOMS.reduce((sum, d) => {
     return sum + d.value * (parseFloat(counts[d.label]) || 0)
   }, 0)
+
+  // Manual input takes priority over denomination total
+  const collectedAmount = manualInput !== '' ? (parseFloat(manualInput) || 0) : denomTotal
+
+  const cashToCollect  = summary ? Number(summary.cashToBeCollected) : 0
   const cashDifference = collectedAmount - cashToCollect
 
   const handleKey = k => {
     if (k === 'C') { setCounts(c => ({ ...c, [activeDenom]: '' })); return }
     if (k === '⌫') { setCounts(c => ({ ...c, [activeDenom]: c[activeDenom].slice(0, -1) })); return }
-    if (k === '.') return
+    if (k === '.') {
+      setCounts(c => {
+        const cur = c[activeDenom]
+        if (cur.includes('.')) return c
+        return { ...c, [activeDenom]: cur + '.' }
+      })
+      return
+    }
     setCounts(c => ({ ...c, [activeDenom]: c[activeDenom] + k }))
+  }
+
+  const handleReport = async (reportType) => {
+    if (submitting || zClosed) return
+    setSubmitting(reportType)
+    try {
+      const result = await api.counterPos.counterClose({
+        counterNo,
+        reportType,
+        collectedCash: collectedAmount,
+      }, accessToken)
+      setCloseResult({ ...result, reportType })
+      if (reportType === 'Z') {
+        setCounts(initCounts())
+        setManualInput('')
+        setZClosed(true)
+      }
+      await fetchSummary()
+    } catch (err) {
+      setError(err.message ?? `${reportType}-Report failed`)
+    } finally {
+      setSubmitting(null)
+    }
   }
 
   const press   = e => { e.currentTarget.style.transform = 'scale(0.91)' }
@@ -97,6 +144,28 @@ export default function CounterReadingModal({ onClose }) {
     </button>
   )
 
+  // Build summary rows from API data
+  const summaryRows = summary ? [
+    { label: 'Total Cash',           value: fmt3(summary.totalCash),          accent: false },
+    { label: 'Total Credit',         value: fmt3(summary.totalCredit),         accent: false },
+    { label: 'Total Card',           value: fmt3(summary.totalCard),           accent: false },
+    { label: 'Refund Amt',           value: fmt3(summary.totalRefund),         accent: false },
+    { label: 'Total Cash IN',        value: fmt3(summary.cashIn),              accent: false },
+    { label: 'Total Cash Out',       value: fmt3(summary.cashOut),             accent: false },
+    { label: 'Cash To Be Collected', value: fmt3(summary.cashToBeCollected),   accent: 'blue', large: true },
+    { label: 'Total Discount',       value: fmt3(summary.totalDiscount),       accent: false },
+    { label: 'Tax Amount',           value: fmt3(summary.totalTax),            accent: false },
+    { label: 'Total Sales',          value: fmt3(summary.grossAmount),         accent: 'brand', large: true },
+  ] : []
+
+  const billRows = summary ? [
+    ['Bill Count',         summary.billCount],
+    ['Cash Bill',          summary.cashBillCount],
+    ['Credit Bill',        summary.creditBillCount],
+    ['Credit Card Bill',   summary.cardBillCount],
+    ['Multi Payment',      summary.multiBillCount],
+  ] : []
+
   return (
     <div
       ref={overlayRef}
@@ -112,6 +181,7 @@ export default function CounterReadingModal({ onClose }) {
       <style>{`
         @keyframes cr-fade  { from{opacity:0} to{opacity:1} }
         @keyframes cr-slide { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         .denom-row:hover { background: var(--brand-bg) !important; }
         @media (max-width: 900px) {
           .cr-left { width: 200px !important; }
@@ -158,8 +228,57 @@ export default function CounterReadingModal({ onClose }) {
               <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1 }}>Counter Reading</p>
             </div>
           </div>
-          <button onClick={onClose} style={closeBtn}><X size={14} /></button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={fetchSummary}
+              disabled={loading}
+              title="Refresh"
+              style={{
+                width: 32, height: 32, borderRadius: 9,
+                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1,
+              }}
+            >
+              <RefreshCw size={13} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+            </button>
+            <button onClick={onClose} style={closeBtn}><X size={14} /></button>
+          </div>
         </div>
+
+        {/* ── Error banner ── */}
+        {error && (
+          <div style={{
+            background: 'var(--red-bg)', borderBottom: '1px solid var(--red-border)',
+            padding: '8px 18px', fontSize: 12, color: 'var(--red)', fontWeight: 600,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            {error}
+            <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)' }}>
+              <X size={12} />
+            </button>
+          </div>
+        )}
+
+        {/* ── Close result banner ── */}
+        {closeResult && (
+          <div style={{
+            background: closeResult.reportType === 'Z' ? 'var(--green-bg)' : 'rgba(59,130,246,0.08)',
+            borderBottom: `1px solid ${closeResult.reportType === 'Z' ? 'var(--green-border)' : 'rgba(59,130,246,0.2)'}`,
+            padding: '8px 18px', fontSize: 12,
+            color: closeResult.reportType === 'Z' ? 'var(--green)' : '#2563eb',
+            fontWeight: 700,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            {closeResult.reportType === 'Z'
+              ? `Z-Report saved — Counter closed ${closeResult.closeNo ? `(${closeResult.closeNo})` : `#${closeResult.closeId}`}`
+              : 'X-Report — live snapshot (not saved)'
+            }
+            <button onClick={() => setCloseResult(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>
+              <X size={12} />
+            </button>
+          </div>
+        )}
 
         {/* ── Body ── */}
         <div className="cr-body" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
@@ -170,7 +289,14 @@ export default function CounterReadingModal({ onClose }) {
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}>
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {SUMMARY.map(row => (
+
+              {loading && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 120, color: 'var(--text-4)', fontSize: 12 }}>
+                  Loading...
+                </div>
+              )}
+
+              {!loading && summaryRows.map(row => (
                 <div key={row.label} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: row.large ? '8px 10px' : '5px 10px',
@@ -203,28 +329,31 @@ export default function CounterReadingModal({ onClose }) {
                 </div>
               ))}
 
-              {/* Bill counts */}
-              <div style={{ marginTop: 8, padding: '10px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Bill Count Summary</p>
-                {[
-                  ['Bill Count', '206'],
-                  ['Cash Bill', '127'],
-                  ['Credit Bill', '0'],
-                  ['Credit Card Bill', '79'],
-                  ['Multi Payment', '0'],
-                ].map(([l, v]) => (
-                  <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px solid var(--border)' }}>
-                    <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>{l}</span>
-                    <span style={{ fontSize: 11, color: 'var(--text-1)', fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{v}</span>
-                  </div>
-                ))}
-              </div>
+              {/* Bill count summary */}
+              {!loading && summary && (
+                <div style={{ marginTop: 8, padding: '10px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Bill Count Summary</p>
+                  {billRows.map(([l, v]) => (
+                    <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px solid var(--border)' }}>
+                      <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>{l}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-1)', fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{v}</span>
+                    </div>
+                  ))}
+                  {summary.startBillNo && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+                      <span style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 600 }}>Bill Range</span>
+                      <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>
+                        {summary.startBillNo} – {summary.endBillNo}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
           {/* ── MIDDLE: denomination entry ── */}
           <div className="cr-mid" style={{ flex: 1, borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            {/* heading */}
             <div style={{
               display: 'grid', gridTemplateColumns: '80px 1fr 100px',
               padding: '8px 16px', background: 'var(--brand-bg)',
@@ -243,30 +372,45 @@ export default function CounterReadingModal({ onClose }) {
                   <div
                     key={d.label}
                     className="denom-row"
-                    onClick={() => setActiveDenom(d.label)}
                     style={{
                       display: 'grid', gridTemplateColumns: '80px 1fr 100px',
                       padding: '8px 16px', alignItems: 'center',
                       borderBottom: i < DENOMS.length - 1 ? '1px solid var(--border)' : 'none',
                       borderLeft: `3px solid ${isActive ? 'var(--brand)' : 'transparent'}`,
                       background: isActive ? 'rgba(107,0,0,0.06)' : '#fff',
-                      cursor: 'pointer', transition: 'background 0.1s',
+                      transition: 'background 0.1s',
                     }}
                   >
-                    <span style={{ fontSize: 14, fontWeight: 800, color: isActive ? 'var(--brand)' : 'var(--text-2)', fontFamily: "'JetBrains Mono', monospace" }}>
+                    <span
+                      onClick={() => setActiveDenom(d.label)}
+                      style={{ fontSize: 14, fontWeight: 800, color: isActive ? 'var(--brand)' : 'var(--text-2)', fontFamily: "'JetBrains Mono', monospace", cursor: 'pointer' }}
+                    >
                       {d.label} ×
                     </span>
-                    <div style={{
-                      height: 34, borderRadius: 7, marginRight: 12,
-                      border: `1.5px solid ${isActive ? 'var(--brand)' : 'var(--border)'}`,
-                      background: isActive ? 'var(--brand-bg)' : 'var(--surface)',
-                      display: 'flex', alignItems: 'center', padding: '0 10px',
-                      fontSize: 14, fontWeight: 700,
-                      color: counts[d.label] ? 'var(--text-1)' : 'var(--text-4)',
-                      fontFamily: "'JetBrains Mono', monospace",
-                    }}>
-                      {counts[d.label] || '0'}
-                    </div>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={counts[d.label]}
+                      placeholder="0"
+                      onFocus={() => setActiveDenom(d.label)}
+                      onChange={e => {
+                        const v = e.target.value
+                        if (v === '' || /^\d*$/.test(v)) {
+                          setCounts(c => ({ ...c, [d.label]: v }))
+                        }
+                      }}
+                      onKeyDown={e => e.stopPropagation()}
+                      style={{
+                        height: 34, borderRadius: 7, marginRight: 12,
+                        border: `1.5px solid ${isActive ? 'var(--brand)' : 'var(--border)'}`,
+                        background: isActive ? 'var(--brand-bg)' : 'var(--surface)',
+                        padding: '0 10px',
+                        fontSize: 14, fontWeight: 700,
+                        color: counts[d.label] ? 'var(--text-1)' : 'var(--text-4)',
+                        fontFamily: "'JetBrains Mono', monospace",
+                        outline: 'none', width: '100%', boxSizing: 'border-box',
+                      }}
+                    />
                     <span style={{ fontSize: 13, fontWeight: 700, color: cnt > 0 ? 'var(--green)' : 'var(--text-4)', textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}>
                       {cnt > 0 ? amt : '—'}
                     </span>
@@ -279,20 +423,63 @@ export default function CounterReadingModal({ onClose }) {
           {/* ── RIGHT: totals + numpad ── */}
           <div className="cr-right" style={{ width: 240, flexShrink: 0, padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-            {/* Collected Amount */}
+            {/* Cash to be collected (from API) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={labelSt}>Collected Amount</span>
+              <span style={labelSt}>Cash To Collect</span>
               <div style={{
-                height: 46, borderRadius: 9,
-                border: `1.5px solid ${collectedAmount > 0 ? 'var(--green-border)' : 'var(--border)'}`,
-                background: collectedAmount > 0 ? 'var(--green-bg)' : 'var(--surface)',
+                height: 38, borderRadius: 9,
+                border: '1.5px solid rgba(59,130,246,0.25)',
+                background: 'rgba(59,130,246,0.07)',
                 display: 'flex', alignItems: 'center', padding: '0 12px',
-                fontSize: 18, fontWeight: 900,
-                color: collectedAmount > 0 ? 'var(--green)' : 'var(--text-4)',
+                fontSize: 15, fontWeight: 900,
+                color: '#2563eb',
                 fontFamily: "'JetBrains Mono', monospace",
               }}>
-                {collectedAmount > 0 ? collectedAmount.toFixed(3) : '0.000'}
+                {loading ? '...' : fmt3(cashToCollect)}
               </div>
+            </div>
+
+            {/* Collected Amount — manual input or denom total */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={labelSt}>Collected Amount</span>
+                {manualInput !== '' && (
+                  <button
+                    onClick={() => setManualInput('')}
+                    title="Clear manual — use denomination total"
+                    style={{ fontSize: 9, color: 'var(--text-4)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                  >
+                    USE DENOM
+                  </button>
+                )}
+              </div>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={manualInput !== '' ? manualInput : denomTotal > 0 ? denomTotal.toFixed(3) : ''}
+                onChange={e => {
+                  const v = e.target.value
+                  // Allow only digits and one decimal point
+                  if (v === '' || /^\d*\.?\d*$/.test(v)) setManualInput(v)
+                }}
+                onBlur={e => {
+                  // Format to 3 decimal places on blur
+                  const n = parseFloat(e.target.value)
+                  if (!isNaN(n)) setManualInput(n.toFixed(3))
+                }}
+                onKeyDown={e => e.stopPropagation()} // prevent window keydown from firing
+                placeholder="0.000"
+                style={{
+                  height: 46, borderRadius: 9,
+                  border: `1.5px solid ${collectedAmount > 0 ? 'var(--green-border)' : 'var(--border)'}`,
+                  background: collectedAmount > 0 ? 'var(--green-bg)' : 'var(--surface)',
+                  padding: '0 12px',
+                  fontSize: 18, fontWeight: 900,
+                  color: collectedAmount > 0 ? 'var(--green)' : 'var(--text-4)',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  outline: 'none', width: '100%', boxSizing: 'border-box',
+                }}
+              />
             </div>
 
             {/* Cash Difference */}
@@ -359,29 +546,39 @@ export default function CounterReadingModal({ onClose }) {
           borderTop: '1px solid var(--border)', background: 'var(--surface-2)', flexShrink: 0,
         }}>
           {[
-            { label: 'X-Report',      color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-            { label: 'Z-Report',      color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
-            { label: 'Re-Print Last', color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-            { label: 'Re-Print Other',color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-          ].map(btn => (
-            <button
-              key={btn.label}
-              style={{
-                flex: 1, height: 40, borderRadius: 10,
-                border: `1.5px solid ${btn.border}`,
-                background: btn.bg, color: btn.color,
-                fontSize: 12, fontWeight: 800, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                transition: 'all 0.12s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(0.93)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-              onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)'; e.currentTarget.style.transform = 'translateY(0)' }}
-              onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.96)' }}
-              onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-            >
-              <Printer size={13} /> {btn.label}
-            </button>
-          ))}
+            { label: 'X-Report',  reportType: 'X', color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+            { label: 'Z-Report',  reportType: 'Z', color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+          ].map(btn => {
+            const busy = submitting === btn.reportType
+            const isZDone = btn.reportType === 'Z' && zClosed
+            return (
+              <button
+                key={btn.label}
+                onClick={() => handleReport(btn.reportType)}
+                disabled={!!submitting || loading || isZDone}
+                style={{
+                  flex: 1, height: 40, borderRadius: 10,
+                  border: `1.5px solid ${btn.border}`,
+                  background: btn.bg, color: btn.color,
+                  fontSize: 12, fontWeight: 800,
+                  cursor: (submitting || loading || isZDone) ? 'not-allowed' : 'pointer',
+                  opacity: (submitting && !busy) || isZDone ? 0.4 : 1,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  transition: 'all 0.12s',
+                }}
+                onMouseEnter={e => { if (!submitting && !loading) { e.currentTarget.style.filter = 'brightness(0.93)'; e.currentTarget.style.transform = 'translateY(-1px)' } }}
+                onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)'; e.currentTarget.style.transform = 'translateY(0)' }}
+                onMouseDown={e => { if (!submitting && !loading) e.currentTarget.style.transform = 'scale(0.96)' }}
+                onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+              >
+                {busy
+                  ? <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                  : <Printer size={13} />
+                }
+                {busy ? 'Saving...' : isZDone ? 'Counter Closed' : btn.label}
+              </button>
+            )
+          })}
           <button
             onClick={onClose}
             style={{

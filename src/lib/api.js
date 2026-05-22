@@ -38,6 +38,15 @@ export const api = {
     recallBill:     (salesId, token)     => request('GET',   `/counter-pos/sales/held/${salesId}`, null, token),
     cancelHold:     (salesId, token)     => request('DELETE',`/counter-pos/sales/held/${salesId}`, null, token),
     groupsList:     (token)              => request('GET',   `/counter-pos/groups`, null, token),
+
+    // Counter reading — X/Z report
+    counterSummary:    (counterNo, token)         => request('GET',  `/counter-pos/counter/summary?counterNo=${counterNo}`, null, token),
+    counterClose:      (body, token)              => request('POST', `/counter-pos/counter/close`, body, token),
+    addCashInOut:      (body, token)              => request('POST', `/counter-pos/counter/cash-in-out`, body, token),
+    getCashInOut:      (counterNo, token)         => request('GET',  `/counter-pos/counter/cash-in-out?counterNo=${counterNo}`, null, token),
+    counterHistory:    (counterNo, limit, token)  => request('GET',  `/counter-pos/counter/history?counterNo=${counterNo}&limit=${limit ?? 30}`, null, token),
+    counterCloseDetail:(closeId, token)           => request('GET',  `/counter-pos/counter/history/${closeId}`, null, token),
+    staffWiseReport:   (counterNo, token)         => request('GET',  `/counter-pos/sales/staff-wise?counterNo=${counterNo}`, null, token),
   },
 
   // Shared backoffice endpoints

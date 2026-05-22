@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import CounterReadingModal from './CounterReadingModal'
+import StaffWiseReportModal from './StaffWiseReportModal'
 import {
   X, BarChart2,
   ClipboardList, Users, Star, Grid3x3,
@@ -76,6 +77,7 @@ const SHORTCUT_MAP = {
 
 export default function ReportsModal({ onClose, onSelect }) {
   const [counterReadingOpen, setCounterReadingOpen] = useState(false)
+  const [staffWiseOpen,     setStaffWiseOpen]     = useState(false)
   const overlayRef = useRef()
 
   useEffect(() => {
@@ -94,6 +96,7 @@ export default function ReportsModal({ onClose, onSelect }) {
 
   function handleSelect(itemKey) {
     if (itemKey === 0) { setCounterReadingOpen(true); return }
+    if (itemKey === 1) { setStaffWiseOpen(true); return }
     onSelect?.(itemKey)
     onClose()
   }
@@ -342,6 +345,9 @@ export default function ReportsModal({ onClose, onSelect }) {
 
     {counterReadingOpen && (
       <CounterReadingModal onClose={() => setCounterReadingOpen(false)} />
+    )}
+    {staffWiseOpen && (
+      <StaffWiseReportModal onClose={() => setStaffWiseOpen(false)} />
     )}
     </>
   )
