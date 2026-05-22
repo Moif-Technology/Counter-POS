@@ -14,6 +14,7 @@ import CommentsModal from '../popup/CommentsModal'
 import CurrencyModal from '../popup/CurrencyModal'
 import ReceiptModal from '../popup/ReceiptModal'
 import SalesManModal from '../popup/SalesManModal'
+import DiscountModal from '../popup/DiscountModal'
 import {
   ShoppingCart, PauseCircle, Archive, Printer, Receipt,
   RefreshCw, Trash2, Minus, RotateCcw, LogOut,
@@ -200,6 +201,7 @@ export function FeatureGrid() {
   const [currencyOpen,    setCurrencyOpen]    = useState(false)
   const [receiptOpen,     setReceiptOpen]     = useState(false)
   const [salesManOpen,    setSalesManOpen]    = useState(false)
+  const [discountOpen,    setDiscountOpen]    = useState(false)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
 
   return (
@@ -223,6 +225,7 @@ export function FeatureGrid() {
         const isCurrency    = btn.label === 'Currency'
         const isReceipt     = btn.label === 'Receipt'
         const isSalesMan    = btn.label === 'Sales Man'
+        const isDiscount    = btn.label === 'Discount' || btn.label === 'Disc'
         const handleClick =
           isGroup       ? () => setGroupOpen(true) :
           isLookup      ? () => setLookupOpen(true) :
@@ -236,6 +239,7 @@ export function FeatureGrid() {
           isCurrency    ? () => setCurrencyOpen(true) :
           isReceipt     ? () => setReceiptOpen(true) :
           isSalesMan    ? () => setSalesManOpen(true) :
+          isDiscount    ? () => { if (selectedRowKey) setDiscountOpen(true) } :
           undefined
         return (
           <button
@@ -340,6 +344,9 @@ export function FeatureGrid() {
     )}
     {salesManOpen && (
       <SalesManModal onClose={() => setSalesManOpen(false)} onApply={staff => console.log('Staff:', staff)} />
+    )}
+    {discountOpen && (
+      <DiscountModal onClose={() => setDiscountOpen(false)} />
     )}
     </>
   )
