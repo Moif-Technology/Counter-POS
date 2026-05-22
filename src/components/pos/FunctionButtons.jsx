@@ -11,6 +11,11 @@ import QtyChangeModal from '../popup/QtyChangeModal'
 import PacketScanModal from '../popup/PacketScanModal'
 import CashInOutModal from '../popup/CashInOutModal'
 import ReportsModal from '../popup/ReportsModal'
+import CommentsModal from '../popup/CommentsModal'
+import CurrencyModal from '../popup/CurrencyModal'
+import ReceiptModal from '../popup/ReceiptModal'
+import SalesManModal from '../popup/SalesManModal'
+import DiscountModal from '../popup/DiscountModal'
 import {
   ShoppingCart, PauseCircle, Archive, Printer, Receipt,
   RefreshCw, Trash2, Minus, RotateCcw, LogOut,
@@ -49,9 +54,9 @@ const FEATURE_BUTTONS = [
   { label: 'Privilege',   icon: Crown,         color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
   { label: 'Report',       icon: BarChart2,     color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
   { label: 'Cash In/Out',  icon: ArrowLeftRight,color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { label: 'Receipt',      icon: FileText,      color: 'var(--text-2)', bg: 'var(--surface-2)', border: 'var(--border)' },
-  { label: 'Comments',     icon: FileText,      color: 'var(--text-2)', bg: 'var(--surface-2)', border: 'var(--border)' },
-  { label: 'NP Scale',     icon: Hash,          color: 'var(--text-2)', bg: 'var(--surface-2)', border: 'var(--border)' },
+  { label: 'Receipt',      icon: FileText,      color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Comments',     icon: FileText,      color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+  { label: 'NP Scale',     icon: Hash,          color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
   { label: 'Lock',         icon: Lock,          color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)' },
   { label: 'Price Level',  icon: Layers,        color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
   { label: 'Save Delivery',icon: Save,          color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
@@ -250,7 +255,12 @@ export function FeatureGrid() {
   const [qtyChangeOpen,   setQtyChangeOpen]   = useState(false)
   const [packetScanOpen,  setPacketScanOpen]  = useState(false)
   const [cashInOutOpen,   setCashInOutOpen]   = useState(false)
-  const [reportsOpen, setReportsOpen] = useState(false)
+  const [reportsOpen,     setReportsOpen]     = useState(false)
+  const [commentsOpen,    setCommentsOpen]    = useState(false)
+  const [currencyOpen,    setCurrencyOpen]    = useState(false)
+  const [receiptOpen,     setReceiptOpen]     = useState(false)
+  const [salesManOpen,    setSalesManOpen]    = useState(false)
+  const [discountOpen,    setDiscountOpen]    = useState(false)
   const addGroupItem = usePosStore(s => s.addGroupItem)
   const qtyBuffer = usePosStore(s => s.qtyBuffer)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
@@ -282,6 +292,11 @@ export function FeatureGrid() {
         const isPacketScan  = btn.label === 'Packet Scan'
         const isCashInOut   = btn.label === 'Cash In/Out'
         const isReport      = btn.label === 'Report'
+        const isComments    = btn.label === 'Comments'
+        const isCurrency    = btn.label === 'Currency'
+        const isReceipt     = btn.label === 'Receipt'
+        const isSalesMan    = btn.label === 'Sales Man'
+        const isDiscount    = btn.label === 'Discount' || btn.label === 'Disc'
         const handleClick =
           isGroup       ? () => setGroupOpen(true) :
           isLookup      ? () => setLookupOpen(true) :
@@ -292,6 +307,11 @@ export function FeatureGrid() {
           isPacketScan  ? () => setPacketScanOpen(true) :
           isCashInOut   ? () => setCashInOutOpen(true) :
           isReport      ? () => setReportsOpen(true) :
+          isComments    ? () => setCommentsOpen(true) :
+          isCurrency    ? () => setCurrencyOpen(true) :
+          isReceipt     ? () => setReceiptOpen(true) :
+          isSalesMan    ? () => setSalesManOpen(true) :
+          isDiscount    ? () => { if (selectedRowKey) setDiscountOpen(true) } :
           undefined
         return (
           <button
@@ -390,6 +410,21 @@ export function FeatureGrid() {
         onClose={() => setReportsOpen(false)}
         onSelect={(_key) => {}}
       />
+    )}
+    {commentsOpen && (
+      <CommentsModal onClose={() => setCommentsOpen(false)} onSave={text => console.log('Comment:', text)} />
+    )}
+    {currencyOpen && (
+      <CurrencyModal onClose={() => setCurrencyOpen(false)} />
+    )}
+    {receiptOpen && (
+      <ReceiptModal onClose={() => setReceiptOpen(false)} />
+    )}
+    {salesManOpen && (
+      <SalesManModal onClose={() => setSalesManOpen(false)} onApply={staff => console.log('Staff:', staff)} />
+    )}
+    {discountOpen && (
+      <DiscountModal onClose={() => setDiscountOpen(false)} />
     )}
     </>
   )

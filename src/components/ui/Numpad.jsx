@@ -1,4 +1,4 @@
-import { Delete } from 'lucide-react'
+import { Delete, XCircle } from 'lucide-react'
 
 /*
  * Reusable Numpad component.
@@ -80,7 +80,7 @@ export default function Numpad({
         onMouseDown={press}
         onMouseUp={release}
       >
-        {label === '⌫' ? <Delete size={Math.round(fontSize * 0.9)} /> : label}
+        {label === '⌫' ? <Delete size={Math.round(fontSize * 0.9)} /> : label === 'C' ? <XCircle size={Math.round(fontSize * 0.9)} /> : label}
       </button>
     )
   }
