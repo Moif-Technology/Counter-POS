@@ -58,6 +58,9 @@ const FEATURE_BUTTONS = [
 export function SideNav() {
   const navigate              = useNavigate()
   const clearAll              = usePosStore(s => s.clearAll)
+  const repeatLastItem        = usePosStore(s => s.repeatLastItem)
+  const pressSubTotal         = usePosStore(s => s.pressSubTotal)
+  const toggleReturn          = usePosStore(s => s.toggleReturn)
   const [recallOpen,  setRecallOpen]  = useState(false)
   const [reprintOpen, setReprintOpen] = useState(false)
   const [activeLabel, setActiveLabel] = useState('POS')
@@ -126,7 +129,15 @@ export function SideNav() {
             setActiveLabel(btn.label)
             return
           }
+          if (btn.label === 'Repeat')    { repeatLastItem(); setActiveLabel(btn.label); return }
+          if (btn.label === 'Sub Total') { pressSubTotal();  setActiveLabel(btn.label); return }
           if (btn.label === 'Hold Bill') { doHoldBill(); setActiveLabel(btn.label); return }
+          if (btn.label === 'Return') {
+            toggleReturn()
+            const newQty = parseFloat(usePosStore.getState().qtyBuffer)
+            setActiveLabel(newQty < 0 ? 'Return' : 'POS')
+            return
+          }
           if (btn.label === 'Recall')  { setRecallOpen(true);  setActiveLabel(btn.label); return }
           if (btn.label === 'Reprint') { setReprintOpen(true); setActiveLabel(btn.label); return }
           setActiveLabel(btn.label)
@@ -229,6 +240,17 @@ export function FeatureGrid() {
   const [lookupOpen,     setLookupOpen]     = useState(false)
   const [privilegeOpen,  setPrivilegeOpen]  = useState(false)
   const [priceEnqOpen,   setPriceEnqOpen]   = useState(false)
+  const addGroupItem = usePosStore(s => s.addGroupItem)
+  const qtyBuffer    = usePosStore(s => s.qtyBuffer)
+
+  function handleGroupSelect({ group, unitPrice, mode }) {
+    if (mode === 'price_entry') {
+      const qty = parseFloat(qtyBuffer) > 0 ? parseFloat(qtyBuffer) : 1
+      addGroupItem(group, unitPrice, qty)
+    } else if (mode === 'product_lookup') {
+      setLookupOpen(true)
+    }
+  }
 
   return (
     <>
@@ -305,7 +327,7 @@ export function FeatureGrid() {
     {groupOpen && (
       <GroupModal
         onClose={() => setGroupOpen(false)}
-        onSelect={({ group }) => { setGroupOpen(false) }}
+        onSelect={(result) => { setGroupOpen(false); handleGroupSelect(result) }}
       />
     )}
     {lookupOpen && (

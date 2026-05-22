@@ -1,83 +1,185 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Archive, RotateCcw } from 'lucide-react'
-
-/* ── demo data — replace with real store/API ── */
-const DEMO_HOLDS = [
-  { holdNo: 6,  billTime: '14/01/2025 12:06', salesMan: 'CHIEF CASHIER', total: 145.50, comments: '', items: [
-    { sl: 1, barcode: '6281002283', description: 'ONION 1KG',     qty: 2, unitPrice: 5.00,  disc: 0, total: 10.00 },
-    { sl: 2, barcode: '6291234567', description: 'RICE BASMATI',  qty: 1, unitPrice: 28.00, disc: 0, total: 28.00 },
-  ]},
-  { holdNo: 12, billTime: '31/12/2024 02:21', salesMan: 'CHIEF CASHIER', total: 88.00,  comments: '', items: [
-    { sl: 1, barcode: '6281009911', description: 'MILK FULL CREAM', qty: 3, unitPrice: 6.50, disc: 0, total: 19.50 },
-  ]},
-  { holdNo: 16, billTime: '30/12/2024 12:01', salesMan: 'CHIEF CASHIER', total: 210.00, comments: '', items: [] },
-  { holdNo: 18, billTime: '31/12/2024 11:34', salesMan: 'CHIEF CASHIER', total: 55.75,  comments: '', items: [] },
-  { holdNo: 19, billTime: '03/01/2025 08:33', salesMan: 'CHIEF CASHIER', total: 320.00, comments: '', items: [] },
-  { holdNo: 26, billTime: '08/01/2025 07:47', salesMan: 'CHIEF CASHIER', total: 47.00,  comments: '', items: [] },
-  { holdNo: 29, billTime: '08/01/2025 04:27', salesMan: 'CHIEF CASHIER', total: 198.25, comments: '', items: [] },
-  { holdNo: 30, billTime: '09/01/2025 10:31', salesMan: 'CHIEF CASHIER', total: 63.00,  comments: '', items: [] },
-  { holdNo: 31, billTime: '10/01/2025 08:31', salesMan: 'CHIEF CASHIER', total: 112.50, comments: '', items: [] },
-  { holdNo: 34, billTime: '14/01/2025 11:51', salesMan: 'CHIEF CASHIER', total: 75.00,  comments: '', items: [] },
-  { holdNo: 37, billTime: '21/05/2026 01:18', salesMan: 'CHIEF CASHIER', total: 290.00, comments: '', items: [] },
-]
+import { X, Archive, RotateCcw, Trash2, AlertCircle } from 'lucide-react'
+import { api } from '../../lib/api'
+import { usePosStore } from '../../store/posStore'
 
 const ITEM_COLS = [
-  { key: 'sl',          label: 'SL',               w: 36,  align: 'center' },
-  { key: 'barcode',     label: 'Barcode',           w: 110 },
-  { key: 'description', label: 'Short Description', flex: true },
-  { key: 'qty',         label: 'Qty',              w: 48,  align: 'center' },
-  { key: 'unitPrice',   label: 'Unit',             w: 70,  align: 'right' },
-  { key: 'disc',        label: 'Disc',             w: 50,  align: 'right' },
-  { key: 'total',       label: 'Total',            w: 72,  align: 'right' },
+  { key: 'sl', label: 'SL', w: 36, align: 'center' },
+  { key: 'product_code', label: 'Barcode', w: 110 },
+  { key: 'short_description', label: 'Short Description', flex: true },
+  { key: 'qty', label: 'Qty', w: 48, align: 'center' },
+  { key: 'unit_price', label: 'Unit', w: 70, align: 'right', money: true },
+  { key: 'discount_amount', label: 'Disc', w: 50, align: 'right', money: true },
+  { key: 'line_total', label: 'Total', w: 72, align: 'right', money: true },
 ]
 
+function fmt(n) {
+  const value = Number(n)
+  return Number.isFinite(value) ? value.toFixed(3) : '0.000'
+}
+
+function fmtDateTime(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value)
+  return date.toLocaleString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function getSalesMan(hold) {
+  return hold.staff_name || hold.sales_man || hold.staff_code || hold.staff_id || ''
+}
+
 export default function RecallHoldModal({ onClose, onRecall }) {
-  const [holds]         = useState(DEMO_HOLDS)
-  const [selectedIdx,   setSelectedIdx]   = useState(0)
-  const [holdNoInput,   setHoldNoInput]   = useState('')
-  const [comments,      setComments]      = useState('')
-  const overlayRef                        = useRef()
-  const holdInputRef                      = useRef()
+  const [holds, setHolds] = useState([])
+  const [selectedIdx, setSelectedIdx] = useState(0)
+  const [holdNoInput, setHoldNoInput] = useState('')
+  const [comments, setComments] = useState('')
+  const [itemsBySalesId, setItemsBySalesId] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [itemsLoading, setItemsLoading] = useState(false)
+  const [recalling, setRecalling] = useState(false)
+  const [cancelling, setCancelling] = useState(null)
+  const [error, setError] = useState(null)
+  const overlayRef = useRef()
+  const holdInputRef = useRef()
+  const accessToken = usePosStore(s => s.accessToken)
+  const recallHold = usePosStore(s => s.recallHold)
 
   const selected = holds[selectedIdx] ?? null
+  const selectedItems = selected ? itemsBySalesId[selected.sales_id] || [] : []
 
   useEffect(() => {
     holdInputRef.current?.focus()
     const onKey = e => {
-      if (e.key === 'Escape') { onClose(); return }
-      if (e.key === 'ArrowUp')   moveSelection(-1)
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (e.key === 'ArrowUp') moveSelection(-1)
       if (e.key === 'ArrowDown') moveSelection(1)
-      if (e.key === 'Enter')     handleRecall()
+      if (e.key === 'Enter') handleRecall()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectedIdx, holds])
+  }, [selectedIdx, holds, selectedItems, recalling])
 
-  const moveSelection = (dir) => {
+  useEffect(() => {
+    fetchHolds()
+  }, [])
+
+  useEffect(() => {
+    if (selected?.sales_id) fetchItems(selected)
+  }, [selected?.sales_id])
+
+  async function fetchHolds() {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await api.counterPos.getHeldBills(accessToken)
+      setHolds(Array.isArray(data) ? data : [])
+      setSelectedIdx(0)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function fetchItems(hold) {
+    if (!hold?.sales_id || itemsBySalesId[hold.sales_id]) return itemsBySalesId[hold.sales_id] || []
+
+    setItemsLoading(true)
+    setError(null)
+    try {
+      const items = await api.counterPos.recallBill(hold.sales_id, accessToken)
+      const safeItems = Array.isArray(items) ? items : []
+      setItemsBySalesId(prev => ({ ...prev, [hold.sales_id]: safeItems }))
+      return safeItems
+    } catch (e) {
+      setError(e.message)
+      return []
+    } finally {
+      setItemsLoading(false)
+    }
+  }
+
+  function moveSelection(dir) {
     setSelectedIdx(i => Math.max(0, Math.min(holds.length - 1, i + dir)))
   }
 
-  const handleRecall = () => {
-    if (!selected) return
-    onRecall?.(selected)
-    onClose()
+  async function handleRecall(hold = selected) {
+    if (!hold || recalling) return
+
+    setRecalling(true)
+    setError(null)
+    try {
+      const items = await fetchItems(hold)
+      recallHold(hold, items)
+      onRecall?.(hold)
+      onClose()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setRecalling(false)
+    }
   }
 
-  const fmt = n => (typeof n === 'number' ? n.toFixed(3) : '—')
+  async function handleCancel(hold) {
+    if (!hold || cancelling) return
+    if (!window.confirm(`Cancel hold H-${hold.hold_no}?`)) return
+
+    setCancelling(hold.sales_id)
+    setError(null)
+    try {
+      await api.counterPos.cancelHold(hold.sales_id, accessToken)
+      setHolds(prev => {
+        const next = prev.filter(x => x.sales_id !== hold.sales_id)
+        setSelectedIdx(i => Math.max(0, Math.min(next.length - 1, i)))
+        return next
+      })
+      setItemsBySalesId(prev => {
+        const next = { ...prev }
+        delete next[hold.sales_id]
+        return next
+      })
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setCancelling(null)
+    }
+  }
 
   const thStyle = (col) => ({
-    width: col.w, flex: col.flex ? 1 : undefined, flexShrink: 0,
-    fontSize: 10, fontWeight: 700, color: 'var(--brand)',
-    textTransform: 'uppercase', letterSpacing: 0.5,
-    textAlign: col.align || 'left', paddingRight: 6,
+    width: col.w,
+    flex: col.flex ? 1 : undefined,
+    flexShrink: 0,
+    fontSize: 10,
+    fontWeight: 700,
+    color: 'var(--brand)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    textAlign: col.align || 'left',
+    paddingRight: 6,
   })
 
-  const tdStyle = (col, active) => ({
-    width: col.w, flex: col.flex ? 1 : undefined, flexShrink: 0,
-    fontSize: 11.5, fontWeight: active ? 600 : 400,
-    color: active ? 'var(--brand)' : 'var(--text-1)',
-    textAlign: col.align || 'left', paddingRight: 6,
-    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  const tdStyle = (col) => ({
+    width: col.w,
+    flex: col.flex ? 1 : undefined,
+    flexShrink: 0,
+    fontSize: 11.5,
+    fontWeight: 400,
+    color: 'var(--text-1)',
+    textAlign: col.align || 'left',
+    paddingRight: 6,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   })
 
   return (
@@ -99,14 +201,15 @@ export default function RecallHoldModal({ onClose, onRecall }) {
       `}</style>
 
       <div style={{
-        width: 820, maxWidth: '96vw', maxHeight: '88vh',
+        width: 820,
+        maxWidth: '96vw',
+        height: 620,
+        maxHeight: '88vh',
         background: '#fff', borderRadius: 24, overflow: 'hidden',
         boxShadow: '0 32px 80px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.06)',
         display: 'flex', flexDirection: 'column',
         animation: 'rh-slide 0.18s cubic-bezier(.22,.68,0,1.2)',
       }}>
-
-        {/* ── Header ── */}
         <div style={{
           background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
           padding: '14px 18px',
@@ -126,6 +229,7 @@ export default function RecallHoldModal({ onClose, onRecall }) {
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             style={{
               width: 32, height: 32, borderRadius: 9,
@@ -140,13 +244,27 @@ export default function RecallHoldModal({ onClose, onRecall }) {
           </button>
         </div>
 
-        {/* ── Body — two panels ── */}
+        {error && (
+          <div style={{
+            margin: '10px 16px 0',
+            padding: '8px 12px',
+            borderRadius: 9,
+            border: '1px solid var(--red-border)',
+            background: 'var(--red-bg)',
+            color: 'var(--red)',
+            fontSize: 12,
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+          }}>
+            <AlertCircle size={13} />
+            {error}
+          </div>
+        )}
+
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
-
-          {/* LEFT — hold bills list */}
           <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)' }}>
-
-            {/* Left table head */}
             <div style={{
               display: 'flex', alignItems: 'center',
               padding: '0 12px', height: 34, flexShrink: 0,
@@ -161,13 +279,20 @@ export default function RecallHoldModal({ onClose, onRecall }) {
               ))}
             </div>
 
-            {/* Left rows — scrollable */}
-            <div style={{ flex: 1, overflowY: 'auto' }}>
-              {holds.map((h, i) => {
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+              {loading ? (
+                <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-4)', fontSize: 12, fontWeight: 600 }}>
+                  Loading held bills...
+                </div>
+              ) : holds.length === 0 ? (
+                <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-4)', fontSize: 12, fontWeight: 600 }}>
+                  No held bills
+                </div>
+              ) : holds.map((h, i) => {
                 const active = i === selectedIdx
                 return (
                   <div
-                    key={h.holdNo}
+                    key={h.sales_id}
                     className="rh-hold-row"
                     onClick={() => setSelectedIdx(i)}
                     style={{
@@ -179,19 +304,22 @@ export default function RecallHoldModal({ onClose, onRecall }) {
                       borderLeft: active ? '3px solid var(--brand)' : '3px solid transparent',
                     }}
                   >
-                    <div style={{ width: 70, flexShrink: 0, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--brand)' : 'var(--text-1)' }}>{h.holdNo}</div>
-                    <div style={{ flex: 1, fontSize: 11, color: active ? 'var(--brand)' : 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 6 }}>{h.billTime}</div>
-                    <div style={{ width: 90, flexShrink: 0, fontSize: 10.5, color: active ? 'var(--brand)' : 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.salesMan}</div>
+                    <div style={{ width: 70, flexShrink: 0, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--brand)' : 'var(--text-1)' }}>
+                      {h.hold_no}
+                    </div>
+                    <div style={{ flex: 1, fontSize: 11, color: active ? 'var(--brand)' : 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 6 }}>
+                      {fmtDateTime(h.bill_date)}
+                    </div>
+                    <div style={{ width: 90, flexShrink: 0, fontSize: 10.5, color: active ? 'var(--brand)' : 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {getSalesMan(h)}
+                    </div>
                   </div>
                 )
               })}
             </div>
           </div>
 
-          {/* RIGHT — selected bill items */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
-
-            {/* Right table head */}
             <div style={{
               display: 'flex', alignItems: 'center',
               padding: '0 12px', height: 34, flexShrink: 0,
@@ -202,11 +330,18 @@ export default function RecallHoldModal({ onClose, onRecall }) {
               ))}
             </div>
 
-            {/* Right rows — scrollable */}
-            <div style={{ flex: 1, overflowY: 'auto' }}>
-              {selected?.items?.length > 0 ? selected.items.map((item, i) => (
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+              {itemsLoading ? (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  height: '100%', minHeight: 120,
+                  color: 'var(--text-4)', fontSize: 12, fontWeight: 600,
+                }}>
+                  Loading items...
+                </div>
+              ) : selectedItems.length > 0 ? selectedItems.map((item, i) => (
                 <div
-                  key={i}
+                  key={item.sales_child_id ?? i}
                   style={{
                     display: 'flex', alignItems: 'center',
                     padding: '0 12px', height: 34,
@@ -215,8 +350,8 @@ export default function RecallHoldModal({ onClose, onRecall }) {
                   }}
                 >
                   {ITEM_COLS.map(col => (
-                    <div key={col.key} style={tdStyle(col, false)}>
-                      {col.key === 'unitPrice' || col.key === 'total' ? fmt(item[col.key]) : item[col.key] ?? '—'}
+                    <div key={col.key} style={tdStyle(col)}>
+                      {col.key === 'sl' ? i + 1 : col.money ? fmt(item[col.key]) : item[col.key] ?? '-'}
                     </div>
                   ))}
                 </div>
@@ -233,20 +368,17 @@ export default function RecallHoldModal({ onClose, onRecall }) {
           </div>
         </div>
 
-        {/* ── Footer ── */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '10px 16px', borderTop: '1.5px solid var(--border)',
           background: 'var(--surface-2)', flexShrink: 0, flexWrap: 'wrap',
         }}>
-
-          {/* Comments */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 140 }}>
             <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Comments</span>
             <input
               value={comments}
               onChange={e => setComments(e.target.value)}
-              placeholder="Optional note…"
+              placeholder="Optional note..."
               style={{
                 height: 32, borderRadius: 8,
                 border: '1.5px solid var(--border)', background: 'var(--surface)',
@@ -258,11 +390,12 @@ export default function RecallHoldModal({ onClose, onRecall }) {
             />
           </div>
 
-          {/* Recall button */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <span style={{ fontSize: 9, fontWeight: 700, color: 'transparent', letterSpacing: 0.7 }}>_</span>
             <button
-              onClick={handleRecall}
+              type="button"
+              onClick={() => handleRecall()}
+              disabled={!selected || recalling}
               style={{
                 height: 32, padding: '0 20px', borderRadius: 8, border: 'none',
                 background: selected
@@ -270,21 +403,17 @@ export default function RecallHoldModal({ onClose, onRecall }) {
                   : 'var(--surface-3)',
                 color: selected ? '#fff' : 'var(--text-4)',
                 fontSize: 12, fontWeight: 800,
-                cursor: selected ? 'pointer' : 'default',
+                cursor: selected && !recalling ? 'pointer' : 'default',
                 display: 'flex', alignItems: 'center', gap: 6,
                 boxShadow: selected ? '0 4px 14px rgba(107,0,0,0.22)' : 'none',
                 transition: 'all 0.12s',
+                opacity: recalling ? 0.7 : 1,
               }}
-              onMouseEnter={e => { if (selected) e.currentTarget.style.boxShadow = '0 6px 20px rgba(107,0,0,0.32)' }}
-              onMouseLeave={e => { if (selected) e.currentTarget.style.boxShadow = '0 4px 14px rgba(107,0,0,0.22)' }}
-              onMouseDown={e => { if (selected) e.currentTarget.style.transform = 'scale(0.96)' }}
-              onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
             >
-              <RotateCcw size={13} /> Recall
+              <RotateCcw size={13} /> {recalling ? 'Recalling' : 'Recall'}
             </button>
           </div>
 
-          {/* Hold No */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: 100 }}>
             <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Hold No</span>
             <input
@@ -292,11 +421,11 @@ export default function RecallHoldModal({ onClose, onRecall }) {
               value={holdNoInput}
               onChange={e => {
                 setHoldNoInput(e.target.value)
-                const idx = holds.findIndex(h => String(h.holdNo) === e.target.value)
+                const idx = holds.findIndex(h => String(h.hold_no) === e.target.value)
                 if (idx >= 0) setSelectedIdx(idx)
               }}
               onKeyDown={e => e.key === 'Enter' && handleRecall()}
-              placeholder={selected?.holdNo ?? '—'}
+              placeholder={selected?.hold_no ?? '-'}
               style={{
                 height: 32, borderRadius: 8,
                 border: '1.5px solid var(--border)', background: 'var(--surface)',
@@ -309,7 +438,6 @@ export default function RecallHoldModal({ onClose, onRecall }) {
             />
           </div>
 
-          {/* Bill Total */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Bill Total</span>
             <div style={{
@@ -321,49 +449,45 @@ export default function RecallHoldModal({ onClose, onRecall }) {
                 fontSize: 15, fontWeight: 800, color: 'var(--brand)',
                 fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums',
               }}>
-                {selected ? fmt(selected.total) : '0.000'}
+                {selected ? fmt(selected.amount) : '0.000'}
               </span>
             </div>
           </div>
 
-          {/* Enter */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <span style={{ fontSize: 9, fontWeight: 700, color: 'transparent', letterSpacing: 0.7 }}>_</span>
             <button
-              onClick={handleRecall}
-              style={{
-                height: 32, padding: '0 20px', borderRadius: 8,
-                border: '1.5px solid var(--border)', background: 'var(--surface)',
-                color: 'var(--text-2)', fontSize: 12, fontWeight: 700,
-                cursor: 'pointer', transition: 'background 0.1s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-3)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)' }}
-              onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.96)' }}
-              onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-            >
-              Enter
-            </button>
-          </div>
-
-          {/* Cancel */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginLeft: 'auto' }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: 'transparent', letterSpacing: 0.7 }}>_</span>
-            <button
-              onClick={onClose}
+              type="button"
+              onClick={() => selected && handleCancel(selected)}
+              disabled={!selected || cancelling === selected?.sales_id}
               style={{
                 height: 32, padding: '0 16px', borderRadius: 8,
                 border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
                 color: 'var(--red)', fontSize: 12, fontWeight: 700,
-                cursor: 'pointer', transition: 'background 0.1s, color 0.1s',
+                cursor: selected ? 'pointer' : 'default', transition: 'background 0.1s, color 0.1s',
+                opacity: cancelling === selected?.sales_id ? 0.6 : 1,
+                display: 'flex', alignItems: 'center', gap: 6,
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--red)'; e.currentTarget.style.color = '#fff' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--red-bg)'; e.currentTarget.style.color = 'var(--red)' }}
             >
-              Cancel
+              <Trash2 size={12} /> Cancel Hold
             </button>
           </div>
 
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginLeft: 'auto' }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: 'transparent', letterSpacing: 0.7 }}>_</span>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                height: 32, padding: '0 16px', borderRadius: 8,
+                border: '1.5px solid var(--border)', background: 'var(--surface)',
+                color: 'var(--text-2)', fontSize: 12, fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>

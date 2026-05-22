@@ -29,6 +29,7 @@ export const api = {
     pinLogin:      (body)           => request('POST', '/counter-pos/pin-login',    body),
     enrollDevice:  (body)           => request('POST', '/counter-pos/device/enroll', body),
     productSearch:  (barcode, token)      => request('GET',  `/counter-pos/products/search?barcode=${encodeURIComponent(barcode)}`, null, token),
+    productLookup:  (q, maxPrice, token)  => request('GET',  `/counter-pos/products/lookup?q=${encodeURIComponent(q ?? '')}${maxPrice ? `&maxPrice=${encodeURIComponent(maxPrice)}` : ''}`, null, token),
     customerSearch: (q, limit, token)    => request('GET',  `/counter-pos/customers/search?q=${encodeURIComponent(q ?? '')}&limit=${limit ?? 30}`, null, token),
     nextBillNo:     (token)              => request('GET',   `/counter-pos/sales/next-bill-no`, null, token),
     saveBill:       (body, token)        => request('POST',  `/counter-pos/sales/save`, body, token),
@@ -36,6 +37,7 @@ export const api = {
     getHeldBills:   (token)              => request('GET',   `/counter-pos/sales/held`, null, token),
     recallBill:     (salesId, token)     => request('GET',   `/counter-pos/sales/held/${salesId}`, null, token),
     cancelHold:     (salesId, token)     => request('DELETE',`/counter-pos/sales/held/${salesId}`, null, token),
+    groupsList:     (token)              => request('GET',   `/counter-pos/groups`, null, token),
   },
 
   // Shared backoffice endpoints

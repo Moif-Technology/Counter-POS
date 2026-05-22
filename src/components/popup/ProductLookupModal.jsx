@@ -1,46 +1,95 @@
-import { useEffect, useRef, useState } from 'react'
-import { X, Search, Trash2, SlidersHorizontal } from 'lucide-react'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { X, Search, Trash2, Loader2 } from 'lucide-react'
+import { api } from '../../lib/api'
+import { usePosStore } from '../../store/posStore'
 
 const COLUMNS = [
-  { key: 'barcode',       label: 'Barcode',        w: 130 },
-  { key: 'description',   label: 'Description',    flex: true },
-  { key: 'packetDetails', label: 'Packet Details',  w: 130 },
-  { key: 'price',         label: 'Price',           w: 90, align: 'right' },
+  { key: 'barcode',       label: 'Barcode',     w: 130 },
+  { key: 'description',   label: 'Description', flex: true },
+  { key: 'packetDetails', label: 'Unit',         w: 130 },
+  { key: 'price',         label: 'Price',        w: 90, align: 'right' },
 ]
 
+const DEBOUNCE_MS = 350
+
 export default function ProductLookupModal({ onClose, onSelect }) {
-  const [shortDesc, setShortDesc] = useState('')
-  const [price,     setPrice]     = useState('')
-  const [group,     setGroup]     = useState('')
-  const [results,   setResults]   = useState([])
-  const [selected,  setSelected]  = useState(null)
-  const overlayRef                = useRef()
-  const descRef                   = useRef()
+  const [query,    setQuery]    = useState('')
+  const [price,    setPrice]    = useState('')
+  const [results,  setResults]  = useState([])
+  const [selected, setSelected] = useState(null)
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState(null)
+  const [searched, setSearched] = useState(false)
+  const overlayRef  = useRef()
+  const queryRef    = useRef()
+  const debounceRef = useRef(null)
+  const accessToken = usePosStore(s => s.accessToken)
 
   useEffect(() => {
-    descRef.current?.focus()
+    queryRef.current?.focus()
     const onKey = e => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const handleSearch = () => {
-    // Placeholder — replace with real API/store lookup
-    setResults([])
+  const runSearch = useCallback(async (q, p) => {
+    if (!q.trim()) { setResults([]); setSearched(false); return }
+    setLoading(true)
+    setError(null)
+    setSearched(true)
+    try {
+      const { products } = await api.counterPos.productLookup(q, p || null, accessToken)
+      setResults((products ?? []).map(prod => ({
+        barcode:       prod.barcode ?? prod.productCode,
+        description:   prod.description,
+        packetDetails: prod.unitName ?? '—',
+        price:         Number(prod.unitPrice ?? 0).toFixed(3),
+        _raw:          prod,
+      })))
+    } catch (e) {
+      setError(e.message)
+      setResults([])
+    } finally {
+      setLoading(false)
+    }
+  }, [accessToken])
+
+  const scheduleSearch = (q, p) => {
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => runSearch(q, p), DEBOUNCE_MS)
+  }
+
+  const fireNow = (q, p) => {
+    clearTimeout(debounceRef.current)
+    runSearch(q, p)
+  }
+
+  const handleQueryChange = e => {
+    const q = e.target.value
+    setQuery(q)
+    scheduleSearch(q, price)
+  }
+
+  const handlePriceChange = e => {
+    const p = e.target.value
+    setPrice(p)
+    scheduleSearch(query, p)
   }
 
   const handleClearAll = () => {
-    setShortDesc('')
+    clearTimeout(debounceRef.current)
+    setQuery('')
     setPrice('')
-    setGroup('')
     setResults([])
     setSelected(null)
-    descRef.current?.focus()
+    setSearched(false)
+    setError(null)
+    queryRef.current?.focus()
   }
 
   const handleRowClick = (row) => {
     setSelected(row)
-    onSelect?.(row)
+    onSelect?.(row._raw ?? row)
     onClose()
   }
 
@@ -82,6 +131,7 @@ export default function ProductLookupModal({ onClose, onSelect }) {
       }}>
         <style>{`
           @keyframes pl-slide { from { opacity:0; transform:scale(0.96) translateY(8px) } to { opacity:1; transform:scale(1) translateY(0) } }
+          @keyframes pl-spin  { from { transform:rotate(0deg) } to { transform:rotate(360deg) } }
         `}</style>
 
         {/* ── Header ── */}
@@ -124,30 +174,41 @@ export default function ProductLookupModal({ onClose, onSelect }) {
           padding: '12px 16px', borderBottom: '1px solid var(--border)',
           background: 'var(--surface-2)', flexShrink: 0,
         }}>
-          {/* Short Description — wider */}
-          <div style={{ flex: 3 }}>
-            {field('Short Description',
-              <input
-                ref={descRef}
-                value={shortDesc}
-                onChange={e => setShortDesc(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                placeholder="Search by name…"
-                style={inputStyle}
-                onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
-                onBlur={e => { e.target.style.borderColor = 'var(--border)' }}
-              />
+          {/* Name / barcode / code */}
+          <div style={{ flex: 3, position: 'relative' }}>
+            {field('Name / Barcode / Code',
+              <div style={{ position: 'relative' }}>
+                <input
+                  ref={queryRef}
+                  value={query}
+                  onChange={handleQueryChange}
+                  onKeyDown={e => e.key === 'Enter' && fireNow(query, price)}
+                  placeholder="Type or scan barcode…"
+                  style={{ ...inputStyle, paddingRight: 34 }}
+                  onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
+                  onBlur={e => { e.target.style.borderColor = 'var(--border)' }}
+                />
+                <div style={{
+                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                }}>
+                  {loading
+                    ? <Loader2 size={14} color="var(--brand)" style={{ animation: 'pl-spin 0.8s linear infinite' }} />
+                    : <Search size={13} color="var(--text-4)" />
+                  }
+                </div>
+              </div>
             )}
           </div>
 
-          {/* Price */}
+          {/* Max Price filter */}
           <div style={{ flex: 1 }}>
-            {field('Price',
+            {field('Max Price',
               <input
                 value={price}
-                onChange={e => setPrice(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                placeholder="0.000"
+                onChange={handlePriceChange}
+                onKeyDown={e => e.key === 'Enter' && fireNow(query, price)}
+                placeholder="Any"
                 style={{ ...inputStyle, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}
                 onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
                 onBlur={e => { e.target.style.borderColor = 'var(--border)' }}
@@ -155,42 +216,7 @@ export default function ProductLookupModal({ onClose, onSelect }) {
             )}
           </div>
 
-          {/* Group */}
-          <div style={{ flex: 1 }}>
-            {field('Group',
-              <input
-                value={group}
-                onChange={e => setGroup(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                placeholder="All"
-                style={inputStyle}
-                onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
-                onBlur={e => { e.target.style.borderColor = 'var(--border)' }}
-              />
-            )}
-          </div>
-
-          {/* Search button */}
-          <button
-            onClick={handleSearch}
-            style={{
-              height: 34, padding: '0 16px', borderRadius: 8, flexShrink: 0,
-              border: 'none',
-              background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
-              color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6,
-              boxShadow: '0 2px 8px rgba(107,0,0,0.18)',
-              transition: 'box-shadow 0.12s, transform 0.08s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(107,0,0,0.28)' }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(107,0,0,0.18)' }}
-            onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.96)' }}
-            onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-          >
-            <Search size={13} /> Search
-          </button>
-
-          {/* Clear All */}
+          {/* Clear */}
           <button
             onClick={handleClearAll}
             style={{
@@ -232,13 +258,30 @@ export default function ProductLookupModal({ onClose, onSelect }) {
 
         {/* ── Results ── */}
         <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-2)' }}>
-          {results.length === 0 ? (
+          {loading ? (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              height: '100%', minHeight: 200,
+              color: 'var(--text-4)', fontSize: 13, fontWeight: 500,
+            }}>
+              <Loader2 size={16} color="var(--brand)" style={{ animation: 'pl-spin 0.8s linear infinite' }} />
+              Searching…
+            </div>
+          ) : error ? (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              height: '100%', minHeight: 200,
+              color: 'var(--red)', fontSize: 12, fontWeight: 600,
+            }}>
+              {error}
+            </div>
+          ) : results.length === 0 ? (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               height: '100%', minHeight: 200,
               color: 'var(--text-4)', fontSize: 13, fontWeight: 500,
             }}>
-              No results found
+              {searched ? 'No products found' : 'Enter search term above'}
             </div>
           ) : (
             results.map((row, i) => {

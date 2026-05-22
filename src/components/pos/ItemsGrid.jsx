@@ -25,7 +25,11 @@ function changeQty(barcode, delta) {
   const item = state.cartItems.find(i => i.barcode === barcode)
   if (!item) return
   const newQty = +(item.qty + delta).toFixed(3)
-  if (newQty <= 0) { state.removeItem(barcode); return }
+  if (newQty <= 0) {
+    const key = item._key ?? (item.productId != null ? `pid_${item.productId}` : `bc_${item.barcode}`)
+    state.removeItem(key)
+    return
+  }
   const newItems = state.cartItems.map(i =>
     i.barcode === barcode
       ? {
@@ -95,11 +99,12 @@ export default function ItemsGrid() {
             <div style={{ fontSize: 11.5, color: 'var(--text-4)' }}>Scan or type a barcode to start</div>
           </div>
         ) : cartItems.map((row, idx) => {
-          const selected = row.barcode === selectedRowKey
+          const rowKey   = row._key ?? (row.productId != null ? `pid_${row.productId}` : `bc_${row.barcode}`)
+          const selected = rowKey === selectedRowKey
           return (
             <div
-              key={row.barcode}
-              onClick={() => usePosStore.setState({ selectedRowKey: row.barcode })}
+              key={rowKey}
+              onClick={() => usePosStore.setState({ selectedRowKey: rowKey })}
               onDoubleClick={() => setModalItem(row)}
               style={{
                 display: 'flex', alignItems: 'center', cursor: 'pointer',
@@ -120,7 +125,7 @@ export default function ItemsGrid() {
                 if (col.key === '_del') return (
                   <div key="_del" style={{ width: 34, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
                     <button
-                      onClick={e => { e.stopPropagation(); removeItem(row.barcode) }}
+                      onClick={e => { e.stopPropagation(); removeItem(rowKey) }}
                       aria-label="Remove item"
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',

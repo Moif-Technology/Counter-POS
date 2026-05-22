@@ -20,7 +20,7 @@ export default function BarcodeInput({ onEnter }) {
 
   const handleQtyChange = (e) => {
     const val = e.target.value
-    if (/^\d*\.?\d*$/.test(val)) setQtyBuffer(val || '1')
+    if (/^-?\d*\.?\d*$/.test(val)) setQtyBuffer(val || '1')
   }
 
   const handleQtyKeyDown = (e) => {
@@ -33,6 +33,7 @@ export default function BarcodeInput({ onEnter }) {
 
   const qtyActive     = inputMode === 'qty'
   const barcodeActive = inputMode === 'barcode'
+  const isReturn      = parseFloat(qtyBuffer) < 0
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: '100%', width: '100%' }}>
@@ -41,16 +42,16 @@ export default function BarcodeInput({ onEnter }) {
       <div
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          background: qtyActive ? 'var(--brand-bg)' : 'var(--surface-2)',
-          border: `1.5px solid ${qtyActive ? 'var(--brand)' : 'var(--border)'}`,
+          background: isReturn ? 'var(--red-bg)' : qtyActive ? 'var(--brand-bg)' : 'var(--surface-2)',
+          border: `1.5px solid ${isReturn ? 'var(--red)' : qtyActive ? 'var(--brand)' : 'var(--border)'}`,
           borderRadius: 'var(--r-md)', padding: '0 10px', height: 42,
           flexShrink: 0, minWidth: 80,
-          boxShadow: qtyActive ? '0 0 0 3px var(--brand-glow)' : 'none',
+          boxShadow: isReturn ? '0 0 0 3px var(--red-glow, rgba(220,38,38,0.15))' : qtyActive ? '0 0 0 3px var(--brand-glow)' : 'none',
           transition: 'all 0.13s', cursor: 'text',
         }}
         onClick={() => { usePosStore.setState({ inputMode: 'qty' }); qtyRef.current?.focus() }}
       >
-        <Hash size={12} color={qtyActive ? 'var(--brand)' : 'var(--text-3)'} style={{ flexShrink: 0 }} />
+        <Hash size={12} color={isReturn ? 'var(--red)' : qtyActive ? 'var(--brand)' : 'var(--text-3)'} style={{ flexShrink: 0 }} />
         <input
           ref={qtyRef}
           value={qtyBuffer}
@@ -59,11 +60,11 @@ export default function BarcodeInput({ onEnter }) {
           onKeyDown={handleQtyKeyDown}
           inputMode="decimal"
           style={{
-            width: 38, background: 'none', border: 'none', outline: 'none',
+            width: 46, background: 'none', border: 'none', outline: 'none',
             fontSize: 20, fontWeight: 800, textAlign: 'right',
             fontVariantNumeric: 'tabular-nums',
             fontFamily: "'JetBrains Mono', monospace",
-            color: qtyActive ? 'var(--brand)' : 'var(--text-1)',
+            color: isReturn ? 'var(--red)' : qtyActive ? 'var(--brand)' : 'var(--text-1)',
             lineHeight: 1, cursor: 'text',
           }}
         />
@@ -85,6 +86,23 @@ export default function BarcodeInput({ onEnter }) {
         }}
       >
         <ScanLine size={15} color={barcodeActive ? 'var(--brand)' : 'var(--text-3)'} style={{ flexShrink: 0 }} />
+        {(qtyBuffer !== '0' && qtyBuffer !== '1') && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0,
+            background: isReturn ? 'var(--red)' : 'var(--brand)', borderRadius: 5,
+            padding: '2px 7px',
+          }}>
+            <span style={{
+              fontSize: 13, fontWeight: 800, color: '#fff',
+              fontVariantNumeric: 'tabular-nums',
+              fontFamily: "'JetBrains Mono', monospace",
+              lineHeight: 1,
+            }}>{qtyBuffer}</span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: 0.3 }}>
+              {isReturn ? 'RTN' : 'QTY'}
+            </span>
+          </div>
+        )}
         <input
           ref={barcodeRef}
           value={barcodeBuffer}

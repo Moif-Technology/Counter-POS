@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { Banknote, CreditCard, UserCheck, Layers } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
+import CreditCustomerModal from '../popup/CreditCustomerModal'
 
 const MODES = [
   { key: 'CASH',   label: 'Cash',      icon: Banknote,   color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
@@ -10,12 +12,26 @@ const MODES = [
 
 /* Compact 4-button strip — kept for standalone use if needed */
 export default function PaymentButtons() {
+  const [showCreditModal, setShowCreditModal] = useState(false)
   const paymentMode    = usePosStore(s => s.paymentMode)
   const netAmount      = usePosStore(s => s.netAmount)
   const setPaymentMode = usePosStore(s => s.setPaymentMode)
   const setPayment     = usePosStore(s => s.setPayment)
+  const setCustomer    = usePosStore(s => s.setCustomer)
+
+  const handleCreditApply = (c) => {
+    setCustomer(c.customerId, c.customerName, c.customerCode, c.paymentMode, c.osAmount)
+    setPaymentMode('CREDIT')
+  }
 
   return (
+    <>
+    {showCreditModal && (
+      <CreditCustomerModal
+        onClose={() => setShowCreditModal(false)}
+        onApply={handleCreditApply}
+      />
+    )}
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 5, padding: '6px 8px' }}>
       {MODES.map(m => {
         const Icon   = m.icon
@@ -24,6 +40,7 @@ export default function PaymentButtons() {
           <button
             key={m.key}
             onClick={() => {
+              if (m.key === 'CREDIT') { setShowCreditModal(true); return }
               setPaymentMode(m.key)
               if (m.key === 'CASH' || m.key === 'CARD') setPayment(netAmount)
             }}
@@ -62,5 +79,6 @@ export default function PaymentButtons() {
         )
       })}
     </div>
+    </>
   )
 }

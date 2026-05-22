@@ -1,21 +1,33 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Search, Tag, Delete } from 'lucide-react'
-
-const GROUPS = [
-  '06', 'Frozen Fish', 'Telephone Card',
-  '12', 'Frozen Food', 'Tobacco',
-  'Bakery', 'Garments & Foodwear', 'Vegetable',
-  'Beverages', 'Home Care', 'Cosmetics',
-  'House Hold Item', 'Disp. Plastic', 'Newspaper & Magazine',
-  'Electronics', 'Rice & Spices', 'Food Items',
-  'Stationery', 'Fresh Meat', 'Sweets & Chocolate',
-]
+import { X, Tag, Delete, Loader2 } from 'lucide-react'
+import { api } from '../../lib/api'
+import { usePosStore } from '../../store/posStore'
 
 export default function GroupModal({ onClose, onSelect }) {
-  const [selected, setSelected]   = useState(null)
-  const [price, setPrice]         = useState('')
-  const [search, setSearch]       = useState('')
-  const overlayRef                = useRef()
+  const [groups,   setGroups]   = useState([])
+  const [loading,  setLoading]  = useState(true)
+  const [error,    setError]    = useState(null)
+  const [selected, setSelected] = useState(null)
+  const [price,    setPrice]    = useState('')
+  const [search,   setSearch]   = useState('')
+  const overlayRef              = useRef()
+  const accessToken             = usePosStore(s => s.accessToken)
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      setError(null)
+      try {
+        const { groups: list } = await api.counterPos.groupsList(accessToken)
+        setGroups(list ?? [])
+      } catch (e) {
+        setError(e.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [accessToken])
 
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose() }
@@ -23,7 +35,9 @@ export default function GroupModal({ onClose, onSelect }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const filtered = GROUPS.filter(g => g.toLowerCase().includes(search.toLowerCase()))
+  const filtered = groups.filter(g =>
+    g.groupDescription.toLowerCase().includes(search.toLowerCase())
+  )
 
   const pressNum = (k) => {
     if (k === 'C') { setPrice(''); return }
@@ -31,12 +45,21 @@ export default function GroupModal({ onClose, onSelect }) {
     setPrice(p => p + k)
   }
 
-  const handleDone = () => {
-    if (selected) onSelect?.({ group: selected, unitPrice: parseFloat(price) || 0 })
-    onClose()
+  const handleGroupClick = (g) => {
+    setSelected(g)
+    setPrice('')
+    if (g.keyShift === 1) {
+      // Product lookup mode — pass control back to caller to open product lookup
+      onSelect?.({ group: g, mode: 'product_lookup' })
+      onClose()
+    }
   }
 
-  const numKeys = ['7','8','9','4','5','6','1','2','3']
+  const handleDone = () => {
+    if (!selected) return
+    onSelect?.({ group: selected, unitPrice: parseFloat(price) || 0, mode: 'price_entry' })
+    onClose()
+  }
 
   return (
     <div
@@ -54,6 +77,7 @@ export default function GroupModal({ onClose, onSelect }) {
       <style>{`
         @keyframes gm-fade  { from { opacity:0 } to { opacity:1 } }
         @keyframes gm-slide { from { opacity:0; transform:scale(0.96) translateY(10px) } to { opacity:1; transform:scale(1) translateY(0) } }
+        @keyframes gm-spin  { from { transform:rotate(0deg) } to { transform:rotate(360deg) } }
       `}</style>
 
       <div style={{
@@ -111,7 +135,9 @@ export default function GroupModal({ onClose, onSelect }) {
                 background: 'var(--surface-2)', border: '1.5px solid var(--border)',
                 borderRadius: 10, padding: '0 12px', height: 36,
               }}>
-                <Search size={13} color="var(--text-4)" />
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-4)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
@@ -127,44 +153,78 @@ export default function GroupModal({ onClose, onSelect }) {
 
             {/* Grid */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                {filtered.map(g => {
-                  const active = selected === g
-                  return (
-                    <button
-                      key={g}
-                      onClick={() => setSelected(g)}
-                      style={{
-                        padding: '12px 8px', borderRadius: 10, cursor: 'pointer',
-                        border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
-                        background: active ? 'var(--brand-bg)' : 'var(--surface)',
-                        color: active ? 'var(--brand)' : 'var(--text-2)',
-                        fontSize: 11.5, fontWeight: active ? 700 : 500,
-                        textAlign: 'center', lineHeight: 1.3,
-                        transition: 'all 0.12s',
-                        boxShadow: active ? '0 0 0 3px var(--brand-glow)' : 'var(--shadow-xs)',
-                      }}
-                      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.borderColor = 'var(--border-2)' } }}
-                      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.borderColor = 'var(--border)' } }}
-                    >
-                      {g}
-                    </button>
-                  )
-                })}
-              </div>
+              {loading ? (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  height: 180, color: 'var(--text-4)', fontSize: 13,
+                }}>
+                  <Loader2 size={16} color="var(--brand)" style={{ animation: 'gm-spin 0.8s linear infinite' }} />
+                  Loading groups…
+                </div>
+              ) : error ? (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  height: 180, color: 'var(--red)', fontSize: 12, fontWeight: 600,
+                }}>
+                  {error}
+                </div>
+              ) : filtered.length === 0 ? (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  height: 180, color: 'var(--text-4)', fontSize: 13,
+                }}>
+                  No groups found
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {filtered.map(g => {
+                    const active    = selected?.groupId === g.groupId
+                    const isLookup  = g.keyShift === 1
+                    return (
+                      <button
+                        key={g.groupId}
+                        onClick={() => handleGroupClick(g)}
+                        title={isLookup ? 'Opens product search' : 'Enter price'}
+                        style={{
+                          padding: '12px 8px', borderRadius: 10, cursor: 'pointer',
+                          border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
+                          background: active ? 'var(--brand-bg)' : 'var(--surface)',
+                          color: active ? 'var(--brand)' : 'var(--text-2)',
+                          fontSize: 11.5, fontWeight: active ? 700 : 500,
+                          textAlign: 'center', lineHeight: 1.3,
+                          transition: 'all 0.12s',
+                          boxShadow: active ? '0 0 0 3px var(--brand-glow)' : 'var(--shadow-xs)',
+                          position: 'relative',
+                        }}
+                        onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.borderColor = 'var(--border-2)' } }}
+                        onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.borderColor = 'var(--border)' } }}
+                      >
+                        {g.groupDescription}
+                        {isLookup && (
+                          <span style={{
+                            display: 'block', fontSize: 9, fontWeight: 600,
+                            color: active ? 'var(--brand)' : 'var(--text-4)',
+                            marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.5,
+                          }}>Browse</span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* RIGHT — unit price + numpad */}
+          {/* RIGHT — unit price + numpad (only for price-entry groups) */}
           <div style={{ width: 210, flexShrink: 0, display: 'flex', flexDirection: 'column', padding: '10px 12px 0' }}>
 
-            {/* Unit price display */}
             <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }}>
               Unit Price
             </p>
             <div style={{
               height: 40, borderRadius: 8, marginBottom: 8,
-              border: '1.5px solid var(--border)', background: 'var(--surface-2)',
+              border: `1.5px solid ${selected && selected.keyShift !== 1 ? 'var(--brand)' : 'var(--border)'}`,
+              background: 'var(--surface-2)',
               display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
               padding: '0 12px',
             }}>
@@ -203,7 +263,6 @@ export default function GroupModal({ onClose, onSelect }) {
                 </div>
               ))}
 
-              {/* Row: . | 0 (wide) | Clear */}
               <div style={{ display: 'flex', gap: 4 }}>
                 <button
                   onClick={() => pressNum('.')}
@@ -271,16 +330,21 @@ export default function GroupModal({ onClose, onSelect }) {
               </button>
               <button
                 onClick={handleDone}
+                disabled={!selected || !price}
                 style={{
                   flex: 1, height: 36, borderRadius: 8, border: 'none',
-                  background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
-                  color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(107,0,0,0.22)',
+                  background: selected && price
+                    ? 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)'
+                    : 'var(--surface-3)',
+                  color: selected && price ? '#fff' : 'var(--text-4)',
+                  fontSize: 12, fontWeight: 800,
+                  cursor: selected && price ? 'pointer' : 'not-allowed',
+                  boxShadow: selected && price ? '0 4px 14px rgba(107,0,0,0.22)' : 'none',
                   transition: 'box-shadow 0.12s, transform 0.08s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(107,0,0,0.32)' }}
-                onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(107,0,0,0.22)' }}
-                onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.97)' }}
+                onMouseEnter={e => { if (selected && price) e.currentTarget.style.boxShadow = '0 6px 20px rgba(107,0,0,0.32)' }}
+                onMouseLeave={e => { if (selected && price) e.currentTarget.style.boxShadow = '0 4px 14px rgba(107,0,0,0.22)' }}
+                onMouseDown={e => { if (selected && price) e.currentTarget.style.transform = 'scale(0.97)' }}
                 onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
               >
                 Done

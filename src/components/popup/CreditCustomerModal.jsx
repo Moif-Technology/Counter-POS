@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { X, Delete, Loader2 } from 'lucide-react'
+import { X, Delete, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
 
@@ -9,15 +9,21 @@ const NUM_KEYS = [
   ['1','2','3'],
 ]
 
-export default function PrivilegeCustomerModal({ onClose, onApply }) {
-  const [customerNo,   setCustomerNo]   = useState('')
+function resolveMode(dbMode) {
+  const m = String(dbMode || '').toUpperCase()
+  if (m === 'CREDITCARD' || m === 'CARD') return 'CARD'
+  if (m === 'CREDIT')                     return 'CREDIT'
+  return 'CASH'
+}
+
+export default function CreditCustomerModal({ onClose, onApply }) {
   const [customerCode, setCustomerCode] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [customers,    setCustomers]    = useState([])
   const [selectedIdx,  setSelectedIdx]  = useState(-1)
   const [loading,      setLoading]      = useState(false)
   const [error,        setError]        = useState(null)
-  const [focus,        setFocus]        = useState('no')
+  const [focus,        setFocus]        = useState('code')
   const overlayRef  = useRef()
   const listRef     = useRef()
   const debounceRef = useRef(null)
@@ -33,8 +39,9 @@ export default function PrivilegeCustomerModal({ onClose, onApply }) {
     setLoading(true)
     setError(null)
     try {
-      const { customers: list } = await api.counterPos.customerSearch(q, 100, accessToken)
-      setCustomers(list ?? [])
+      const { customers: list } = await api.counterPos.customerSearch(q, 200, accessToken)
+      const creditOnly = (list ?? []).filter(c => resolveMode(c.paymentMode) === 'CREDIT')
+      setCustomers(creditOnly)
       setSelectedIdx(-1)
     } catch (e) {
       setError(e.message)
@@ -43,7 +50,6 @@ export default function PrivilegeCustomerModal({ onClose, onApply }) {
     }
   }, [accessToken])
 
-  // Load all customers on open
   useEffect(() => { doSearch('') }, [doSearch])
 
   const scheduleSearch = (q) => {
@@ -53,19 +59,16 @@ export default function PrivilegeCustomerModal({ onClose, onApply }) {
 
   const selectRow = (c, idx) => {
     setSelectedIdx(idx)
-    setCustomerNo(String(c.customerId ?? ''))
     setCustomerCode(c.customerCode ?? '')
     setCustomerName(c.customerName ?? '')
   }
 
   const pressKey = k => {
     if (k === '⌫') {
-      if (focus === 'no')   { setCustomerNo(v   => { const n = v.slice(0, -1); scheduleSearch(n); return n }) }
       if (focus === 'code') { setCustomerCode(v => { const n = v.slice(0, -1); scheduleSearch(n); return n }) }
       if (focus === 'name') { setCustomerName(v => { const n = v.slice(0, -1); scheduleSearch(n); return n }) }
       return
     }
-    if (focus === 'no')   { setCustomerNo(v   => { const n = v + k; scheduleSearch(n); return n }) }
     if (focus === 'code') { setCustomerCode(v => { const n = v + k; scheduleSearch(n); return n }) }
     if (focus === 'name') { setCustomerName(v => { const n = v + k; scheduleSearch(n); return n }) }
   }
@@ -98,6 +101,9 @@ export default function PrivilegeCustomerModal({ onClose, onApply }) {
     cursor: 'pointer', transition: 'all 0.1s',
   }
 
+  const selected = selectedIdx >= 0 ? customers[selectedIdx] : null
+  const osAmt    = selected ? Number(selected.osAmount ?? 0) : 0
+
   return (
     <div
       ref={overlayRef}
@@ -107,29 +113,31 @@ export default function PrivilegeCustomerModal({ onClose, onApply }) {
         background: 'rgba(10,8,6,0.4)',
         backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: 'pc-fade 0.15s ease',
+        animation: 'cc-fade 0.15s ease',
       }}
     >
       <style>{`
-        @keyframes pc-fade  { from{opacity:0} to{opacity:1} }
-        @keyframes pc-slide { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @keyframes cc-fade  { from{opacity:0} to{opacity:1} }
+        @keyframes cc-slide { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @keyframes cc-spin  { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes cc-bal   { from{opacity:0;transform:scaleY(0.7)} to{opacity:1;transform:scaleY(1)} }
       `}</style>
 
       <div style={{
-        width: 680, maxWidth: '96vw',
+        width: 700, maxWidth: '96vw',
         background: '#fff', borderRadius: 24, overflow: 'hidden',
         boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
         display: 'flex', flexDirection: 'column',
-        animation: 'pc-slide 0.18s cubic-bezier(.22,.68,0,1.2)',
+        animation: 'cc-slide 0.18s cubic-bezier(.22,.68,0,1.2)',
       }}>
 
-        {/* ── Header ── */}
+        {/* Header — brand crimson, same as privilege modal */}
         <div style={{
           background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
           padding: '12px 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
         }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Privilege Customer Selection</span>
+          <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Credit Customer Selection</span>
           <button
             onClick={onClose}
             style={{
@@ -145,24 +153,23 @@ export default function PrivilegeCustomerModal({ onClose, onApply }) {
           </button>
         </div>
 
-        {/* ── Body ── */}
+        {/* Body */}
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
-          {/* ── Left: customer list ── */}
+          {/* Left: customer list */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden', padding: '12px' }}>
-            {/* Table with outer border + curved corners */}
             <div style={{
               flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
               border: '1.5px solid var(--brand-border)', borderRadius: 10,
             }}>
-              {/* Heading */}
+              {/* Column headings */}
               <div style={{
-                display: 'grid', gridTemplateColumns: '1fr 1fr 2fr',
+                display: 'grid', gridTemplateColumns: '110px 1fr',
                 background: 'var(--brand-bg)', borderBottom: '1.5px solid var(--brand-border)',
                 padding: '8px 12px', flexShrink: 0,
                 borderRadius: '8px 8px 0 0',
               }}>
-                {['Customer No', 'Customer Code', 'Customer Name'].map(h => (
+                {['Customer Code', 'Customer Name'].map(h => (
                   <span key={h} style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</span>
                 ))}
               </div>
@@ -171,38 +178,70 @@ export default function PrivilegeCustomerModal({ onClose, onApply }) {
               <div ref={listRef} style={{ flex: 1, overflowY: 'auto', borderRadius: '0 0 8px 8px' }}>
                 {loading && (
                   <div style={{ padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-4)', fontSize: 12 }}>
-                    <Loader2 size={14} style={{ animation: 'pcm-spin 0.8s linear infinite' }} /> Loading…
-                    <style>{`@keyframes pcm-spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
+                    <Loader2 size={14} style={{ animation: 'cc-spin 0.8s linear infinite' }} /> Loading…
                   </div>
                 )}
                 {!loading && error && (
                   <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--red)', fontWeight: 600 }}>{error}</div>
                 )}
                 {!loading && !error && customers.length === 0 && (
-                  <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: 'var(--text-4)' }}>No customers found</div>
+                  <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: 'var(--text-4)' }}>No credit customers found</div>
                 )}
                 {!loading && customers.map((c, i) => {
                   const isActive = selectedIdx === i
                   const isLast   = i === customers.length - 1
+                  const cOs      = Number(c.osAmount ?? 0)
                   return (
-                    <div
-                      key={c.customerId}
-                      onClick={() => selectRow(c, i)}
-                      style={{
-                        display: 'grid', gridTemplateColumns: '1fr 1fr 2fr',
-                        padding: '9px 12px', cursor: 'pointer',
-                        borderBottom: isLast ? 'none' : '1px solid var(--border)',
-                        background: isActive ? 'rgba(107,0,0,0.06)' : '#fff',
-                        borderLeft: `3px solid ${isActive ? 'var(--brand)' : 'transparent'}`,
-                        transition: 'background 0.1s',
-                        borderRadius: isLast ? '0 0 8px 8px' : 0,
-                      }}
-                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--surface-2)' }}
-                      onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = '#fff' }}
-                    >
-                      <span style={{ fontSize: 12, color: 'var(--text-1)', fontFamily: "'JetBrains Mono', monospace", fontWeight: isActive ? 700 : 500 }}>{c.customerId}</span>
-                      <span style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: "'JetBrains Mono', monospace", fontWeight: isActive ? 700 : 500 }}>{c.customerCode}</span>
-                      <span style={{ fontSize: 12, color: 'var(--text-1)', fontWeight: isActive ? 700 : 500 }}>{c.customerName}</span>
+                    <div key={c.customerId}>
+                      {/* Main row */}
+                      <div
+                        onClick={() => selectRow(c, i)}
+                        style={{
+                          display: 'grid', gridTemplateColumns: '110px 1fr',
+                          padding: '9px 12px', cursor: 'pointer',
+                          borderBottom: (isActive || (!isActive && !isLast)) ? '1px solid var(--border)' : 'none',
+                          background: isActive ? 'var(--brand-bg)' : '#fff',
+                          borderLeft: `3px solid ${isActive ? 'var(--brand)' : 'transparent'}`,
+                          transition: 'background 0.1s',
+                        }}
+                        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--surface-2)' }}
+                        onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = '#fff' }}
+                      >
+                        <span style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: "'JetBrains Mono', monospace", fontWeight: isActive ? 700 : 500 }}>{c.customerCode}</span>
+                        <span style={{ fontSize: 12, color: 'var(--text-1)', fontWeight: isActive ? 700 : 500 }}>{c.customerName}</span>
+                      </div>
+
+                      {/* Inline OS balance strip — visible only when this row selected */}
+                      {isActive && (
+                        <div style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '8px 14px 8px 15px',
+                          background: cOs > 0 ? 'var(--red-bg)' : 'var(--green-bg)',
+                          borderLeft: `3px solid ${cOs > 0 ? 'var(--red)' : 'var(--green)'}`,
+                          borderBottom: isLast ? 'none' : '1px solid var(--border)',
+                          animation: 'cc-bal 0.15s ease',
+                          transformOrigin: 'top',
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {cOs > 0
+                              ? <AlertCircle  size={13} color="var(--red)"   />
+                              : <CheckCircle2 size={13} color="var(--green)" />
+                            }
+                            <span style={{ fontSize: 11, fontWeight: 700, color: cOs > 0 ? 'var(--red)' : 'var(--green)' }}>
+                              Outstanding Balance
+                            </span>
+                          </div>
+                          <span style={{
+                            fontSize: 15, fontWeight: 800,
+                            fontFamily: "'JetBrains Mono', monospace",
+                            fontVariantNumeric: 'tabular-nums',
+                            color: cOs > 0 ? 'var(--red)' : 'var(--green)',
+                            letterSpacing: '-0.3px',
+                          }}>
+                            {cOs.toFixed(3)} <span style={{ fontSize: 10, fontWeight: 700, opacity: 0.65 }}>AED</span>
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -210,13 +249,11 @@ export default function PrivilegeCustomerModal({ onClose, onApply }) {
             </div>
           </div>
 
-          {/* ── Right: inputs + numpad ── */}
+          {/* Right: inputs + numpad */}
           <div style={{ width: 260, display: 'flex', flexDirection: 'column', padding: '14px 14px 0', gap: 10, flexShrink: 0 }}>
 
-            {/* Fields */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
-                { label: 'Customer No :',   value: customerNo,   key: 'no',   setter: setCustomerNo   },
                 { label: 'Customer Code :', value: customerCode, key: 'code', setter: setCustomerCode },
                 { label: 'Customer Name :', value: customerName, key: 'name', setter: setCustomerName },
               ].map(f => (
@@ -273,7 +310,7 @@ export default function PrivilegeCustomerModal({ onClose, onApply }) {
               </div>
             </div>
 
-            {/* Footer buttons inside right panel */}
+            {/* Footer */}
             <div style={{ display: 'flex', gap: 6, paddingBottom: 14, marginTop: 'auto' }}>
               <button
                 onClick={handleApply}

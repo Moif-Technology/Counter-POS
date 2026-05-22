@@ -36,7 +36,7 @@ export default function App() {
               <POSPage />
             </RequireAuth>
           } />
-          <Route path="*" element={<Navigate to="/" />} />
+<Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

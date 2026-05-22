@@ -25,24 +25,34 @@ const NUM_BTN = {
 }
 
 export default function NumPad({ onEnter }) {
-  const inputMode        = usePosStore(s => s.inputMode)
-  const paymentMode      = usePosStore(s => s.paymentMode)
-  const netAmount        = usePosStore(s => s.netAmount)
-  const setQtyBuffer     = usePosStore(s => s.setQtyBuffer)
-  const setBarcodeBuffer = usePosStore(s => s.setBarcodeBuffer)
-  const setPaymentMode   = usePosStore(s => s.setPaymentMode)
-  const setPayment       = usePosStore(s => s.setPayment)
+  const inputMode      = usePosStore(s => s.inputMode)
+  const paymentMode    = usePosStore(s => s.paymentMode)
+  const netAmount      = usePosStore(s => s.netAmount)
+  const setPaymentMode = usePosStore(s => s.setPaymentMode)
+  const setPayment     = usePosStore(s => s.setPayment)
 
   const pressNum = (key) => {
-    if (inputMode === 'qty') {
-      setQtyBuffer(p => {
-        if (key === '00') return p === '0' ? '0' : p + '00'
-        if (key === '.' && p.includes('.')) return p
-        if (p === '1' && key !== '.') return key
-        return p + key
-      })
+    const state = usePosStore.getState()
+    if (state.inputMode === 'qty') {
+      const p = state.qtyBuffer
+      let next
+      if (key === '00') next = p === '0' ? '0' : p + '00'
+      else if (key === '.' && p.includes('.')) next = p
+      else if (p === '1' && key !== '.') next = key
+      else next = p + key
+      usePosStore.setState({ qtyBuffer: next })
     } else {
-      setBarcodeBuffer(p => p + key)
+      usePosStore.setState({ barcodeBuffer: state.barcodeBuffer + key })
+    }
+  }
+
+  const pressQty = () => {
+    const state = usePosStore.getState()
+    const val = state.barcodeBuffer.trim()
+    if (val && !isNaN(Number(val)) && Number(val) > 0) {
+      usePosStore.setState({ qtyBuffer: val, barcodeBuffer: '', inputMode: 'barcode' })
+    } else {
+      usePosStore.setState({ inputMode: 'qty' })
     }
   }
 
@@ -119,6 +129,28 @@ export default function NumPad({ onEnter }) {
           ]
         })}
       </div>
+
+      {/* QTY button — transfers barcode buffer to qty */}
+      <button
+        onClick={pressQty}
+        style={{
+          width: '100%', height: 38, marginTop: 5,
+          borderRadius: 'var(--r-md)',
+          border: '1.5px solid var(--brand-border)',
+          background: 'var(--brand-bg)',
+          color: 'var(--brand)',
+          fontSize: 12, fontWeight: 800, letterSpacing: 2,
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          transition: 'all 0.12s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand)'; e.currentTarget.style.color = '#fff' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'var(--brand-bg)'; e.currentTarget.style.color = 'var(--brand)' }}
+        onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.97)' }}
+        onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+      >
+        # QTY
+      </button>
 
       {/* ENTER key — spans full width */}
       <button

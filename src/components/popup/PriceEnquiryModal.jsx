@@ -1,20 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Delete, ScanBarcode } from 'lucide-react'
-
-const DEMO_ITEMS = [
-  { sl: 1, barcode: '6291003091219', description: 'TOMATO VEG 500G',   pack: '1 x 500g',  unitPrice: 5.000,  discount: 0,  vatPer: 5, vatAmt: 0.250, price: 5.250  },
-  { sl: 2, barcode: '6291003091220', description: 'FRESH MILK 1L',     pack: '1 x 1L',    unitPrice: 3.500,  discount: 0,  vatPer: 5, vatAmt: 0.175, price: 3.675  },
-  { sl: 3, barcode: '6291003091221', description: 'OLIVE OIL 750ML',   pack: '1 x 750ml', unitPrice: 12.000, discount: 5,  vatPer: 5, vatAmt: 0.570, price: 11.970 },
-  { sl: 4, barcode: '6291003091222', description: 'BROWN BREAD 400G',  pack: '1 x 400g',  unitPrice: 1.800,  discount: 0,  vatPer: 0, vatAmt: 0.000, price: 1.800  },
-  { sl: 5, barcode: '6291003091223', description: 'ORANGE JUICE 1L',   pack: '1 x 1L',    unitPrice: 4.250,  discount: 10, vatPer: 5, vatAmt: 0.191, price: 3.991  },
-  { sl: 6, barcode: '6291003091224', description: 'BASMATI RICE 5KG',  pack: '1 x 5kg',   unitPrice: 8.500,  discount: 0,  vatPer: 5, vatAmt: 0.425, price: 8.925  },
-  { sl: 7, barcode: '6291003091225', description: 'CHEDDAR CHEESE 200G',pack:'1 x 200g',  unitPrice: 6.750,  discount: 5,  vatPer: 5, vatAmt: 0.321, price: 6.729  },
-]
+import { api } from '../../lib/api'
+import { usePosStore } from '../../store/posStore'
 
 const COLS = '36px 1fr 120px 70px 64px 52px 64px 70px'
 const HEADS = ['Sl#', 'Description', 'Pack Details', 'Unit Price', 'Discount', 'VAT%', 'VAT Amt', 'Price']
 const NUM_KEYS = [['7','8','9'],['4','5','6'],['1','2','3']]
-const fmt = n => n.toFixed(3)
+const fmt = n => Number(n ?? 0).toFixed(3)
 
 function TableRow({ row, isLast, highlight }) {
   const [hover, setHover] = useState(false)
@@ -48,27 +40,56 @@ export default function PriceEnquiryModal({ onClose }) {
   const [barcode,  setBarcode]  = useState('')
   const [result,   setResult]   = useState(null)
   const [searched, setSearched] = useState(false)
-  const overlayRef = useRef()
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState(null)
+  const overlayRef  = useRef()
+  const inputRef    = useRef()
+  const accessToken = usePosStore(s => s.accessToken)
 
   useEffect(() => {
+    inputRef.current?.focus()
     const onKey = e => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
   const pressKey = k => {
-    if (k === 'CLR') { setBarcode(''); setResult(null); setSearched(false); return }
+    if (k === 'CLR') { setBarcode(''); setResult(null); setSearched(false); setError(null); return }
     if (k === '⌫')  { setBarcode(v => v.slice(0, -1)); return }
     setBarcode(v => v + k)
   }
 
-  const handleEnter = () => {
+  const handleEnter = async () => {
+    const term = barcode.trim()
+    if (!term) return
+    setLoading(true)
     setSearched(true)
-    setResult(DEMO_ITEMS.find(i => i.barcode === barcode.trim()) || null)
+    setError(null)
+    try {
+      const { product } = await api.counterPos.productSearch(term, accessToken)
+      const vatAmt = Number(product.unitPrice) * (Number(product.vatPer) / 100)
+      setResult({
+        sl: 1,
+        barcode:   product.barcode ?? term,
+        description: product.description,
+        pack:      product.unitName ?? '—',
+        unitPrice: Number(product.unitPrice),
+        discount:  0,
+        vatPer:    Number(product.vatPer),
+        vatAmt,
+        price:     Number(product.unitPrice) + vatAmt,
+        qtyOnHand: Number(product.qtyOnHand),
+      })
+    } catch (e) {
+      setResult(null)
+      setError(e.status === 404 ? 'No item found for this barcode' : e.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const stat = result
-    ? { unitPrice: result.unitPrice, vatPer: result.vatPer, priceWithTax: result.price, qtyOnHand: 24 }
+    ? { unitPrice: result.unitPrice, vatPer: result.vatPer, priceWithTax: result.price, qtyOnHand: result.qtyOnHand }
     : { unitPrice: 0, vatPer: 0, priceWithTax: 0, qtyOnHand: 0 }
 
   const STATS = [
@@ -108,7 +129,7 @@ export default function PriceEnquiryModal({ onClose }) {
     >{k === '⌫' ? <Delete size={14} /> : k}</button>
   )
 
-  const displayRows = searched ? (result ? [result] : []) : DEMO_ITEMS
+  const displayRows = result ? [result] : []
 
   return (
     <div
@@ -186,17 +207,24 @@ export default function PriceEnquiryModal({ onClose }) {
 
               {/* Rows */}
               <div style={{ flex: 1, overflowY: 'auto' }}>
-                {searched && displayRows.length === 0 && (
+                {loading && (
                   <div style={{ padding: '30px 16px', textAlign: 'center' }}>
-                    <p style={{ fontSize: 12, color: 'var(--text-4)', fontWeight: 500 }}>No item found for this barcode</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-4)', fontWeight: 500 }}>Searching…</p>
                   </div>
                 )}
-                {displayRows.map((row, i) => (
+                {!loading && searched && displayRows.length === 0 && (
+                  <div style={{ padding: '30px 16px', textAlign: 'center' }}>
+                    <p style={{ fontSize: 12, color: error ? 'var(--red)' : 'var(--text-4)', fontWeight: 500 }}>
+                      {error ?? 'No item found for this barcode'}
+                    </p>
+                  </div>
+                )}
+                {!loading && displayRows.map((row, i) => (
                   <TableRow
                     key={row.sl}
                     row={row}
                     isLast={i === displayRows.length - 1}
-                    highlight={searched && !!result}
+                    highlight={!!result}
                   />
                 ))}
               </div>
@@ -226,8 +254,10 @@ export default function PriceEnquiryModal({ onClose }) {
               <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Bar Code</label>
               <div style={{ display: 'flex', gap: 5 }}>
                 <input
-                  readOnly
+                  ref={inputRef}
                   value={barcode}
+                  onChange={e => setBarcode(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleEnter()}
                   placeholder="Scan or type…"
                   style={{
                     flex: 1, height: 34, padding: '0 10px', borderRadius: 7,

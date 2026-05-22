@@ -78,27 +78,67 @@ export const usePosStore = create((set, get) => ({
   setBarcodeBuffer: (val) => set({ barcodeBuffer: val }),
   setInputMode: (mode) => set({ inputMode: mode }),
 
+  toggleReturn: () => {
+    const curr = parseFloat(get().qtyBuffer)
+    const base = (!curr || isNaN(curr)) ? 1 : Math.abs(curr)
+    const isReturn = curr < 0
+    set({ qtyBuffer: isReturn ? String(base) : String(-base) })
+  },
+
   addItem: (item) => {
     const items = get().cartItems
-    const existing = items.find(i => String(i.productId) === String(item.productId))
-    let newItems
-    if (existing) {
-      newItems = items.map(i =>
-        String(i.productId) === String(item.productId)
-          ? { ...i, qty: i.qty + item.qty, lineTotal: (i.qty + item.qty) * i.unitPrice }
-          : i
-      )
-    } else {
-      const slNo = items.length + 1
-      newItems = [...items, { ...item, slNo, lineTotal: item.qty * item.unitPrice }]
+    const slNo = items.length + 1
+    const uniqueKey = `pid_${item.productId}_${Date.now()}`
+    const newItems = [...items, { ...item, slNo, lineTotal: item.qty * item.unitPrice, _key: uniqueKey }]
+    set({ cartItems: newItems, selectedRowKey: uniqueKey })
+    get().recalc(newItems)
+  },
+
+  addGroupItem: (group, unitPrice, qty) => {
+    const items = get().cartItems
+    const slNo  = items.length + 1
+    const safeQty   = Number(qty) > 0 ? Number(qty) : 1
+    const safePrice = Number(unitPrice) || 0
+    const vatPer    = 0
+    const lineTotal = safeQty * safePrice
+    const uniqueKey = `GRP_${group.groupId}_${Date.now()}`
+    const newItem = {
+      slNo,
+      barcode:     uniqueKey,
+      productId:   null,
+      productCode: null,
+      description: group.groupDescription,
+      qty:         safeQty,
+      unitPrice:   safePrice,
+      discount:    0,
+      vatPer,
+      vatAmt:      0,
+      lineTotal,
+      groupId:     group.groupId,
     }
-    set({ cartItems: newItems, selectedRowKey: item.productId != null ? `pid_${item.productId}` : `bc_${item.barcode}` })
+    const newItems = [...items, newItem]
+    set({ cartItems: newItems, selectedRowKey: `bc_${uniqueKey}` })
+    get().recalc(newItems)
+  },
+
+  pressSubTotal: () => {
+    set({ barcodeBuffer: '', qtyBuffer: '1', inputMode: 'barcode' })
+  },
+
+  repeatLastItem: () => {
+    const items = get().cartItems
+    if (!items.length) return
+    const last = items[items.length - 1]
+    const uniqueKey = `pid_${last.productId ?? 'grp'}_${Date.now()}`
+    const newItem = { ...last, slNo: items.length + 1, _key: uniqueKey }
+    const newItems = [...items, newItem]
+    set({ cartItems: newItems, selectedRowKey: uniqueKey })
     get().recalc(newItems)
   },
 
   removeItem: (key) => {
     const newItems = get().cartItems
-      .filter(i => (i.productId != null ? `pid_${i.productId}` : `bc_${i.barcode}`) !== key)
+      .filter(i => (i._key ?? (i.productId != null ? `pid_${i.productId}` : `bc_${i.barcode}`)) !== key)
       .map((i, idx) => ({ ...i, slNo: idx + 1 }))
     set({ cartItems: newItems, selectedRowKey: null })
     get().recalc(newItems)
