@@ -167,14 +167,35 @@ export default function SalesManModal({ onClose, onApply }) {
               {/* Staff Name */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <label style={labelStyle}>Staff Name</label>
-                <input
-                  ref={nameRef}
-                  value={staffName}
-                  onChange={e => setStaffName(e.target.value)}
-                  onFocus={() => { setFocus('name'); setKeyboardOpen(true) }}
-                  placeholder="Search name…"
-                  style={inputStyle(focus === 'name')}
-                />
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    ref={nameRef}
+                    value={staffName}
+                    onChange={e => setStaffName(e.target.value)}
+                    onFocus={() => { setFocus('name'); setKeyboardOpen(true) }}
+                    onClick={() => { setFocus('name'); setKeyboardOpen(true) }}
+                    placeholder="Tap to type name…"
+                    readOnly
+                    style={{ ...inputStyle(focus === 'name'), flex: 1, cursor: 'pointer' }}
+                  />
+                  <button
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => { setFocus('name'); setKeyboardOpen(true); nameRef.current?.focus() }}
+                    style={{
+                      width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+                      border: `1.5px solid ${keyboardOpen && focus === 'name' ? 'var(--brand)' : 'var(--border)'}`,
+                      background: keyboardOpen && focus === 'name' ? 'var(--brand-bg)' : 'var(--surface)',
+                      color: keyboardOpen && focus === 'name' ? 'var(--brand)' : 'var(--text-3)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', transition: 'all 0.14s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-bg)'; e.currentTarget.style.borderColor = 'var(--brand-border)'; e.currentTarget.style.color = 'var(--brand)' }}
+                    onMouseLeave={e => { if (!(keyboardOpen && focus === 'name')) { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-3)' } }}
+                    title="Open keyboard"
+                  >
+                    <Keyboard size={14} />
+                  </button>
+                </div>
               </div>
             </div>
 
