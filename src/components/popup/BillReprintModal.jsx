@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Printer, Delete, RefreshCw, FileText, CalendarDays } from 'lucide-react'
+import { X, Printer, FileText, CalendarDays } from 'lucide-react'
 import Calendar from '../ui/Calendar'
+import Numpad from '../ui/Numpad'
 
 const today = new Date()
 const isoDate = d => d.toISOString().split('T')[0]
@@ -36,20 +37,15 @@ export default function BillReprintModal({ onClose }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [calOpen])
 
-  const setActive = v => {
-    if (focus === 'billNo') setBillNo(v)
+  const handleKey = k => {
+    if (focus !== 'billNo') return
+    if (k === 'C' || k === '⌫' && billNo === '') { setBillNo(''); return }
+    if (k === '⌫') { setBillNo(v => v.slice(0, -1)); return }
+    setBillNo(v => v + k)
   }
 
-  const pressNum = k => {
-    if (k === 'C')  { setActive(''); return }
-    if (k === '00') { setActive(v => v + '00'); return }
-    setActive(v => v + k)
-  }
-
-  const handlePrint      = () => { onClose() }
-  const handleOtherBill  = () => { setBillNo(''); setFocus('billNo'); billRef.current?.focus() }
-
-  const numRows = [['7','8','9'],['4','5','6'],['1','2','3']]
+  const handlePrint     = () => { onClose() }
+  const handleOtherBill = () => { setBillNo(''); setFocus('billNo'); billRef.current?.focus() }
 
   const fieldStyle = active => ({
     height: 36, borderRadius: 8, width: '100%', boxSizing: 'border-box',
@@ -204,97 +200,16 @@ export default function BillReprintModal({ onClose }) {
           </div>
 
           {/* RIGHT — numpad */}
-          <div style={{ width: 188, flexShrink: 0, padding: '20px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-
-            {numRows.map(row => (
-              <div key={row[0]} style={{ display: 'flex', gap: 6 }}>
-                {row.map(k => (
-                  <button
-                    key={k}
-                    onClick={() => pressNum(k)}
-                    style={{
-                      flex: 1, height: 42, borderRadius: 9,
-                      border: '1.5px solid var(--border)', background: 'var(--surface)',
-                      color: 'var(--text-1)', fontSize: 17, fontWeight: 700,
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: "'JetBrains Mono', monospace",
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                      transition: 'transform 0.07s, background 0.08s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)' }}
-                    onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.91)' }}
-                    onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-                  >{k}</button>
-                ))}
-              </div>
-            ))}
-
-            {/* Bottom row: 0 | . | Backspace */}
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button
-                onClick={() => pressNum('0')}
-                style={{
-                  flex: 1, height: 42, borderRadius: 9,
-                  border: '1.5px solid var(--border)', background: 'var(--surface)',
-                  color: 'var(--text-1)', fontSize: 17, fontWeight: 700,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)', transition: 'transform 0.07s, background 0.08s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)' }}
-                onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.91)' }}
-                onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-              >0</button>
-
-              <button
-                onClick={() => pressNum('.')}
-                style={{
-                  flex: 1, height: 42, borderRadius: 9,
-                  border: '1.5px solid var(--border)', background: 'var(--surface)',
-                  color: 'var(--text-1)', fontSize: 18, fontWeight: 700,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)', transition: 'transform 0.07s, background 0.08s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)' }}
-                onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.91)' }}
-                onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-              >.</button>
-
-              <button
-                onClick={() => setActive(v => v.slice(0, -1))}
-                style={{
-                  flex: 1, height: 42, borderRadius: 9,
-                  border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
-                  color: 'var(--red)', fontSize: 13, fontWeight: 700,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)', transition: 'background 0.08s, color 0.08s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--red)'; e.currentTarget.style.color = '#fff' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'var(--red-bg)'; e.currentTarget.style.color = 'var(--red)' }}
-                onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.91)' }}
-                onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-              ><Delete size={14} /></button>
-            </div>
-
-            {/* Clear full */}
-            <button
-              onClick={() => pressNum('C')}
-              style={{
-                width: '100%', height: 36, borderRadius: 9, marginTop: 2,
-                border: '1.5px solid var(--border)', background: 'var(--surface-2)',
-                color: 'var(--text-3)', fontSize: 11, fontWeight: 700,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                transition: 'background 0.08s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-3)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-2)' }}
-            >
-              <RefreshCw size={11} /> Clear
-            </button>
+          <div style={{ width: 188, flexShrink: 0, padding: '20px 14px' }}>
+            <Numpad
+              onKey={handleKey}
+              showDot={false}
+              showClear={true}
+              showBackspace={true}
+              btnHeight={42}
+              fontSize={17}
+              gap={6}
+            />
           </div>
         </div>
 
