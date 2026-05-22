@@ -96,6 +96,11 @@ export default function CashInOutModal({ onClose }) {
         .cat-btn:hover { filter: brightness(0.93); transform: scale(0.98); }
         .cat-btn:active { transform: scale(0.95); }
         .entry-row:hover .del-btn { opacity: 1 !important; }
+        @media (max-width: 640px) {
+          .cio-body { flex-direction: column !important; overflow-y: auto !important; }
+          .cio-left { border-right: none !important; border-bottom: 1px solid var(--border) !important; min-height: 200px; }
+          .cio-right { width: 100% !important; }
+        }
       `}</style>
 
       {/* ════════════════════ STEP 1 : CHOOSE ════════════════════ */}
@@ -244,10 +249,10 @@ export default function CashInOutModal({ onClose }) {
           </div>
 
           {/* ── Body ── */}
-          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          <div className="cio-body" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
             {/* LEFT — description + table */}
-            <div style={{ flex: 1, padding: '16px 16px', display: 'flex', flexDirection: 'column', gap: 12, borderRight: '1px solid var(--border)', overflow: 'hidden' }}>
+            <div className="cio-left" style={{ flex: 1, padding: '16px 16px', display: 'flex', flexDirection: 'column', gap: 12, borderRight: '1px solid var(--border)', overflow: 'hidden' }}>
 
               {/* Type Description row */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -351,7 +356,7 @@ export default function CashInOutModal({ onClose }) {
             </div>
 
             {/* RIGHT — category buttons + amount + numpad */}
-            <div style={{ width: 232, flexShrink: 0, padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="cio-right" style={{ width: 232, flexShrink: 0, padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
               {/* Category preset buttons */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

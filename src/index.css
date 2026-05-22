@@ -3,14 +3,14 @@
 
 /* ─── Design Tokens ──────────────────────────────────────────── */
 :root {
-  /* Layout skeleton */
-  --header-h:   52px;
-  --footer-h:   28px;
-  --sidebar-w:  70px;     /* narrow icon-only nav */
-  --right-w:    324px;
-  --topbar-h:   54px;     /* customer + barcode row */
-  --preview-h:  36px;     /* selected item strip */
-  --fn-h:       92px;     /* bottom feature buttons */
+  /* Layout skeleton — fluid with clamp() */
+  --header-h:   clamp(44px, 5vh, 56px);
+  --footer-h:   clamp(24px, 3vh, 30px);
+  --sidebar-w:  clamp(56px, 5vw, 72px);
+  --right-w:    clamp(240px, 26vw, 360px);
+  --topbar-h:   clamp(46px, 6vh, 58px);
+  --preview-h:  clamp(32px, 4vh, 40px);
+  --fn-h:       clamp(76px, 10vh, 96px);
 
   /* Surfaces */
   --bg:        #f4f3ef;
@@ -213,4 +213,92 @@ button { cursor: pointer; border: none; background: none; }
   align-items: center;
   justify-content: space-between;
   padding: 0 14px;
+}
+
+/* ─── Responsive — 1280px (standard POS screen) ─────────────── */
+@media (max-width: 1280px) {
+  :root {
+    --right-w:  clamp(220px, 24vw, 310px);
+    --sidebar-w: 62px;
+    --fn-h: 82px;
+  }
+  .pos-header { padding: 0 10px; gap: 7px; }
+  .header-hide-md { display: none !important; }
+}
+
+/* ─── Responsive — 1024px (tablet/small touch) ──────────────── */
+@media (max-width: 1024px) {
+  :root {
+    --right-w:   220px;
+    --sidebar-w: 56px;
+    --header-h:  46px;
+    --fn-h:      78px;
+    --topbar-h:  46px;
+    --preview-h: 30px;
+  }
+  .pos-header { padding: 0 8px; gap: 5px; }
+  .header-hide-sm { display: none !important; }
+  .pos-footer { display: none; }
+}
+
+/* ─── Responsive — 768px (small tablet) ─────────────────────── */
+@media (max-width: 768px) {
+  :root {
+    --right-w:   200px;
+    --sidebar-w: 48px;
+    --fn-h:      72px;
+  }
+  .pos-topbar { gap: 5px; padding: 0 6px; }
+  .header-hide-xs { display: none !important; }
+
+  /* Sidebar buttons smaller */
+  .pos-sidebar button { padding: 8px 2px; }
+}
+
+/* ─── Responsive — 640px (compact / stacked) ────────────────── */
+@media (max-width: 640px) {
+  :root {
+    --right-w:   100vw;
+    --sidebar-w: 0px;
+  }
+
+  /* Stack: center takes full width, right slides below */
+  .pos-body        { flex-direction: column; }
+  .pos-sidebar     { display: none; }
+  .pos-center      { border-right: none; }
+  .pos-right       {
+    width: 100%;
+    flex-direction: row;
+    height: 260px;
+    border-top: 2px solid var(--border);
+  }
+  .pos-bill-zone   { flex: 1; overflow-y: auto; border-right: 1px solid var(--border); }
+  .pos-numpad-zone { width: 200px; flex-shrink: 0; border-top: none; }
+}
+
+/* ─── Responsive — popup modals ─────────────────────────────── */
+@media (max-width: 900px) {
+  /* Allow modals to use more viewport */
+  [style*="width: 820"], [style*="width: 860"],
+  [style*="width: 780"], [style*="width: 760"] {
+    max-width: 98vw !important;
+  }
+}
+
+/* ─── Touch: larger tap targets on small screens ────────────── */
+@media (max-width: 768px) and (pointer: coarse) {
+  button { min-height: 36px; }
+  .pos-fn-grid button { width: 64px !important; height: 64px !important; }
+}
+
+/* ─── High-DPI / 4K screens ─────────────────────────────────── */
+@media (min-width: 1920px) {
+  :root {
+    --right-w:   380px;
+    --sidebar-w: 80px;
+    --header-h:  58px;
+    --fn-h:      100px;
+    --topbar-h:  60px;
+  }
+  body { font-size: 14px; }
 }

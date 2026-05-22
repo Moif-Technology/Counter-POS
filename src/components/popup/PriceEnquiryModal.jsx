@@ -125,6 +125,11 @@ export default function PriceEnquiryModal({ onClose }) {
       <style>{`
         @keyframes pe-fade  { from{opacity:0} to{opacity:1} }
         @keyframes pe-slide { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @media (max-width: 640px) {
+          .pe-body { flex-direction: column !important; }
+          .pe-left { border-right: none !important; border-bottom: 1px solid var(--border) !important; min-height: 200px; }
+          .pe-right { width: 100% !important; }
+        }
       `}</style>
 
       <div style={{
@@ -167,10 +172,10 @@ export default function PriceEnquiryModal({ onClose }) {
         </div>
 
         {/* ── Body: left table | right panel ── */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div className="pe-body" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
           {/* ── LEFT: table ── */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '12px 6px 12px 12px' }}>
+          <div className="pe-left" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '12px 6px 12px 12px' }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', border: '1px solid rgba(0,0,0,0.18)', borderRadius: 10, overflow: 'hidden' }}>
 
               {/* Heading */}
@@ -205,7 +210,7 @@ export default function PriceEnquiryModal({ onClose }) {
           </div>
 
           {/* ── RIGHT: stats + barcode + numpad ── */}
-          <div style={{ width: 252, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', padding: '12px', gap: 10, flexShrink: 0 }}>
+          <div className="pe-right" style={{ width: 252, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', padding: '12px', gap: 10, flexShrink: 0 }}>
 
             {/* Stat cards 2×2 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>

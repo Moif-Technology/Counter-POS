@@ -54,6 +54,12 @@ export default function GroupModal({ onClose, onSelect }) {
       <style>{`
         @keyframes gm-fade  { from { opacity:0 } to { opacity:1 } }
         @keyframes gm-slide { from { opacity:0; transform:scale(0.96) translateY(10px) } to { opacity:1; transform:scale(1) translateY(0) } }
+        @media (max-width: 640px) {
+          .gm-body { flex-direction: column !important; }
+          .gm-left { border-right: none !important; border-bottom: 1px solid var(--border) !important; max-height: 240px; }
+          .gm-right { width: 100% !important; padding: 10px 12px !important; }
+          .gm-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
       `}</style>
 
       <div style={{
@@ -99,10 +105,10 @@ export default function GroupModal({ onClose, onSelect }) {
         </div>
 
         {/* ── Body ── */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div className="gm-body" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
           {/* LEFT — group grid */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden' }}>
+          <div className="gm-left" style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden' }}>
 
             {/* Search */}
             <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
@@ -127,7 +133,7 @@ export default function GroupModal({ onClose, onSelect }) {
 
             {/* Grid */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              <div className="gm-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                 {filtered.map(g => {
                   const active = selected === g
                   return (
@@ -156,7 +162,7 @@ export default function GroupModal({ onClose, onSelect }) {
           </div>
 
           {/* RIGHT — unit price + numpad */}
-          <div style={{ width: 210, flexShrink: 0, display: 'flex', flexDirection: 'column', padding: '10px 12px 0' }}>
+          <div className="gm-right" style={{ width: 210, flexShrink: 0, display: 'flex', flexDirection: 'column', padding: '10px 12px 0' }}>
 
             {/* Unit price display */}
             <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }}>

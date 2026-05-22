@@ -96,6 +96,11 @@ export default function RecallHoldModal({ onClose, onRecall }) {
         @keyframes rh-fade  { from { opacity:0 } to { opacity:1 } }
         @keyframes rh-slide { from { opacity:0; transform:scale(0.96) translateY(10px) } to { opacity:1; transform:scale(1) translateY(0) } }
         .rh-hold-row:hover { background: var(--surface-2) !important; }
+        @media (max-width: 640px) {
+          .rh-body { flex-direction: column !important; }
+          .rh-left { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--border) !important; max-height: 200px; }
+          .rh-right { width: 100% !important; }
+        }
       `}</style>
 
       <div style={{
@@ -141,10 +146,10 @@ export default function RecallHoldModal({ onClose, onRecall }) {
         </div>
 
         {/* ── Body — two panels ── */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+        <div className="rh-body" style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
 
           {/* LEFT — hold bills list */}
-          <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)' }}>
+          <div className="rh-left" style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)' }}>
 
             {/* Left table head */}
             <div style={{
@@ -189,7 +194,7 @@ export default function RecallHoldModal({ onClose, onRecall }) {
           </div>
 
           {/* RIGHT — selected bill items */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+          <div className="rh-right" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
 
             {/* Right table head */}
             <div style={{

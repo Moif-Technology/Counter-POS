@@ -89,6 +89,11 @@ export default function DiscountModal({ onClose }) {
       <style>{`
         @keyframes dc-fade  { from{opacity:0} to{opacity:1} }
         @keyframes dc-slide { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @media (max-width: 600px) {
+          .dc-body { flex-direction: column !important; }
+          .dc-left { border-right: none !important; border-bottom: 1px solid var(--border) !important; padding: 16px !important; }
+          .dc-right { width: 100% !important; padding: 12px 16px !important; }
+        }
       `}</style>
 
       <div style={{
@@ -135,10 +140,10 @@ export default function DiscountModal({ onClose }) {
         </div>
 
         {/* ── Body ── */}
-        <div style={{ display: 'flex', overflow: 'hidden' }}>
+        <div className="dc-body" style={{ display: 'flex', overflow: 'hidden' }}>
 
           {/* LEFT — info fields */}
-          <div style={{
+          <div className="dc-left" style={{
             flex: 1, padding: '24px 24px',
             display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 18,
             borderRight: '1px solid var(--border)',
@@ -200,7 +205,7 @@ export default function DiscountModal({ onClose }) {
           </div>
 
           {/* RIGHT — numpad with presets */}
-          <div style={{ width: 260, flexShrink: 0, padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="dc-right" style={{ width: 260, flexShrink: 0, padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
 
             {/* Rows 7-9 / 4-6 / 1-3 with preset % buttons */}
             {[

@@ -10,6 +10,7 @@ import PriceChangeModal from '../popup/PriceChangeModal'
 import QtyChangeModal from '../popup/QtyChangeModal'
 import PacketScanModal from '../popup/PacketScanModal'
 import CashInOutModal from '../popup/CashInOutModal'
+import ReportsModal from '../popup/ReportsModal'
 import CommentsModal from '../popup/CommentsModal'
 import CurrencyModal from '../popup/CurrencyModal'
 import ReceiptModal from '../popup/ReceiptModal'
@@ -23,6 +24,7 @@ import {
   Lock, Layers, Save, Hash, Plus, Crown, SlidersHorizontal,
 } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
+// import { api } from '../../lib/api'
 
 /* ─── Side nav button data ───────────────────────────────────── */
 const SIDE_BUTTONS = [
@@ -67,9 +69,56 @@ const FEATURE_BUTTONS = [
 export function SideNav() {
   const navigate              = useNavigate()
   const clearAll              = usePosStore(s => s.clearAll)
+  const repeatLastItem        = usePosStore(s => s.repeatLastItem)
+  const pressSubTotal         = usePosStore(s => s.pressSubTotal)
+  const toggleReturn          = usePosStore(s => s.toggleReturn)
   const [recallOpen,  setRecallOpen]  = useState(false)
   const [reprintOpen, setReprintOpen] = useState(false)
   const [activeLabel, setActiveLabel] = useState('POS')
+  const [holdLoading, setHoldLoading] = useState(false)
+
+  async function doHoldBill() {
+    const {
+      cartItems,
+      accessToken,
+      counterNo,
+      paymentMode,
+      subTotal,
+      discountAmt,
+      taxableAmt,
+      taxAmt,
+      roundOff,
+      netAmount,
+      customerId,
+      recalledHoldSalesId,
+      clearAll: clear,
+    } = usePosStore.getState()
+
+    if (!cartItems.length || holdLoading) return
+
+    setHoldLoading(true)
+    try {
+      await api.counterPos.holdBill({
+        cartItems,
+        paymentMode,
+        counterNo,
+        subTotal,
+        discountAmt,
+        taxableAmt,
+        taxAmt,
+        roundOff,
+        netAmount,
+        customerId,
+        recalledHoldSalesId: recalledHoldSalesId ?? null,
+      }, accessToken)
+      usePosStore.setState({ recalledHoldSalesId: null })
+      clear()
+    } catch (e) {
+      alert(e.message)
+    } finally {
+      setHoldLoading(false)
+    }
+  }
 
   return (
     <>
@@ -89,6 +138,15 @@ export function SideNav() {
             const { selectedRowKey, removeItem } = usePosStore.getState()
             if (selectedRowKey) removeItem(selectedRowKey)
             setActiveLabel(btn.label)
+            return
+          }
+          if (btn.label === 'Repeat')    { repeatLastItem(); setActiveLabel(btn.label); return }
+          if (btn.label === 'Sub Total') { pressSubTotal();  setActiveLabel(btn.label); return }
+          if (btn.label === 'Hold Bill') { doHoldBill(); setActiveLabel(btn.label); return }
+          if (btn.label === 'Return') {
+            toggleReturn()
+            const newQty = parseFloat(usePosStore.getState().qtyBuffer)
+            setActiveLabel(newQty < 0 ? 'Return' : 'POS')
             return
           }
           if (btn.label === 'Recall')  { setRecallOpen(true);  setActiveLabel(btn.label); return }
@@ -116,7 +174,7 @@ export function SideNav() {
               background: isActive ? activeBg : 'transparent',
               color: isActive ? activeColor : isDanger ? 'var(--red)' : 'var(--text-2)',
               fontSize: 9, fontWeight: isActive ? 800 : 600, lineHeight: 1.2,
-              textAlign: 'center', cursor: 'pointer',
+              textAlign: 'center', cursor: btn.label === 'Hold Bill' && holdLoading ? 'wait' : 'pointer',
               transition: 'all 0.15s ease',
               userSelect: 'none',
               WebkitTapHighlightColor: 'transparent',
@@ -143,7 +201,7 @@ export function SideNav() {
           >
             <Icon size={17} style={{ flexShrink: 0 }} />
             <span style={{ fontSize: 8.5, letterSpacing: 0.2, maxWidth: 56, wordBreak: 'break-word' }}>
-              {btn.label}
+              {btn.label === 'Hold Bill' && holdLoading ? 'Holding' : btn.label}
             </span>
           </button>
         )
@@ -197,12 +255,24 @@ export function FeatureGrid() {
   const [qtyChangeOpen,   setQtyChangeOpen]   = useState(false)
   const [packetScanOpen,  setPacketScanOpen]  = useState(false)
   const [cashInOutOpen,   setCashInOutOpen]   = useState(false)
+  const [reportsOpen,     setReportsOpen]     = useState(false)
   const [commentsOpen,    setCommentsOpen]    = useState(false)
   const [currencyOpen,    setCurrencyOpen]    = useState(false)
   const [receiptOpen,     setReceiptOpen]     = useState(false)
   const [salesManOpen,    setSalesManOpen]    = useState(false)
   const [discountOpen,    setDiscountOpen]    = useState(false)
+  const addGroupItem = usePosStore(s => s.addGroupItem)
+  const qtyBuffer = usePosStore(s => s.qtyBuffer)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
+
+  function handleGroupSelect({ group, unitPrice, mode }) {
+    if (mode === 'price_entry') {
+      const qty = parseFloat(qtyBuffer) > 0 ? parseFloat(qtyBuffer) : 1
+      addGroupItem(group, unitPrice, qty)
+    } else if (mode === 'product_lookup') {
+      setLookupOpen(true)
+    }
+  }
 
   return (
     <>
@@ -221,6 +291,7 @@ export function FeatureGrid() {
         const isQtyChange   = btn.label === 'Qty Change'
         const isPacketScan  = btn.label === 'Packet Scan'
         const isCashInOut   = btn.label === 'Cash In/Out'
+        const isReport      = btn.label === 'Report'
         const isComments    = btn.label === 'Comments'
         const isCurrency    = btn.label === 'Currency'
         const isReceipt     = btn.label === 'Receipt'
@@ -235,6 +306,7 @@ export function FeatureGrid() {
           isQtyChange   ? () => { if (selectedRowKey) setQtyChangeOpen(true) } :
           isPacketScan  ? () => setPacketScanOpen(true) :
           isCashInOut   ? () => setCashInOutOpen(true) :
+          isReport      ? () => setReportsOpen(true) :
           isComments    ? () => setCommentsOpen(true) :
           isCurrency    ? () => setCurrencyOpen(true) :
           isReceipt     ? () => setReceiptOpen(true) :
@@ -303,7 +375,7 @@ export function FeatureGrid() {
     {groupOpen && (
       <GroupModal
         onClose={() => setGroupOpen(false)}
-        onSelect={({ group }) => { setGroupOpen(false) }}
+        onSelect={(result) => { setGroupOpen(false); handleGroupSelect(result) }}
       />
     )}
     {lookupOpen && (
@@ -332,6 +404,12 @@ export function FeatureGrid() {
     )}
     {cashInOutOpen && (
       <CashInOutModal onClose={() => setCashInOutOpen(false)} />
+    )}
+    {reportsOpen && (
+      <ReportsModal
+        onClose={() => setReportsOpen(false)}
+        onSelect={(_key) => {}}
+      />
     )}
     {commentsOpen && (
       <CommentsModal onClose={() => setCommentsOpen(false)} onSave={text => console.log('Comment:', text)} />
