@@ -14,6 +14,8 @@ import BillSummary from '../components/pos/BillSummary'
 import ItemPreview from '../components/pos/ItemPreview'
 import { SideNav, FeatureGrid } from '../components/pos/FunctionButtons'
 import CustomerSearch from '../components/pos/CustomerSearch'
+import { focusBarcodeScan, shouldSkipBarcodeRefocus } from '../lib/posFocus'
+import { setGvTax } from '../lib/gvtax'
 
 /* ── Tiny header chip ─────────────────────────────────────────── */
 function HeaderChip({ icon: Icon, label, dropdown }) {
@@ -85,13 +87,24 @@ export default function POSPage() {
     try {
       const { billNoDisplay } = await api.counterPos.nextBillNo(accessToken)
       setBillNo(billNoDisplay)
-    } catch {}
+    } catch {
+      // ignore: bill number is best-effort (POS can still operate)
+    }
   }, [setBillNo])
 
   useEffect(() => {
     if (!cashier) { navigate('/'); return }
     const t = setInterval(() => setNow(new Date()), 1000)
     fetchNextBillNo()
+    ;(async () => {
+      try {
+        const { accessToken } = usePosStore.getState()
+        const data = await api.appParameters.gvtax(accessToken)
+        setGvTax(data?.gvtax ?? 5)
+      } catch {
+        setGvTax(5)
+      }
+    })()
     return () => clearInterval(t)
   }, [cashier, navigate, fetchNextBillNo])
 
@@ -104,8 +117,8 @@ export default function POSPage() {
     setScanning(true)
     try {
       const { product } = await api.counterPos.productSearch(term, accessToken)
-      const qty    = parseFloat(qtyBuffer) || 1
-      const vatPer = product.vatPer ?? 0
+      const { parseScanQty, resetAfterLineScan } = usePosStore.getState()
+      const qty = parseScanQty(qtyBuffer)
       addItem({
         productId:   product.productId,
         barcode:     product.barcode,
@@ -114,15 +127,14 @@ export default function POSPage() {
         qty,
         unitPrice: product.unitPrice,
         discount:  0,
-        vatPer,
-        vatAmt:    qty * product.unitPrice * (vatPer / 100),
+        vatPer:    product.vatPer ?? 0,
       })
-      setBarcodeBuffer('')
-      setQtyBuffer('1')
+      resetAfterLineScan()
     } catch (err) {
       setScanError(err.message ?? 'Product not found')
     } finally {
       setScanning(false)
+      focusBarcodeScan(30)
     }
   }, [addItem, scanning, setBarcodeBuffer, setQtyBuffer])
 
@@ -132,26 +144,52 @@ export default function POSPage() {
       setSaveMsg({ type: 'error', text: 'Cart is empty' })
       return
     }
+
+    const payResult = state.applyPaymentForSettlement()
+    if (!payResult.ok) {
+      setSaveMsg({ type: 'error', text: payResult.error })
+      focusBarcodeScan(30)
+      return
+    }
+
     setSaving(true)
     setSaveMsg(null)
     try {
+      const fresh = usePosStore.getState()
+      const hasSale   = fresh.cartItems.some(i => Number(i.qty) > 0)
+      const hasReturn = fresh.cartItems.some(i => Number(i.qty) < 0)
+      const isReturn = fresh.returnMode && !hasSale && hasReturn
       const result = await api.counterPos.saveBill({
-        cartItems:    state.cartItems,
-        paymentMode:  state.paymentMode,
-        counterNo:    state.counterNo,
-        subTotal:     state.subTotal,
-        discountAmt:  state.discountAmt,
-        taxableAmt:   state.taxableAmt,
-        taxAmt:       state.taxAmt,
-        roundOff:     state.roundOff,
-        netAmount:    state.netAmount,
-        paidAmount:   state.paidAmount,
-        balanceAmount: state.balanceAmount,
-        customerId:   state.customerId ?? null,
-        recalledHoldSalesId: state.recalledHoldSalesId ?? null,
-      }, state.accessToken)
+        cartItems:    fresh.cartItems,
+        paymentMode:  fresh.paymentMode,
+        paymentSplits: fresh.paymentMode === 'MULTI' ? (fresh.paymentSplits ?? []) : undefined,
+        counterNo:    fresh.counterNo,
+        subTotal:     fresh.subTotal,
+        discountAmt:  fresh.discountAmt,
+        taxableAmt:   fresh.taxableAmt,
+        taxAmt:       fresh.taxAmt,
+        roundOff:     fresh.roundOff,
+        netAmount:    fresh.netAmount,
+        paidAmount:   fresh.paidAmount,
+        balanceAmount: fresh.balanceAmount,
+        customerId:   fresh.customerId ?? null,
+        remarks:      fresh.billComment?.trim() || null,
+        isReturn,
+        recalledHoldSalesId: fresh.recalledHoldSalesId ?? null,
+      }, fresh.accessToken)
 
-      setSaveMsg({ type: 'success', text: `Bill ${result.billNoDisplay} saved!` })
+      if (result?.isMixed) {
+        setSaveMsg({
+          type: 'success',
+          text: `Saved: ${result.sale?.billNoDisplay} (Sale) + ${result.return?.billNoDisplay} (Return)`,
+        })
+      } else {
+        const savedLabel = result.billNoDisplay ?? `B-${result.billNo ?? result.salesId}`
+        setSaveMsg({
+          type: 'success',
+          text: (result?.isReturn ? `Return ${savedLabel} saved!` : `Bill ${savedLabel} saved!`),
+        })
+      }
       usePosStore.setState({ recalledHoldSalesId: null })
       clearAll()
       await fetchNextBillNo()
@@ -163,14 +201,20 @@ export default function POSPage() {
       setSaveMsg({ type: 'error', text: err.message ?? 'Save failed' })
     } finally {
       setSaving(false)
+      focusBarcodeScan(80)
     }
   }, [clearAll, fetchNextBillNo])
+
+  const handleMainScreenPointerDown = useCallback((e) => {
+    if (shouldSkipBarcodeRefocus(e.target)) return
+    focusBarcodeScan()
+  }, [])
 
   const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
   const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
   return (
-    <div className="pos-root">
+    <div className="pos-root" onPointerDown={handleMainScreenPointerDown}>
 
       {/* ── HEADER ─────────────────────────────────── */}
       <header className="pos-header">

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Archive, RotateCcw, Trash2, AlertCircle } from 'lucide-react'
+import { X, Archive, RotateCcw, Trash2, AlertCircle, MessageSquare } from 'lucide-react'
 import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
 
@@ -35,11 +35,18 @@ function getSalesMan(hold) {
   return hold.staff_name || hold.sales_man || hold.staff_code || hold.staff_id || ''
 }
 
+function getCustomerLabel(hold) {
+  return hold.customer_name || hold.customer_code || (hold.customer_id ? `#${hold.customer_id}` : 'Walk-in')
+}
+
+function getHoldComment(hold) {
+  return String(hold?.remarks ?? '').trim()
+}
+
 export default function RecallHoldModal({ onClose, onRecall }) {
   const [holds, setHolds] = useState([])
   const [selectedIdx, setSelectedIdx] = useState(0)
   const [holdNoInput, setHoldNoInput] = useState('')
-  const [comments, setComments] = useState('')
   const [itemsBySalesId, setItemsBySalesId] = useState({})
   const [loading, setLoading] = useState(true)
   const [itemsLoading, setItemsLoading] = useState(false)
@@ -53,6 +60,7 @@ export default function RecallHoldModal({ onClose, onRecall }) {
 
   const selected = holds[selectedIdx] ?? null
   const selectedItems = selected ? itemsBySalesId[selected.sales_id] || [] : []
+  const selectedComment = getHoldComment(selected)
 
   useEffect(() => {
     holdInputRef.current?.focus()
@@ -184,7 +192,7 @@ export default function RecallHoldModal({ onClose, onRecall }) {
 
   return (
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
@@ -201,7 +209,7 @@ export default function RecallHoldModal({ onClose, onRecall }) {
       `}</style>
 
       <div style={{
-        width: 820,
+        width: 900,
         maxWidth: '96vw',
         height: 620,
         maxHeight: '88vh',
@@ -264,13 +272,19 @@ export default function RecallHoldModal({ onClose, onRecall }) {
         )}
 
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)' }}>
+          <div style={{ width: 440, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)' }}>
             <div style={{
               display: 'flex', alignItems: 'center',
               padding: '0 12px', height: 34, flexShrink: 0,
               background: 'var(--brand-bg)', borderBottom: '1.5px solid var(--brand-border)',
             }}>
-              {[{ label: 'Hold No', w: 70 }, { label: 'Bill Time', flex: true }, { label: 'Sales Man', w: 90 }].map(col => (
+              {[
+                { label: 'Hold No',   w: 52 },
+                { label: 'Bill Time', w: 100 },
+                { label: 'Sales Man', w: 72 },
+                { label: 'Customer',  w: 88 },
+                { label: 'Comments',  flex: true },
+              ].map(col => (
                 <div key={col.label} style={{
                   width: col.w, flex: col.flex ? 1 : undefined, flexShrink: 0,
                   fontSize: 10, fontWeight: 700, color: 'var(--brand)',
@@ -290,11 +304,13 @@ export default function RecallHoldModal({ onClose, onRecall }) {
                 </div>
               ) : holds.map((h, i) => {
                 const active = i === selectedIdx
+                const comment = getHoldComment(h)
                 return (
                   <div
                     key={h.sales_id}
                     className="rh-hold-row"
                     onClick={() => setSelectedIdx(i)}
+                    title={comment || undefined}
                     style={{
                       display: 'flex', alignItems: 'center',
                       padding: '0 12px', height: 34,
@@ -304,14 +320,44 @@ export default function RecallHoldModal({ onClose, onRecall }) {
                       borderLeft: active ? '3px solid var(--brand)' : '3px solid transparent',
                     }}
                   >
-                    <div style={{ width: 70, flexShrink: 0, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--brand)' : 'var(--text-1)' }}>
+                    <div style={{ width: 52, flexShrink: 0, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--brand)' : 'var(--text-1)' }}>
                       {h.hold_no}
                     </div>
-                    <div style={{ flex: 1, fontSize: 11, color: active ? 'var(--brand)' : 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 6 }}>
+                    <div style={{ width: 100, flexShrink: 0, fontSize: 11, color: active ? 'var(--brand)' : 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 6 }}>
                       {fmtDateTime(h.bill_date)}
                     </div>
-                    <div style={{ width: 90, flexShrink: 0, fontSize: 10.5, color: active ? 'var(--brand)' : 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ width: 72, flexShrink: 0, fontSize: 10.5, color: active ? 'var(--brand)' : 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 6 }}>
                       {getSalesMan(h)}
+                    </div>
+                    <div
+                      title={getCustomerLabel(h)}
+                      style={{
+                        width: 88, flexShrink: 0,
+                        fontSize: 11, fontWeight: h.customer_name ? 600 : 400,
+                        color: active
+                          ? 'var(--brand)'
+                          : h.customer_name ? 'var(--text-2)' : 'var(--text-4)',
+                        fontStyle: h.customer_name ? 'normal' : 'italic',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        paddingRight: 6,
+                      }}
+                    >
+                      {getCustomerLabel(h)}
+                    </div>
+                    <div style={{
+                      flex: 1, minWidth: 0,
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      fontSize: 10.5,
+                      color: comment ? (active ? 'var(--brand)' : 'var(--text-2)') : 'var(--text-4)',
+                      fontStyle: comment ? 'normal' : 'italic',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {comment ? (
+                        <>
+                          <MessageSquare size={11} style={{ flexShrink: 0, opacity: 0.7 }} />
+                          <span>{comment}</span>
+                        </>
+                      ) : '—'}
                     </div>
                   </div>
                 )
@@ -373,20 +419,20 @@ export default function RecallHoldModal({ onClose, onRecall }) {
           padding: '10px 16px', borderTop: '1.5px solid var(--border)',
           background: 'var(--surface-2)', flexShrink: 0, flexWrap: 'wrap',
         }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 140 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 180 }}>
             <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Comments</span>
             <input
-              value={comments}
-              onChange={e => setComments(e.target.value)}
-              placeholder="Optional note..."
+              readOnly
+              value={selectedComment}
+              placeholder={selected ? 'No comment on this hold' : 'Select a hold bill'}
+              title={selectedComment || undefined}
               style={{
                 height: 32, borderRadius: 8,
                 border: '1.5px solid var(--border)', background: 'var(--surface)',
-                padding: '0 10px', fontSize: 12, color: 'var(--text-1)',
+                padding: '0 10px', fontSize: 12, color: selectedComment ? 'var(--text-1)' : 'var(--text-4)',
                 fontFamily: 'inherit', outline: 'none',
+                fontStyle: selectedComment ? 'normal' : 'italic',
               }}
-              onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
-              onBlur={e => { e.target.style.borderColor = 'var(--border)' }}
             />
           </div>
 

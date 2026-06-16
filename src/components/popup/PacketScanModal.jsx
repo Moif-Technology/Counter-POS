@@ -45,7 +45,7 @@ export default function PacketScanModal({ onClose }) {
 
   return (
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,

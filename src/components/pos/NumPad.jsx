@@ -1,5 +1,10 @@
 import { Banknote, CreditCard, UserCheck, Layers } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
+import {
+  applyPosNumpadKey,
+  togglePosQtyMode,
+  usePosNumpadKeyboard,
+} from '../../lib/posNumpadKeys'
 
 const NUMBER_ROWS = [
   ['7', '8', '9'],
@@ -25,40 +30,16 @@ const NUM_BTN = {
 }
 
 export default function NumPad({ onEnter }) {
-  const inputMode      = usePosStore(s => s.inputMode)
-  const paymentMode    = usePosStore(s => s.paymentMode)
-  const netAmount      = usePosStore(s => s.netAmount)
-  const setPaymentMode = usePosStore(s => s.setPaymentMode)
-  const setPayment     = usePosStore(s => s.setPayment)
+  const inputMode        = usePosStore(s => s.inputMode)
+  const paymentMode      = usePosStore(s => s.paymentMode)
+  const setPaymentMode   = usePosStore(s => s.setPaymentMode)
+  usePosNumpadKeyboard(onEnter)
 
-  const pressNum = (key) => {
-    const state = usePosStore.getState()
-    if (state.inputMode === 'qty') {
-      const p = state.qtyBuffer
-      let next
-      if (key === '00') next = p === '0' ? '0' : p + '00'
-      else if (key === '.' && p.includes('.')) next = p
-      else if (p === '1' && key !== '.') next = key
-      else next = p + key
-      usePosStore.setState({ qtyBuffer: next })
-    } else {
-      usePosStore.setState({ barcodeBuffer: state.barcodeBuffer + key })
-    }
-  }
-
-  const pressQty = () => {
-    const state = usePosStore.getState()
-    const val = state.barcodeBuffer.trim()
-    if (val && !isNaN(Number(val)) && Number(val) > 0) {
-      usePosStore.setState({ qtyBuffer: val, barcodeBuffer: '', inputMode: 'barcode' })
-    } else {
-      usePosStore.setState({ inputMode: 'qty' })
-    }
-  }
+  const pressNum = (key) => applyPosNumpadKey(key)
 
   const selectPayment = (mode) => {
     setPaymentMode(mode.key)
-    if (mode.key === 'CASH' || mode.key === 'CARD') setPayment(netAmount)
+    if (mode.key === 'CASH' || mode.key === 'CARD') usePosStore.getState().resetBillPaymentDefaults()
   }
 
   /* Shared row height so 4 rows fill evenly */
@@ -132,7 +113,7 @@ export default function NumPad({ onEnter }) {
 
       {/* QTY button — transfers barcode buffer to qty */}
       <button
-        onClick={pressQty}
+        onClick={togglePosQtyMode}
         style={{
           width: '100%', height: 38, marginTop: 5,
           borderRadius: 'var(--r-md)',

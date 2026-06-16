@@ -1,16 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Tag, Delete } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
+import {
+  calcLineTotals,
+  findCartItemByKey,
+  resolveUnitPriceGross,
+  resolveUnitPricesFromInput,
+  unitPricePatchFromInput,
+} from '../../lib/cartLine'
+import { fmtMoney } from '../../lib/currencyFormat'
+import { getGvTax } from '../../lib/gvtax'
 
-const fmt4 = n => Number(n).toFixed(4)
-const fmt2 = n => Number(n).toFixed(2)
 const NUM_KEYS = [['7','8','9'],['4','5','6'],['1','2','3']]
 
 export default function PriceChangeModal({ onClose }) {
-  const cartItems = usePosStore(s => s.cartItems)
+  const cartItems      = usePosStore(s => s.cartItems)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
-  const item = cartItems.find(i => i.barcode === selectedRowKey)
+  const updateLine     = usePosStore(s => s.updateLine)
+  const item           = findCartItemByKey(cartItems, selectedRowKey)
 
+  const [editMode, setEditMode] = useState('net')
   const [newPrice, setNewPrice] = useState('')
   const overlayRef = useRef()
 
@@ -22,11 +31,27 @@ export default function PriceChangeModal({ onClose }) {
 
   if (!item) return null
 
-  const currentPrice  = item.unitPrice || 0
-  const vatPer        = item.vatPer || 0
-  const parsedNew     = parseFloat(newPrice) || 0
-  const vatAmount     = parsedNew * (vatPer / 100)
-  const priceWithVat  = parsedNew + vatAmount
+  const vatPer = Number(item.vatPer) || getGvTax()
+  const parsedInput = parseFloat(newPrice) || 0
+
+  const currentGross = resolveUnitPriceGross(item)
+  const currentNet = vatPer > 0
+    ? fmtMoney(currentGross / (1 + vatPer / 100))
+    : fmtMoney(currentGross)
+  const currentLine = calcLineTotals(item)
+
+  const preview = parsedInput > 0
+    ? resolveUnitPricesFromInput(editMode, parsedInput, vatPer)
+    : null
+
+  const previewLine = preview
+    ? calcLineTotals({
+      ...item,
+      unitPrice: preview.unitPrice,
+      unitPriceGross: preview.unitPriceGross,
+      vatPer,
+    })
+    : null
 
   const pressKey = k => {
     if (k === 'C')  { setNewPrice(''); return }
@@ -36,18 +61,19 @@ export default function PriceChangeModal({ onClose }) {
   }
 
   const handleDone = () => {
-    if (!parsedNew || parsedNew <= 0) return
-    const state    = usePosStore.getState()
-    const newItems = state.cartItems.map(i => {
-      if (i.barcode !== item.barcode) return i
-      const qty      = i.qty
-      const subTotal = qty * parsedNew
-      const vat      = subTotal * (vatPer / 100)
-      return { ...i, unitPrice: parsedNew, lineTotal: +(subTotal + vat).toFixed(3), vatAmt: +vat.toFixed(3) }
-    })
-    usePosStore.setState({ cartItems: newItems })
-    state.recalc(newItems)
+    const patch = unitPricePatchFromInput(editMode, parsedInput, vatPer)
+    if (!patch) return
+    updateLine(selectedRowKey, patch)
     onClose()
+  }
+
+  const switchMode = mode => {
+    if (mode === editMode) return
+    if (parsedInput > 0) {
+      const cur = resolveUnitPricesFromInput(editMode, parsedInput, vatPer)
+      setNewPrice(mode === 'net' ? String(cur.unitNet) : fmtMoney(cur.unitPriceGross))
+    }
+    setEditMode(mode)
   }
 
   const numBtn = (label, onClick, style = {}) => (
@@ -102,9 +128,25 @@ export default function PriceChangeModal({ onClose }) {
     </div>
   )
 
+  const modeBtn = (mode, label) => (
+    <button
+      type="button"
+      onClick={() => switchMode(mode)}
+      style={{
+        flex: 1, height: 32, borderRadius: 7, border: 'none', cursor: 'pointer',
+        fontSize: 10, fontWeight: 800, letterSpacing: 0.3, textTransform: 'uppercase',
+        background: editMode === mode ? 'var(--brand)' : 'var(--surface-2)',
+        color: editMode === mode ? '#fff' : 'var(--text-3)',
+        transition: 'all 0.12s',
+      }}
+    >
+      {label}
+    </button>
+  )
+
   return (
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
@@ -127,7 +169,6 @@ export default function PriceChangeModal({ onClose }) {
         animation: 'pc-slide 0.18s cubic-bezier(.22,.68,0,1.2)',
       }}>
 
-        {/* ── Header ── */}
         <div style={{
           background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
           padding: '12px 16px',
@@ -161,22 +202,25 @@ export default function PriceChangeModal({ onClose }) {
           </button>
         </div>
 
-        {/* ── Body ── */}
         <div style={{ display: 'flex', overflow: 'hidden' }}>
 
-          {/* Left: fields */}
           <div style={{ flex: 1, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 2, borderRight: '1px solid var(--border)' }}>
 
             {fieldRow('BarCode', item.barcode)}
-
-            {/* Divider */}
             <div style={{ height: 1, background: 'var(--border)', margin: '6px 0' }} />
+            {fieldRow('Current Price', currentNet)}
+            {fieldRow('Current With VAT', fmtMoney(currentGross))}
+            {fieldRow(`Line Total (×${item.qty})`, fmtMoney(currentLine.lineTotal))}
 
-            {fieldRow('Current Price', fmt4(currentPrice))}
+            <div style={{ display: 'flex', gap: 6, margin: '8px 0 4px 122px' }}>
+              {modeBtn('net', 'Unit Price')}
+              {modeBtn('gross', 'Price With VAT')}
+            </div>
 
-            {/* New Price — active editable */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 0' }}>
-              <span style={{ width: 110, flexShrink: 0, textAlign: 'right', fontSize: 11, fontWeight: 700, color: 'var(--text-2)' }}>New Price</span>
+              <span style={{ width: 110, flexShrink: 0, textAlign: 'right', fontSize: 11, fontWeight: 700, color: 'var(--text-2)' }}>
+                {editMode === 'gross' ? 'New Price (VAT)' : 'New Price'}
+              </span>
               <div style={{
                 flex: 1, height: 34, borderRadius: 7,
                 border: '1.5px solid var(--brand)',
@@ -192,41 +236,45 @@ export default function PriceChangeModal({ onClose }) {
 
             <div style={{ height: 1, background: 'var(--border)', margin: '6px 0' }} />
 
-            {/* VAT % and VAT Amount side by side */}
-            <div style={{ display: 'flex', gap: 10, padding: '6px 0', marginLeft: 122 }}>
-              {[
-                { label: 'VAT %',      value: vatPer },
-                { label: 'VAT Amount', value: fmt2(vatAmount) },
-              ].map(f => (
-                <div key={f.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.4 }}>{f.label}</span>
-                  <div style={{
-                    height: 34, borderRadius: 7,
-                    border: '1px solid var(--border)', background: 'var(--surface-2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 13, fontWeight: 700, color: 'var(--text-1)',
-                    fontFamily: "'JetBrains Mono', monospace",
-                  }}>{f.value}</div>
+            {preview ? (
+              <>
+                <div style={{ display: 'flex', gap: 10, padding: '6px 0', marginLeft: 122 }}>
+                  {[
+                    { label: 'VAT %',      value: vatPer },
+                    { label: 'VAT Amount', value: fmtMoney(preview.unitVat) },
+                  ].map(f => (
+                    <div key={f.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.4 }}>{f.label}</span>
+                      <div style={{
+                        height: 34, borderRadius: 7,
+                        border: '1px solid var(--border)', background: 'var(--surface-2)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 13, fontWeight: 700, color: 'var(--text-1)',
+                        fontFamily: "'JetBrains Mono', monospace",
+                      }}>{f.value}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            {/* Price with VAT */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 0' }}>
-              <span style={{ width: 110, flexShrink: 0, textAlign: 'right', fontSize: 11, fontWeight: 700, color: 'var(--brand)' }}>Price With VAT</span>
-              <div style={{
-                flex: 1, height: 36, borderRadius: 7,
-                border: '1.5px solid var(--brand-border)', background: 'var(--brand-bg)',
-                display: 'flex', alignItems: 'center', padding: '0 12px',
-                fontSize: 16, fontWeight: 900,
-                color: 'var(--brand)',
-                fontFamily: "'JetBrains Mono', monospace",
-              }}>{fmt2(priceWithVat)}</div>
-            </div>
+                {fieldRow(
+                  editMode === 'net' ? 'Price With VAT' : 'Unit Price',
+                  editMode === 'net' ? fmtMoney(preview.unitPriceGross) : fmtMoney(preview.unitNet),
+                  true,
+                )}
+                {fieldRow(
+                  `New Line Total (×${item.qty})`,
+                  fmtMoney(previewLine.lineTotal),
+                  true,
+                )}
+              </>
+            ) : (
+              <div style={{ padding: '8px 0 8px 122px', fontSize: 11, color: 'var(--text-4)' }}>
+                Enter a price to preview VAT and line total
+              </div>
+            )}
 
           </div>
 
-          {/* Right: numpad */}
           <div style={{ width: 220, padding: '14px 14px', display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
 
             {NUM_KEYS.map((row, ri) => (
@@ -235,7 +283,6 @@ export default function PriceChangeModal({ onClose }) {
               </div>
             ))}
 
-            {/* 0 . C */}
             <div style={{ display: 'flex', gap: 6 }}>
               {numBtn('0', () => pressKey('0'))}
               {numBtn('.', () => pressKey('.'))}
@@ -244,23 +291,22 @@ export default function PriceChangeModal({ onClose }) {
               })}
             </div>
 
-            {/* Done / Cancel */}
             <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
               <button
                 onClick={handleDone}
-                disabled={!parsedNew || parsedNew <= 0}
+                disabled={!parsedInput || parsedInput <= 0}
                 style={{
                   flex: 1, height: 46, borderRadius: 8, border: 'none',
-                  background: parsedNew > 0 ? 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)' : 'var(--border)',
-                  color: parsedNew > 0 ? '#fff' : 'var(--text-4)',
+                  background: parsedInput > 0 ? 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)' : 'var(--border)',
+                  color: parsedInput > 0 ? '#fff' : 'var(--text-4)',
                   fontSize: 13, fontWeight: 800,
-                  cursor: parsedNew > 0 ? 'pointer' : 'not-allowed',
+                  cursor: parsedInput > 0 ? 'pointer' : 'not-allowed',
                   transition: 'all 0.1s',
-                  boxShadow: parsedNew > 0 ? '0 4px 12px rgba(107,0,0,0.22)' : 'none',
+                  boxShadow: parsedInput > 0 ? '0 4px 12px rgba(107,0,0,0.22)' : 'none',
                 }}
-                onMouseEnter={e => { if (parsedNew > 0) e.currentTarget.style.filter = 'brightness(1.08)' }}
+                onMouseEnter={e => { if (parsedInput > 0) e.currentTarget.style.filter = 'brightness(1.08)' }}
                 onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)' }}
-                onMouseDown={e => { if (parsedNew > 0) e.currentTarget.style.transform = 'scale(0.97)' }}
+                onMouseDown={e => { if (parsedInput > 0) e.currentTarget.style.transform = 'scale(0.97)' }}
                 onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
               >Done</button>
               <button

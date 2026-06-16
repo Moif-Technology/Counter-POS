@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { User, UserPlus, X, Search, CreditCard, Phone, ChevronDown } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { api } from '../../lib/api'
+import { fmtMoney } from '../../lib/currencyFormat'
+import { focusBarcodeScan } from '../../lib/posFocus'
 
 const WALK_IN_LABEL = 'Walk-in Customer'
 
@@ -48,7 +50,7 @@ function CustomerRow({ c, onSelect }) {
         )}
         {c.osAmount > 0 && (
           <span style={{ fontSize: 10, color: 'var(--red)', fontWeight: 700 }}>
-            O/S {c.osAmount.toFixed(3)}
+            O/S {fmtMoney(c.osAmount)}
           </span>
         )}
       </div>
@@ -71,6 +73,11 @@ export default function CustomerSearch() {
   const inputRef  = useRef()
   const wrapRef   = useRef()
   const timerRef  = useRef()
+
+  useEffect(() => {
+    if (open) return
+    focusBarcodeScan(50)
+  }, [open])
 
   // Close on outside click
   useEffect(() => {
@@ -189,7 +196,9 @@ export default function CustomerSearch() {
 
       {/* ── Dropdown panel ── */}
       {open && (
-        <div style={{
+        <div
+          data-pos-customer-dropdown
+          style={{
           position: 'absolute', top: 'calc(100% + 6px)', left: 0,
           width: 320, zIndex: 999,
           background: 'var(--surface)',

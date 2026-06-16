@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { X, Delete, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
+import { fmtMoney } from '../../lib/currencyFormat'
 
 const NUM_KEYS = [
   ['7','8','9'],
@@ -106,7 +107,7 @@ export default function CreditCustomerModal({ onClose, onApply }) {
 
   return (
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
@@ -238,7 +239,7 @@ export default function CreditCustomerModal({ onClose, onApply }) {
                             color: cOs > 0 ? 'var(--red)' : 'var(--green)',
                             letterSpacing: '-0.3px',
                           }}>
-                            {cOs.toFixed(3)} <span style={{ fontSize: 10, fontWeight: 700, opacity: 0.65 }}>AED</span>
+                            {fmtMoney(cOs)} <span style={{ fontSize: 10, fontWeight: 700, opacity: 0.65 }}>AED</span>
                           </span>
                         </div>
                       )}

@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Percent, XCircle } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
+import { fmtMoney } from '../../lib/currencyFormat'
+import { findCartItemByKey } from '../../lib/cartLine'
 
 export default function DiscountModal({ onClose }) {
   const cartItems      = usePosStore(s => s.cartItems)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
-  const item           = cartItems.find(i => i.barcode === selectedRowKey)
+  const updateLine     = usePosStore(s => s.updateLine)
+  const item           = findCartItemByKey(cartItems, selectedRowKey)
 
   const [discPct, setDiscPct] = useState('')
   const overlayRef = useRef()
@@ -37,18 +40,7 @@ export default function DiscountModal({ onClose }) {
 
   const handleDone = () => {
     if (pct < 0 || pct > 100) return
-    const state    = usePosStore.getState()
-    const newItems = state.cartItems.map(i => {
-      if (i.barcode !== item.barcode) return i
-      const vatPer  = i.vatPer || 0
-      const base    = i.qty * i.unitPrice
-      const discAmt = +(base * pct / 100).toFixed(3)
-      const subTotal= +(base - discAmt).toFixed(3)
-      const vatAmt  = +(subTotal * (vatPer / 100)).toFixed(3)
-      return { ...i, discount: pct, discountAmt: discAmt, lineTotal: +(subTotal + vatAmt).toFixed(3), vatAmt }
-    })
-    usePosStore.setState({ cartItems: newItems })
-    state.recalc(newItems)
+    updateLine(selectedRowKey, { discount: pct })
     onClose()
   }
 
@@ -76,7 +68,7 @@ export default function DiscountModal({ onClose }) {
 
   return (
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
@@ -161,9 +153,9 @@ export default function DiscountModal({ onClose }) {
 
             {/* Fields */}
             {[
-              { label: 'Total Amount',    value: totalAmount.toFixed(3),   accent: false },
-              { label: 'Discount Amount', value: discountAmt.toFixed(3),   accent: false },
-              { label: 'Net Amount',      value: netAmount.toFixed(3),     accent: true  },
+              { label: 'Total Amount',    value: fmtMoney(totalAmount),   accent: false },
+              { label: 'Discount Amount', value: fmtMoney(discountAmt),   accent: false },
+              { label: 'Net Amount',      value: fmtMoney(netAmount),     accent: true  },
             ].map(f => (
               <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <span style={{ width: 130, flexShrink: 0, fontSize: 12, fontWeight: 700, color: 'var(--text-2)', textAlign: 'right' }}>

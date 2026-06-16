@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import CounterReadingModal from './CounterReadingModal'
 import StaffWiseReportModal from './StaffWiseReportModal'
+import SalesViewerModal from './SalesViewerModal'
+import CounterCloseViewerModal from './CounterCloseViewerModal'
+import CashInOutViewerModal from './CashInOutViewerModal'
 import {
   X, BarChart2,
-  ClipboardList, Users, Star, Grid3x3,
+  ClipboardList, Users, Star, Grid3x3, Receipt, Archive, Wallet,
   UserCog, Eraser, Trash2,
   Download, Upload, GitBranch,
   KeyRound, Mail, ShieldCheck,
@@ -22,6 +25,9 @@ const SECTIONS = [
       { key: 1, label: 'Staff Wise',       sub: 'Per-staff sales report', icon: Users },
       { key: 2, label: 'Special Report',   sub: 'Custom report print',    icon: Star },
       { key: 8, label: 'Group Wise',       sub: 'Sales by product group', icon: Grid3x3 },
+      { key: 14, label: 'Sales Viewer',        sub: 'View bills & details',    icon: Receipt },
+      { key: 15, label: 'Counter Close Viewer', sub: 'Past Z-report closes', icon: Archive },
+      { key: 16, label: 'Cash In/Out Viewer',   sub: 'Cash drawer movements', icon: Wallet },
     ],
   },
   {
@@ -73,11 +79,17 @@ const SHORTCUT_MAP = {
   0: '0', 1: '1', 2: '2', 3: '3', 4: '4',
   5: '5', 6: '6', 7: '7', 8: '8', 9: '9',
   10: 'A', 11: 'B', 12: 'C', 13: 'D',
+  14: 'E',
+  15: 'F',
+  16: 'G',
 }
 
 export default function ReportsModal({ onClose, onSelect }) {
   const [counterReadingOpen, setCounterReadingOpen] = useState(false)
   const [staffWiseOpen,     setStaffWiseOpen]     = useState(false)
+  const [salesViewerOpen,       setSalesViewerOpen]       = useState(false)
+  const [counterCloseViewerOpen, setCounterCloseViewerOpen] = useState(false)
+  const [cashInOutViewerOpen,    setCashInOutViewerOpen]    = useState(false)
   const overlayRef = useRef()
 
   useEffect(() => {
@@ -97,6 +109,9 @@ export default function ReportsModal({ onClose, onSelect }) {
   function handleSelect(itemKey) {
     if (itemKey === 0) { setCounterReadingOpen(true); return }
     if (itemKey === 1) { setStaffWiseOpen(true); return }
+    if (itemKey === 14) { setSalesViewerOpen(true); return }
+    if (itemKey === 15) { setCounterCloseViewerOpen(true); return }
+    if (itemKey === 16) { setCashInOutViewerOpen(true); return }
     onSelect?.(itemKey)
     onClose()
   }
@@ -104,7 +119,7 @@ export default function ReportsModal({ onClose, onSelect }) {
   return (
     <>
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
@@ -322,7 +337,7 @@ export default function ReportsModal({ onClose, onSelect }) {
           flexShrink: 0,
         }}>
           <span style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 600 }}>
-            14 operations available
+            17 operations available
           </span>
           <button
             onClick={onClose}
@@ -348,6 +363,15 @@ export default function ReportsModal({ onClose, onSelect }) {
     )}
     {staffWiseOpen && (
       <StaffWiseReportModal onClose={() => setStaffWiseOpen(false)} />
+    )}
+    {salesViewerOpen && (
+      <SalesViewerModal onClose={() => setSalesViewerOpen(false)} />
+    )}
+    {counterCloseViewerOpen && (
+      <CounterCloseViewerModal onClose={() => setCounterCloseViewerOpen(false)} />
+    )}
+    {cashInOutViewerOpen && (
+      <CashInOutViewerModal onClose={() => setCashInOutViewerOpen(false)} />
     )}
     </>
   )

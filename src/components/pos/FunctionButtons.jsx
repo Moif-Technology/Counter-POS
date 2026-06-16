@@ -13,7 +13,7 @@ import CashInOutModal from '../popup/CashInOutModal'
 import ReportsModal from '../popup/ReportsModal'
 import CommentsModal from '../popup/CommentsModal'
 import CurrencyModal from '../popup/CurrencyModal'
-import ReceiptModal from '../popup/ReceiptModal'
+import CreditSettlementModal from '../popup/CreditSettlementModal'
 import SalesManModal from '../popup/SalesManModal'
 import DiscountModal from '../popup/DiscountModal'
 import {
@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { api } from '../../lib/api'
+import { closeAndFocusBarcode } from '../../lib/posFocus'
 
 /* ─── Side nav button data ───────────────────────────────────── */
 const SIDE_BUTTONS = [
@@ -72,6 +73,7 @@ export function SideNav() {
   const repeatLastItem        = usePosStore(s => s.repeatLastItem)
   const pressSubTotal         = usePosStore(s => s.pressSubTotal)
   const toggleReturn          = usePosStore(s => s.toggleReturn)
+  const returnMode            = usePosStore(s => s.returnMode)
   const [recallOpen,  setRecallOpen]  = useState(false)
   const [reprintOpen, setReprintOpen] = useState(false)
   const [activeLabel, setActiveLabel] = useState('POS')
@@ -91,6 +93,7 @@ export function SideNav() {
       netAmount,
       customerId,
       recalledHoldSalesId,
+      returnMode,
       clearAll: clear,
     } = usePosStore.getState()
 
@@ -109,6 +112,8 @@ export function SideNav() {
         roundOff,
         netAmount,
         customerId,
+        remarks: usePosStore.getState().billComment?.trim() || null,
+        isReturn: returnMode || cartItems.some(i => Number(i.qty) < 0),
         recalledHoldSalesId: recalledHoldSalesId ?? null,
       }, accessToken)
       usePosStore.setState({ recalledHoldSalesId: null })
@@ -129,7 +134,9 @@ export function SideNav() {
     }}>
       {SIDE_BUTTONS.map((btn, i) => {
         const Icon      = btn.icon
-        const isActive  = activeLabel === btn.label
+        const isActive  = btn.label === 'Return'
+          ? returnMode
+          : activeLabel === btn.label
         const isDanger  = btn.danger
 
         const handleClick = () => {
@@ -145,8 +152,7 @@ export function SideNav() {
           if (btn.label === 'Hold Bill') { doHoldBill(); setActiveLabel(btn.label); return }
           if (btn.label === 'Return') {
             toggleReturn()
-            const newQty = parseFloat(usePosStore.getState().qtyBuffer)
-            setActiveLabel(newQty < 0 ? 'Return' : 'POS')
+            setActiveLabel(usePosStore.getState().returnMode ? 'Return' : 'POS')
             return
           }
           if (btn.label === 'Recall')  { setRecallOpen(true);  setActiveLabel(btn.label); return }
@@ -232,12 +238,12 @@ export function SideNav() {
 
     {recallOpen && (
       <RecallHoldModal
-        onClose={() => setRecallOpen(false)}
-        onRecall={(bill) => { setRecallOpen(false) }}
+        onClose={closeAndFocusBarcode(() => setRecallOpen(false))}
+        onRecall={closeAndFocusBarcode((bill) => { setRecallOpen(false) })}
       />
     )}
     {reprintOpen && (
-      <BillReprintModal onClose={() => setReprintOpen(false)} />
+      <BillReprintModal onClose={closeAndFocusBarcode(() => setReprintOpen(false))} />
     )}
     </>
   )
@@ -262,8 +268,26 @@ export function FeatureGrid() {
   const [salesManOpen,    setSalesManOpen]    = useState(false)
   const [discountOpen,    setDiscountOpen]    = useState(false)
   const addGroupItem = usePosStore(s => s.addGroupItem)
+  const addItem = usePosStore(s => s.addItem)
   const qtyBuffer = usePosStore(s => s.qtyBuffer)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
+
+  function handleLookupSelect(product) {
+    if (!product?.productId && !product?.productCode && !product?.barcode) return
+    const { parseScanQty, resetAfterLineScan } = usePosStore.getState()
+    const qty = parseScanQty(qtyBuffer)
+    addItem({
+      productId:   product.productId,
+      barcode:     product.barcode ?? product.productCode,
+      productCode: product.productCode,
+      description: product.description,
+      qty,
+      unitPrice: product.unitPrice,
+      discount:  0,
+      vatPer:    product.vatPer ?? 0,
+    })
+    resetAfterLineScan()
+  }
 
   function handleGroupSelect({ group, unitPrice, mode }) {
     if (mode === 'price_entry') {
@@ -294,7 +318,7 @@ export function FeatureGrid() {
         const isReport      = btn.label === 'Report'
         const isComments    = btn.label === 'Comments'
         const isCurrency    = btn.label === 'Currency'
-        const isReceipt     = btn.label === 'Receipt'
+        const isReceipt     = btn.label === 'Receipt' || btn.label === 'Settlement'
         const isSalesMan    = btn.label === 'Sales Man'
         const isDiscount    = btn.label === 'Discount' || btn.label === 'Disc'
         const handleClick =
@@ -374,57 +398,63 @@ export function FeatureGrid() {
 
     {groupOpen && (
       <GroupModal
-        onClose={() => setGroupOpen(false)}
-        onSelect={(result) => { setGroupOpen(false); handleGroupSelect(result) }}
+        onClose={closeAndFocusBarcode(() => setGroupOpen(false))}
+        onSelect={closeAndFocusBarcode((result) => { setGroupOpen(false); handleGroupSelect(result) })}
       />
     )}
     {lookupOpen && (
       <ProductLookupModal
-        onClose={() => setLookupOpen(false)}
-        onSelect={(row) => { setLookupOpen(false) }}
+        onClose={closeAndFocusBarcode(() => setLookupOpen(false))}
+        onSelect={closeAndFocusBarcode((product) => {
+          handleLookupSelect(product)
+          setLookupOpen(false)
+        })}
       />
     )}
     {privilegeOpen && (
       <PrivilegeCustomerModal
-        onClose={() => setPrivilegeOpen(false)}
-        onApply={(customer) => { setPrivilegeOpen(false) }}
+        onClose={closeAndFocusBarcode(() => setPrivilegeOpen(false))}
+        onApply={closeAndFocusBarcode((customer) => { setPrivilegeOpen(false) })}
       />
     )}
     {priceEnqOpen && (
-      <PriceEnquiryModal onClose={() => setPriceEnqOpen(false)} />
+      <PriceEnquiryModal onClose={closeAndFocusBarcode(() => setPriceEnqOpen(false))} />
     )}
     {priceChangeOpen && (
-      <PriceChangeModal onClose={() => setPriceChangeOpen(false)} />
+      <PriceChangeModal onClose={closeAndFocusBarcode(() => setPriceChangeOpen(false))} />
     )}
     {qtyChangeOpen && (
-      <QtyChangeModal onClose={() => setQtyChangeOpen(false)} />
+      <QtyChangeModal onClose={closeAndFocusBarcode(() => setQtyChangeOpen(false))} />
     )}
     {packetScanOpen && (
-      <PacketScanModal onClose={() => setPacketScanOpen(false)} />
+      <PacketScanModal onClose={closeAndFocusBarcode(() => setPacketScanOpen(false))} />
     )}
     {cashInOutOpen && (
-      <CashInOutModal onClose={() => setCashInOutOpen(false)} />
+      <CashInOutModal onClose={closeAndFocusBarcode(() => setCashInOutOpen(false))} />
     )}
     {reportsOpen && (
       <ReportsModal
-        onClose={() => setReportsOpen(false)}
+        onClose={closeAndFocusBarcode(() => setReportsOpen(false))}
         onSelect={(_key) => {}}
       />
     )}
     {commentsOpen && (
-      <CommentsModal onClose={() => setCommentsOpen(false)} onSave={text => console.log('Comment:', text)} />
+      <CommentsModal onClose={closeAndFocusBarcode(() => setCommentsOpen(false))} />
     )}
     {currencyOpen && (
-      <CurrencyModal onClose={() => setCurrencyOpen(false)} />
+      <CurrencyModal onClose={closeAndFocusBarcode(() => setCurrencyOpen(false))} />
     )}
     {receiptOpen && (
-      <ReceiptModal onClose={() => setReceiptOpen(false)} />
+      <CreditSettlementModal onClose={closeAndFocusBarcode(() => setReceiptOpen(false))} />
     )}
     {salesManOpen && (
-      <SalesManModal onClose={() => setSalesManOpen(false)} onApply={staff => console.log('Staff:', staff)} />
+      <SalesManModal
+        onClose={closeAndFocusBarcode(() => setSalesManOpen(false))}
+        onApply={closeAndFocusBarcode(staff => console.log('Staff:', staff))}
+      />
     )}
     {discountOpen && (
-      <DiscountModal onClose={() => setDiscountOpen(false)} />
+      <DiscountModal onClose={closeAndFocusBarcode(() => setDiscountOpen(false))} />
     )}
     </>
   )

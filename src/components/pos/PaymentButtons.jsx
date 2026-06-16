@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Banknote, CreditCard, UserCheck, Layers } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import CreditCustomerModal from '../popup/CreditCustomerModal'
+import MultiPaymentModal from '../popup/MultiPaymentModal'
+import { closeAndFocusBarcode } from '../../lib/posFocus'
 
 const MODES = [
   { key: 'CASH',   label: 'Cash',      icon: Banknote,   color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
@@ -13,11 +15,11 @@ const MODES = [
 /* Compact 4-button strip — kept for standalone use if needed */
 export default function PaymentButtons() {
   const [showCreditModal, setShowCreditModal] = useState(false)
+  const [showMultiModal,  setShowMultiModal]  = useState(false)
   const paymentMode    = usePosStore(s => s.paymentMode)
-  const netAmount      = usePosStore(s => s.netAmount)
   const setPaymentMode = usePosStore(s => s.setPaymentMode)
-  const setPayment     = usePosStore(s => s.setPayment)
   const setCustomer    = usePosStore(s => s.setCustomer)
+  const setPaymentSplits = usePosStore(s => s.setPaymentSplits)
 
   const handleCreditApply = (c) => {
     setCustomer(c.customerId, c.customerName, c.customerCode, c.paymentMode, c.osAmount)
@@ -28,8 +30,16 @@ export default function PaymentButtons() {
     <>
     {showCreditModal && (
       <CreditCustomerModal
-        onClose={() => setShowCreditModal(false)}
-        onApply={handleCreditApply}
+        onClose={closeAndFocusBarcode(() => setShowCreditModal(false))}
+        onApply={closeAndFocusBarcode((c) => {
+          handleCreditApply(c)
+          setShowCreditModal(false)
+        })}
+      />
+    )}
+    {showMultiModal && (
+      <MultiPaymentModal
+        onClose={closeAndFocusBarcode(() => setShowMultiModal(false))}
       />
     )}
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 5, padding: '6px 8px' }}>
@@ -41,8 +51,10 @@ export default function PaymentButtons() {
             key={m.key}
             onClick={() => {
               if (m.key === 'CREDIT') { setShowCreditModal(true); return }
+              if (m.key === 'MULTI')  { setShowMultiModal(true); return }
               setPaymentMode(m.key)
-              if (m.key === 'CASH' || m.key === 'CARD') setPayment(netAmount)
+              setPaymentSplits(null)
+              if (m.key === 'CASH' || m.key === 'CARD') usePosStore.getState().resetBillPaymentDefaults()
             }}
             style={{
               padding: '9px 4px', borderRadius: 'var(--r-md)',

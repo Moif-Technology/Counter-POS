@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Wallet, Banknote, Save, Trash2, Keyboard } from 'lucide-react'
+import { X, Wallet, Banknote, Save, Trash2, Keyboard, Loader2, AlertCircle } from 'lucide-react'
 import Numpad from '../ui/Numpad'
 import TouchKeyboard from '../ui/TouchKeyboard'
+import { api } from '../../lib/api'
+import { usePosStore } from '../../store/posStore'
 
 const IN_CATEGORIES  = ['Cash', 'Petty Cash']
 const OUT_CATEGORIES = ['Cash', 'Expense From Cash Counter']
@@ -14,8 +16,12 @@ export default function CashInOutModal({ onClose }) {
   const [amount,   setAmount]   = useState('')
   const [entries,      setEntries]      = useState([])
   const [keyboardOpen, setKeyboardOpen] = useState(false)
+  const [saving,       setSaving]       = useState(false)
+  const [error,        setError]        = useState(null)
   const descRef    = useRef()
   const overlayRef = useRef()
+  const accessToken = usePosStore(s => s.accessToken)
+  const counterNo   = usePosStore(s => s.counterNo)
 
   const categories = type === 'in' ? IN_CATEGORIES : OUT_CATEGORIES
   const isIn       = type === 'in'
@@ -70,14 +76,32 @@ export default function CashInOutModal({ onClose }) {
 
   const removeEntry = id => setEntries(prev => prev.filter(e => e.id !== id))
 
-  const handleSave = () => {
-    if (!entries.length) return
-    onClose()
+  const handleSave = async () => {
+    if (!entries.length || saving) return
+    setSaving(true)
+    setError(null)
+    try {
+      const transactionType = isIn ? 'CASH_IN' : 'CASH_OUT'
+      for (const e of entries) {
+        const remarks = [e.category, e.accountName].filter(Boolean).join(' — ')
+        await api.counterPos.addCashInOut({
+          counterNo,
+          transactionType,
+          amount: parseFloat(e.amount),
+          remarks: remarks || null,
+        }, accessToken)
+      }
+      onClose()
+    } catch (err) {
+      setError(err.message ?? 'Failed to save cash in/out')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
@@ -90,6 +114,7 @@ export default function CashInOutModal({ onClose }) {
       <style>{`
         @keyframes cio-fade  { from{opacity:0} to{opacity:1} }
         @keyframes cio-slide { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @keyframes cio-spin  { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         .cio-card { transition: transform 0.18s ease, box-shadow 0.18s ease !important; }
         .cio-card:hover { transform: translateY(-5px) scale(1.03) !important; box-shadow: 0 20px 48px rgba(0,0,0,0.16) !important; }
         .cio-card:active { transform: scale(0.97) !important; }
@@ -249,7 +274,19 @@ export default function CashInOutModal({ onClose }) {
           </div>
 
           {/* ── Body ── */}
-          <div className="cio-body" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          <div className="cio-body" style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+
+            {error && (
+              <div style={{
+                position: 'absolute', left: 16, right: 16, top: 72, zIndex: 2,
+                padding: '8px 12px', borderRadius: 9,
+                border: '1px solid var(--red-border)', background: 'var(--red-bg)',
+                color: 'var(--red)', fontSize: 12, fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: 7,
+              }}>
+                <AlertCircle size={13} /> {error}
+              </div>
+            )}
 
             {/* LEFT — description + table */}
             <div className="cio-left" style={{ flex: 1, padding: '16px 16px', display: 'flex', flexDirection: 'column', gap: 12, borderRight: '1px solid var(--border)', overflow: 'hidden' }}>
@@ -462,23 +499,27 @@ export default function CashInOutModal({ onClose }) {
             {/* Save */}
             <button
               onClick={handleSave}
+              disabled={!entries.length || saving}
               style={{
                 height: 38, paddingInline: 22, borderRadius: 10, border: 'none',
-                background: entries.length
+                background: entries.length && !saving
                   ? 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)'
                   : 'var(--border)',
-                color: entries.length ? '#fff' : 'var(--text-4)',
-                fontSize: 13, fontWeight: 800, cursor: entries.length ? 'pointer' : 'default',
+                color: entries.length && !saving ? '#fff' : 'var(--text-4)',
+                fontSize: 13, fontWeight: 800, cursor: entries.length && !saving ? 'pointer' : 'default',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                boxShadow: entries.length ? '0 4px 14px rgba(107,0,0,0.2)' : 'none',
+                boxShadow: entries.length && !saving ? '0 4px 14px rgba(107,0,0,0.2)' : 'none',
                 transition: 'filter 0.12s, transform 0.08s',
+                opacity: saving ? 0.8 : 1,
               }}
-              onMouseEnter={e => { if (entries.length) e.currentTarget.style.filter = 'brightness(1.08)' }}
+              onMouseEnter={e => { if (entries.length && !saving) e.currentTarget.style.filter = 'brightness(1.08)' }}
               onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)' }}
-              onMouseDown={e => { if (entries.length) e.currentTarget.style.transform = 'scale(0.97)' }}
+              onMouseDown={e => { if (entries.length && !saving) e.currentTarget.style.transform = 'scale(0.97)' }}
               onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
             >
-              <Save size={14} /> Save
+              {saving
+                ? <><Loader2 size={14} style={{ animation: 'cio-spin 0.8s linear infinite' }} /> Saving…</>
+                : <><Save size={14} /> Save</>}
             </button>
 
             {/* Close */}

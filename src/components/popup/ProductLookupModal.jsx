@@ -93,6 +93,20 @@ export default function ProductLookupModal({ onClose, onSelect }) {
     onClose()
   }
 
+  const handleQueryKeyDown = (e) => {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    if (results.length === 1) {
+      handleRowClick(results[0])
+      return
+    }
+    if (selected) {
+      handleRowClick(selected)
+      return
+    }
+    fireNow(query, price)
+  }
+
   const inputStyle = {
     width: '100%', height: 34, borderRadius: 8,
     border: '1.5px solid var(--border)', background: 'var(--surface)',
@@ -112,7 +126,7 @@ export default function ProductLookupModal({ onClose, onSelect }) {
 
   return (
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
@@ -182,7 +196,7 @@ export default function ProductLookupModal({ onClose, onSelect }) {
                   ref={queryRef}
                   value={query}
                   onChange={handleQueryChange}
-                  onKeyDown={e => e.key === 'Enter' && fireNow(query, price)}
+                  onKeyDown={handleQueryKeyDown}
                   placeholder="Type or scan barcode…"
                   style={{ ...inputStyle, paddingRight: 34 }}
                   onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
@@ -288,8 +302,9 @@ export default function ProductLookupModal({ onClose, onSelect }) {
               const isActive = selected?.barcode === row.barcode
               return (
                 <div
-                  key={i}
+                  key={row.barcode ?? row._raw?.productId ?? i}
                   onClick={() => handleRowClick(row)}
+                  onDoubleClick={() => handleRowClick(row)}
                   style={{
                     display: 'flex', alignItems: 'center',
                     padding: '0 14px', height: 36,
@@ -297,7 +312,7 @@ export default function ProductLookupModal({ onClose, onSelect }) {
                     background: isActive ? 'var(--brand-bg)' : i % 2 === 0 ? '#fff' : 'var(--surface-2)',
                     cursor: 'pointer', transition: 'background 0.1s',
                   }}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--surface-3)' }}
+                  onMouseEnter={e => { setSelected(row); if (selected?.barcode !== row.barcode) e.currentTarget.style.background = 'var(--surface-3)' }}
                   onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = i % 2 === 0 ? '#fff' : 'var(--surface-2)' }}
                 >
                   {COLUMNS.map(col => (

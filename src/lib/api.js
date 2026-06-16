@@ -44,9 +44,53 @@ export const api = {
     counterClose:      (body, token)              => request('POST', `/counter-pos/counter/close`, body, token),
     addCashInOut:      (body, token)              => request('POST', `/counter-pos/counter/cash-in-out`, body, token),
     getCashInOut:      (counterNo, token)         => request('GET',  `/counter-pos/counter/cash-in-out?counterNo=${counterNo}`, null, token),
-    counterHistory:    (counterNo, limit, token)  => request('GET',  `/counter-pos/counter/history?counterNo=${counterNo}&limit=${limit ?? 30}`, null, token),
+    counterHistory:    (params, token) => {
+      const q = new URLSearchParams()
+      if (params?.counterNo) q.set('counterNo', params.counterNo)
+      if (params?.dateFrom)  q.set('dateFrom', params.dateFrom)
+      if (params?.dateTo)    q.set('dateTo', params.dateTo)
+      if (params?.limit)     q.set('limit', params.limit)
+      const qs = q.toString()
+      return request('GET', `/counter-pos/counter/history${qs ? `?${qs}` : ''}`, null, token)
+    },
     counterCloseDetail:(closeId, token)           => request('GET',  `/counter-pos/counter/history/${closeId}`, null, token),
+    cashInOutReport:   (params, token) => {
+      const q = new URLSearchParams()
+      if (params?.dateFrom)    q.set('dateFrom', params.dateFrom)
+      if (params?.dateTo)      q.set('dateTo', params.dateTo)
+      if (params?.counterNo)   q.set('counterNo', params.counterNo)
+      if (params?.closeNo)     q.set('closeNo', params.closeNo)
+      if (params?.limit)       q.set('limit', params.limit)
+      const qs = q.toString()
+      return request('GET', `/counter-pos/counter/cash-in-out/report${qs ? `?${qs}` : ''}`, null, token)
+    },
     staffWiseReport:   (counterNo, token)         => request('GET',  `/counter-pos/sales/staff-wise?counterNo=${counterNo}`, null, token),
+    salesViewerList:   (params, token) => {
+      const q = new URLSearchParams()
+      if (params?.counterNo)   q.set('counterNo', params.counterNo)
+      if (params?.dateFrom)    q.set('dateFrom', params.dateFrom)
+      if (params?.dateTo)      q.set('dateTo', params.dateTo)
+      if (params?.customerId)  q.set('customerId', params.customerId)
+      if (params?.limit)       q.set('limit', params.limit)
+      const qs = q.toString()
+      return request('GET', `/counter-pos/sales/viewer${qs ? `?${qs}` : ''}`, null, token)
+    },
+    salesViewerBill:   (salesId, token)           => request('GET',  `/counter-pos/sales/viewer/${salesId}`, null, token),
+
+    // Credit settlement (receipt against outstanding bills)
+    creditCustomers:          (q, limit, token) => request('GET',  `/counter-pos/settlement/credit-customers?q=${encodeURIComponent(q ?? '')}&limit=${limit ?? 200}`, null, token),
+    customerOutstandingBills: (customerId, token) => request('GET',  `/counter-pos/settlement/customers/${customerId}/bills`, null, token),
+    saveCreditSettlement:     (body, token)       => request('POST', `/counter-pos/settlement/save`, body, token),
+    settlementHistory:        (params, token)     => {
+      const q = new URLSearchParams()
+      if (params?.customerId) q.set('customerId', params.customerId)
+      if (params?.dateFrom)   q.set('dateFrom', params.dateFrom)
+      if (params?.dateTo)     q.set('dateTo', params.dateTo)
+      if (params?.limit)      q.set('limit', params.limit)
+      const qs = q.toString()
+      return request('GET', `/counter-pos/settlement/history${qs ? `?${qs}` : ''}`, null, token)
+    },
+    settlementReceipt:        (transactionId, token) => request('GET', `/counter-pos/settlement/receipts/${transactionId}`, null, token),
   },
 
   // Shared backoffice endpoints
@@ -58,5 +102,9 @@ export const api = {
   staff: {
     list:   (token)                    => request('GET',   '/staff/members',             null,    token),
     setPin: (staffId, pin, token)      => request('PATCH', `/staff/members/${staffId}/pin`, { pin }, token),
+  },
+
+  appParameters: {
+    gvtax: (token) => request('GET', '/app-parameters/gvtax', null, token),
   },
 };
