@@ -56,9 +56,9 @@ export const colors = {
   text3:        'var(--text-3)',
   text4:        'var(--text-4)',
 
-  green:        'var(--green)',
-  greenBg:      'var(--green-bg)',
-  greenBorder:  'var(--green-border)',
+  green:        'var(--brand)',
+  greenBg:      'var(--brand-bg)',
+  greenBorder:  'var(--brand-border)',
 
   blue:         'var(--blue)',
   blueBg:       'var(--blue-bg)',
@@ -81,7 +81,7 @@ export const colors = {
 
 // Semantic color groups for badges, tags, alerts
 export const semantic = {
-  success: { color: colors.green,  bg: colors.greenBg,  border: colors.greenBorder  },
+  success: { color: colors.brand,  bg: colors.brandBg,  border: colors.brandBorder  },
   warning: { color: colors.amber,  bg: colors.amberBg,  border: colors.amberBorder  },
   danger:  { color: colors.red,    bg: colors.redBg,    border: colors.redBorder    },
   info:    { color: colors.blue,   bg: colors.blueBg,   border: colors.blueBorder   },
@@ -227,8 +227,8 @@ export const btn = {
     border: `1.5px solid ${colors.redBorder}`,
   },
   success: {
-    background: colors.greenBg, color: colors.green,
-    border: `1.5px solid ${colors.greenBorder}`,
+    background: colors.brandBg, color: colors.brand,
+    border: `1.5px solid ${colors.brandBorder}`,
   },
   warning: {
     background: colors.amberBg, color: colors.amber,
@@ -343,7 +343,7 @@ export const badge = {
     letterSpacing: 0.4, textTransform: 'uppercase',
   },
   brand:   { background: colors.brandBg,   color: colors.brand,  border: `1px solid ${colors.brandBorder}`  },
-  success: { background: colors.greenBg,   color: colors.green,  border: `1px solid ${colors.greenBorder}`  },
+  success: { background: colors.brandBg,   color: colors.brand,  border: `1px solid ${colors.brandBorder}`  },
   warning: { background: colors.amberBg,   color: colors.amber,  border: `1px solid ${colors.amberBorder}`  },
   danger:  { background: colors.redBg,     color: colors.red,    border: `1px solid ${colors.redBorder}`    },
   info:    { background: colors.blueBg,    color: colors.blue,   border: `1px solid ${colors.blueBorder}`   },
@@ -369,7 +369,7 @@ export const snackbar = {
     animation: 'slideUp 0.2s cubic-bezier(.22,.68,0,1.2)',
     minWidth: 220, maxWidth: 380,
   },
-  success: { background: colors.green,  color: colors.white },
+  success: { background: gradient.brand, color: colors.white },
   danger:  { background: colors.red,    color: colors.white },
   warning: { background: colors.amber,  color: colors.white },
   info:    { background: colors.blue,   color: colors.white },

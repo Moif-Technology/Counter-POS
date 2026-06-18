@@ -13,56 +13,63 @@ import CashInOutModal from '../popup/CashInOutModal'
 import ReportsModal from '../popup/ReportsModal'
 import CommentsModal from '../popup/CommentsModal'
 import CurrencyModal from '../popup/CurrencyModal'
-import ReceiptModal from '../popup/ReceiptModal'
+import CreditSettlementModal from '../popup/CreditSettlementModal'
 import SalesManModal from '../popup/SalesManModal'
-import DiscountModal from '../popup/DiscountModal'
+import BillDiscountModal from '../popup/BillDiscountModal'
+import DeliveryCustomerModal from '../popup/DeliveryCustomerModal'
+import DeliverySettlementModal from '../popup/DeliverySettlementModal'
 import {
   ShoppingCart, PauseCircle, Archive, Printer, Receipt,
   RefreshCw, Trash2, Minus, RotateCcw, LogOut,
   Search, Tag, Grid3x3, Percent, DollarSign,
   User, BarChart2, ArrowLeftRight, FileText, Package,
-  Lock, Layers, Save, Hash, Plus, Crown, SlidersHorizontal,
+  Lock, Layers, Save, Hash, Plus, Crown, SlidersHorizontal, Truck,
 } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { api } from '../../lib/api'
+import { enrichCartItemsForSave } from '../../lib/cartLine'
+import { isGroupBrowseMode } from '../../lib/groupUtils'
+import { closeAndFocusBarcode } from '../../lib/posFocus'
+import { posAskPrintCopies, posNotifyError, posNotifySuccess, posNotifyWarning } from '../../lib/posNotify'
+import { holdDataFromPosState, printHoldReceipt } from '../../lib/printHoldReceipt'
+import { deliveryDataFromPosState, printDeliveryReceipt } from '../../lib/printDeliveryReceipt'
 
 /* ─── Side nav button data ───────────────────────────────────── */
-/* feature: entitlement code that must be enabled for the company
-   (plan ∩ software type). null/absent = always visible. */
 const SIDE_BUTTONS = [
   { label: 'POS',        icon: ShoppingCart, isPOS: true },
-  { label: 'Hold Bill',  icon: PauseCircle,  feature: 'pos.hold_bill' },
-  { label: 'Recall',     icon: Archive,      feature: 'pos.hold_bill' },
-  { label: 'Print',      icon: Printer,      feature: 'pos.billing' },
-  { label: 'Reprint',    icon: Printer,      feature: 'pos.reprint_bill' },
-  { label: 'Sub Total',  icon: Receipt,      feature: 'pos.billing' },
-  { label: 'Repeat',     icon: RefreshCw,    feature: 'pos.billing' },
-  { label: 'Clear All',  icon: Trash2,    danger: true, feature: 'pos.billing' },
-  { label: 'Clear Line', icon: Minus,     danger: true, feature: 'pos.billing' },
-  { label: 'Return',     icon: RotateCcw, danger: true, feature: 'pos.return_bill' },
+  { label: 'Hold Bill',  icon: PauseCircle },
+  { label: 'Recall',     icon: Archive },
+  { label: 'Print',      icon: Printer },
+  { label: 'Reprint',    icon: Printer },
+  { label: 'Sub Total',  icon: Receipt },
+  { label: 'Repeat',     icon: RefreshCw },
+  { label: 'Clear All',  icon: Trash2,    danger: true },
+  { label: 'Clear Line', icon: Minus,     danger: true },
+  { label: 'Return',     icon: RotateCcw, danger: true },
 ]
 
 /* ─── Bottom feature grid button data ───────────────────────── */
 const FEATURE_BUTTONS = [
-  { label: 'Look Up',      icon: Search,           feature: 'pos.product_search',     color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { label: 'Price Change', icon: Tag,              feature: 'pos.price_change',       color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Qty Change',   icon: SlidersHorizontal,feature: 'pos.quantity_change',    color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { label: 'Group',        icon: Grid3x3,          feature: 'pos.group_master',       color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { label: 'Packet Scan',  icon: Package,       feature: 'pos.packet_scan',        color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
-  { label: 'Discount',     icon: Percent,       feature: 'pos.discount',           color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Price Enquiry',icon: Search,        feature: 'pos.price_enquiry',      color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { label: 'Currency',     icon: DollarSign,    feature: 'pos.currency',           color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { label: 'Sales Man',    icon: User,          feature: 'pos.salesman',           color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { label: 'Privilege',   icon: Crown,         feature: 'pos.privilege_customer', color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Report',       icon: BarChart2,     feature: 'pos.counter_reports',    color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
-  { label: 'Cash In/Out',  icon: ArrowLeftRight,feature: 'pos.cash_in_out',        color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { label: 'Receipt',      icon: FileText,      feature: 'pos.reprint_bill',       color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { label: 'Comments',     icon: FileText,      feature: 'pos.notes',              color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
-  { label: 'NP Scale',     icon: Hash,          feature: 'pos.np_scale',           color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { label: 'Lock',         icon: Lock,          feature: 'pos.lock_screen',        color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)' },
-  { label: 'Price Level',  icon: Layers,        feature: 'pos.price_level',        color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Save Delivery',icon: Save,          feature: 'pos.delivery',           color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { label: 'Settlement',   icon: Receipt,       feature: 'pos.settlement',         color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Look Up',      icon: Search,           color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Price Change', icon: Tag,              color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+  { label: 'Qty Change',   icon: SlidersHorizontal,color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+  { label: 'Group',        icon: Grid3x3,          color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Packet Scan',  icon: Package,       color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+  { label: 'Discount',     icon: Percent,       color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+  { label: 'Price Enquiry',icon: Search,        color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Currency',     icon: DollarSign,    color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+  { label: 'Sales Man',    icon: User,          color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Privilege',   icon: Crown,         color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+  { label: 'Report',       icon: BarChart2,     color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+  { label: 'Cash In/Out',  icon: ArrowLeftRight,color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+  { label: 'Receipt',      icon: FileText,      color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Comments',     icon: FileText,      color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+  { label: 'NP Scale',     icon: Hash,          color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+  { label: 'Lock',         icon: Lock,          color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)' },
+  { label: 'Price Level',  icon: Layers,        color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+  { label: 'Delivery',     icon: Truck,         color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
+  { label: 'Save Delivery',icon: Save,          color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
+  { label: 'Settlement',   icon: Receipt,       color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
 ]
 
 /* ─────────────────────────────────────────────────────────────
@@ -74,6 +81,7 @@ export function SideNav() {
   const repeatLastItem        = usePosStore(s => s.repeatLastItem)
   const pressSubTotal         = usePosStore(s => s.pressSubTotal)
   const toggleReturn          = usePosStore(s => s.toggleReturn)
+  const returnMode            = usePosStore(s => s.returnMode)
   const [recallOpen,  setRecallOpen]  = useState(false)
   const [reprintOpen, setReprintOpen] = useState(false)
   const [activeLabel, setActiveLabel] = useState('POS')
@@ -93,6 +101,7 @@ export function SideNav() {
       netAmount,
       customerId,
       recalledHoldSalesId,
+      returnMode,
       clearAll: clear,
     } = usePosStore.getState()
 
@@ -100,8 +109,9 @@ export function SideNav() {
 
     setHoldLoading(true)
     try {
-      await api.counterPos.holdBill({
-        cartItems,
+      const state = usePosStore.getState()
+      const result = await api.counterPos.holdBill({
+        cartItems: enrichCartItemsForSave(cartItems),
         paymentMode,
         counterNo,
         subTotal,
@@ -111,12 +121,35 @@ export function SideNav() {
         roundOff,
         netAmount,
         customerId,
+        remarks: state.billComment?.trim() || null,
+        isReturn: returnMode || cartItems.some(i => Number(i.qty) < 0),
         recalledHoldSalesId: recalledHoldSalesId ?? null,
       }, accessToken)
+      setHoldLoading(false)
+      const holdPrint = holdDataFromPosState(state, result)
+      try {
+        const copies = await posAskPrintCopies({
+          title: 'Hold Print',
+          message: 'How many copies do you need?',
+          defaultValue: 1,
+        })
+        if (copies != null) {
+          printHoldReceipt(holdPrint, {
+            companyName: state.shopName,
+            branchName: state.shopSubName,
+          }, copies)
+        }
+      } catch (printErr) {
+        posNotifyWarning(printErr.message ?? 'Hold saved but print failed', { title: 'Hold Print' })
+      }
       usePosStore.setState({ recalledHoldSalesId: null })
       clear()
+      posNotifySuccess(result.message ?? `Bill held as ${result.holdNo}`, {
+        title: 'Hold Bill',
+        duration: 1200,
+      })
     } catch (e) {
-      alert(e.message)
+      posNotifyError(e.message, { title: 'Hold Bill' })
     } finally {
       setHoldLoading(false)
     }
@@ -131,7 +164,9 @@ export function SideNav() {
     }}>
       {SIDE_BUTTONS.map((btn, i) => {
         const Icon      = btn.icon
-        const isActive  = activeLabel === btn.label
+        const isActive  = btn.label === 'Return'
+          ? returnMode
+          : activeLabel === btn.label
         const isDanger  = btn.danger
 
         const handleClick = () => {
@@ -147,8 +182,7 @@ export function SideNav() {
           if (btn.label === 'Hold Bill') { doHoldBill(); setActiveLabel(btn.label); return }
           if (btn.label === 'Return') {
             toggleReturn()
-            const newQty = parseFloat(usePosStore.getState().qtyBuffer)
-            setActiveLabel(newQty < 0 ? 'Return' : 'POS')
+            setActiveLabel(usePosStore.getState().returnMode ? 'Return' : 'POS')
             return
           }
           if (btn.label === 'Recall')  { setRecallOpen(true);  setActiveLabel(btn.label); return }
@@ -234,12 +268,12 @@ export function SideNav() {
 
     {recallOpen && (
       <RecallHoldModal
-        onClose={() => setRecallOpen(false)}
-        onRecall={(bill) => { setRecallOpen(false) }}
+        onClose={closeAndFocusBarcode(() => setRecallOpen(false))}
+        onRecall={closeAndFocusBarcode((bill) => { setRecallOpen(false) })}
       />
     )}
     {reprintOpen && (
-      <BillReprintModal onClose={() => setReprintOpen(false)} />
+      <BillReprintModal onClose={closeAndFocusBarcode(() => setReprintOpen(false))} />
     )}
     </>
   )
@@ -251,6 +285,7 @@ export function SideNav() {
 export function FeatureGrid() {
   const [groupOpen,       setGroupOpen]       = useState(false)
   const [lookupOpen,      setLookupOpen]      = useState(false)
+  const [lookupGroup,     setLookupGroup]     = useState(null)
   const [privilegeOpen,   setPrivilegeOpen]   = useState(false)
   const [priceEnqOpen,    setPriceEnqOpen]    = useState(false)
   const [priceChangeOpen, setPriceChangeOpen] = useState(false)
@@ -262,16 +297,114 @@ export function FeatureGrid() {
   const [currencyOpen,    setCurrencyOpen]    = useState(false)
   const [receiptOpen,     setReceiptOpen]     = useState(false)
   const [salesManOpen,    setSalesManOpen]    = useState(false)
-  const [discountOpen,    setDiscountOpen]    = useState(false)
+  const [billDiscountOpen, setBillDiscountOpen] = useState(false)
+  const [deliveryModalOpen, setDeliveryModalOpen] = useState(false)
+  const [deliverySavePending, setDeliverySavePending] = useState(false)
+  const [deliverySettleOpen, setDeliverySettleOpen] = useState(false)
+  const [deliverySaving, setDeliverySaving] = useState(false)
+  const cartItems = usePosStore(s => s.cartItems)
   const addGroupItem = usePosStore(s => s.addGroupItem)
+  const addItem = usePosStore(s => s.addItem)
   const qtyBuffer = usePosStore(s => s.qtyBuffer)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
+
+  function handleLookupSelect(product) {
+    if (!product?.productId && !product?.productCode && !product?.barcode) return
+    const { parseScanQty, resetAfterLineScan } = usePosStore.getState()
+    const qty = parseScanQty(qtyBuffer)
+    addItem({
+      productId:   product.productId,
+      barcode:     product.barcode ?? product.productCode,
+      productCode: product.productCode,
+      description: product.description ?? product.productName,
+      qty,
+      unitPrice: product.unitPrice,
+      discount:  0,
+      vatPer:    product.vatPer ?? 0,
+    })
+    resetAfterLineScan()
+  }
+
   function handleGroupSelect({ group, unitPrice, mode }) {
     if (mode === 'price_entry') {
       const qty = parseFloat(qtyBuffer) > 0 ? parseFloat(qtyBuffer) : 1
       addGroupItem(group, unitPrice, qty)
     } else if (mode === 'product_lookup') {
+      setLookupGroup(group)
       setLookupOpen(true)
+    }
+  }
+
+  async function doSaveDelivery(details) {
+    const state = usePosStore.getState()
+    if (!state.cartItems.length || deliverySaving) return
+
+    state.setDeliveryInfo(details)
+    setDeliverySaving(true)
+    try {
+      const result = await api.counterPos.saveDelivery({
+        cartItems: enrichCartItemsForSave(state.cartItems),
+        counterNo: state.counterNo,
+        subTotal: state.subTotal,
+        discountAmt: state.discountAmt,
+        taxableAmt: state.taxableAmt,
+        taxAmt: state.taxAmt,
+        roundOff: state.roundOff,
+        netAmount: state.netAmount,
+        customerId: details.customerId,
+        deliveryTime: details.deliveryTime,
+        deliveryAddress: details.deliveryAddress,
+        deliveryPhone: details.deliveryPhone,
+        remarks: state.billComment?.trim() || null,
+        recalledDeliverySalesId: state.recalledDeliverySalesId ?? null,
+      }, state.accessToken)
+      setDeliverySaving(false)
+      const deliveryPrint = deliveryDataFromPosState(state, result, details)
+      try {
+        const copies = await posAskPrintCopies({
+          title: 'Delivery Print',
+          message: 'How many copies do you need?',
+          defaultValue: 1,
+        })
+        if (copies != null) {
+          await printDeliveryReceipt(deliveryPrint, {
+            companyName: state.shopName,
+            branchName: state.shopSubName,
+          }, copies)
+        }
+      } catch (printErr) {
+        posNotifyWarning(printErr.message ?? 'Delivery saved but print failed', { title: 'Delivery Print' })
+      }
+      usePosStore.setState({ recalledDeliverySalesId: null })
+      state.clearAll()
+      setDeliveryModalOpen(false)
+      setDeliverySavePending(false)
+      posNotifySuccess(result.message ?? `Delivery saved as ${result.holdNo}`, {
+        title: 'Save Delivery',
+        duration: 1200,
+      })
+    } catch (e) {
+      posNotifyError(e.message, { title: 'Save Delivery' })
+    } finally {
+      setDeliverySaving(false)
+    }
+  }
+
+  function openDeliveryDetails(forSave) {
+    if (forSave && !cartItems.length) {
+      posNotifyWarning('Cart is empty', { title: 'Delivery' })
+      return
+    }
+    setDeliverySavePending(!!forSave)
+    setDeliveryModalOpen(true)
+  }
+
+  function handleDeliveryConfirm(details) {
+    const { setDeliveryInfo } = usePosStore.getState()
+    setDeliveryInfo(details)
+    setDeliveryModalOpen(false)
+    if (deliverySavePending) {
+      doSaveDelivery(details)
     }
   }
 
@@ -296,6 +429,9 @@ export function FeatureGrid() {
         const isComments    = btn.label === 'Comments'
         const isCurrency    = btn.label === 'Currency'
         const isReceipt     = btn.label === 'Receipt'
+        const isDelivery    = btn.label === 'Delivery'
+        const isSaveDelivery = btn.label === 'Save Delivery'
+        const isDelSettle   = btn.label === 'Settlement'
         const isSalesMan    = btn.label === 'Sales Man'
         const isDiscount    = btn.label === 'Discount' || btn.label === 'Disc'
         const handleClick =
@@ -311,8 +447,11 @@ export function FeatureGrid() {
           isComments    ? () => setCommentsOpen(true) :
           isCurrency    ? () => setCurrencyOpen(true) :
           isReceipt     ? () => setReceiptOpen(true) :
+          isDelivery    ? () => openDeliveryDetails(false) :
+          isSaveDelivery ? () => openDeliveryDetails(true) :
+          isDelSettle   ? () => setDeliverySettleOpen(true) :
           isSalesMan    ? () => setSalesManOpen(true) :
-          isDiscount    ? () => { if (selectedRowKey) setDiscountOpen(true) } :
+          isDiscount    ? () => { if (cartItems.length) setBillDiscountOpen(true) } :
           undefined
         return (
           <button
@@ -375,57 +514,76 @@ export function FeatureGrid() {
 
     {groupOpen && (
       <GroupModal
-        onClose={() => setGroupOpen(false)}
-        onSelect={(result) => { setGroupOpen(false); handleGroupSelect(result) }}
+        onClose={closeAndFocusBarcode(() => setGroupOpen(false))}
+        onSelect={closeAndFocusBarcode((result) => { setGroupOpen(false); handleGroupSelect(result) })}
       />
     )}
     {lookupOpen && (
       <ProductLookupModal
-        onClose={() => setLookupOpen(false)}
-        onSelect={(row) => { setLookupOpen(false) }}
+        groupId={lookupGroup?.groupId ?? null}
+        groupLabel={lookupGroup?.groupDescription ?? ''}
+        onClose={closeAndFocusBarcode(() => { setLookupOpen(false); setLookupGroup(null) })}
+        onSelect={closeAndFocusBarcode((product) => {
+          handleLookupSelect(product)
+          setLookupOpen(false)
+          setLookupGroup(null)
+        })}
       />
     )}
     {privilegeOpen && (
       <PrivilegeCustomerModal
-        onClose={() => setPrivilegeOpen(false)}
-        onApply={(customer) => { setPrivilegeOpen(false) }}
+        onClose={closeAndFocusBarcode(() => setPrivilegeOpen(false))}
+        onApply={closeAndFocusBarcode((customer) => { setPrivilegeOpen(false) })}
       />
     )}
     {priceEnqOpen && (
-      <PriceEnquiryModal onClose={() => setPriceEnqOpen(false)} />
+      <PriceEnquiryModal onClose={closeAndFocusBarcode(() => setPriceEnqOpen(false))} />
     )}
     {priceChangeOpen && (
-      <PriceChangeModal onClose={() => setPriceChangeOpen(false)} />
+      <PriceChangeModal onClose={closeAndFocusBarcode(() => setPriceChangeOpen(false))} />
     )}
     {qtyChangeOpen && (
-      <QtyChangeModal onClose={() => setQtyChangeOpen(false)} />
+      <QtyChangeModal onClose={closeAndFocusBarcode(() => setQtyChangeOpen(false))} />
     )}
     {packetScanOpen && (
-      <PacketScanModal onClose={() => setPacketScanOpen(false)} />
+      <PacketScanModal onClose={closeAndFocusBarcode(() => setPacketScanOpen(false))} />
     )}
     {cashInOutOpen && (
-      <CashInOutModal onClose={() => setCashInOutOpen(false)} />
+      <CashInOutModal onClose={closeAndFocusBarcode(() => setCashInOutOpen(false))} />
     )}
     {reportsOpen && (
       <ReportsModal
-        onClose={() => setReportsOpen(false)}
+        onClose={closeAndFocusBarcode(() => setReportsOpen(false))}
         onSelect={(_key) => {}}
       />
     )}
     {commentsOpen && (
-      <CommentsModal onClose={() => setCommentsOpen(false)} onSave={text => console.log('Comment:', text)} />
+      <CommentsModal onClose={closeAndFocusBarcode(() => setCommentsOpen(false))} />
     )}
     {currencyOpen && (
-      <CurrencyModal onClose={() => setCurrencyOpen(false)} />
+      <CurrencyModal onClose={closeAndFocusBarcode(() => setCurrencyOpen(false))} />
     )}
     {receiptOpen && (
-      <ReceiptModal onClose={() => setReceiptOpen(false)} />
+      <CreditSettlementModal onClose={closeAndFocusBarcode(() => setReceiptOpen(false))} />
     )}
     {salesManOpen && (
-      <SalesManModal onClose={() => setSalesManOpen(false)} onApply={staff => console.log('Staff:', staff)} />
+      <SalesManModal
+        onClose={closeAndFocusBarcode(() => setSalesManOpen(false))}
+        onApply={closeAndFocusBarcode(staff => console.log('Staff:', staff))}
+      />
     )}
-    {discountOpen && (
-      <DiscountModal onClose={() => setDiscountOpen(false)} />
+    {billDiscountOpen && (
+      <BillDiscountModal onClose={closeAndFocusBarcode(() => setBillDiscountOpen(false))} />
+    )}
+    {deliveryModalOpen && (
+      <DeliveryCustomerModal
+        title={deliverySavePending ? 'Save Delivery — Customer Details' : 'Delivery — Customer Details'}
+        onClose={closeAndFocusBarcode(() => { setDeliveryModalOpen(false); setDeliverySavePending(false) })}
+        onConfirm={closeAndFocusBarcode(handleDeliveryConfirm)}
+      />
+    )}
+    {deliverySettleOpen && (
+      <DeliverySettlementModal onClose={closeAndFocusBarcode(() => setDeliverySettleOpen(false))} />
     )}
     </>
   )

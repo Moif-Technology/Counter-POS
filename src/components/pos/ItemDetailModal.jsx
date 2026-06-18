@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Minus, Plus, Trash2, Save, Edit3, Percent, RotateCcw } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
+import { calcLineTotals, getCartRowKey } from '../../lib/cartLine'
 import { fmt3 } from '../../lib/utils'
 
 export default function ItemDetailModal({ item, onClose }) {
-  const removeItem     = usePosStore(s => s.removeItem)
-  const [qty, setQty]  = useState(item.qty)
-  const overlayRef     = useRef()
+  const removeItem = usePosStore(s => s.removeItem)
+  const updateLine = usePosStore(s => s.updateLine)
+  const rowKey     = getCartRowKey(item)
+  const isReturnLine = Number(item.qty) < 0
+  const [qty, setQty] = useState(item.qty)
+  const overlayRef = useRef()
 
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose() }
@@ -14,29 +18,27 @@ export default function ItemDetailModal({ item, onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const changeQty = delta => setQty(q => Math.max(1, +(q + delta).toFixed(3)))
+  const changeQty = delta => setQty(q => {
+    const next = +(Number(q) + delta).toFixed(3)
+    if (isReturnLine) return next >= 0 ? q : next
+    return next <= 0 ? q : next
+  })
 
-  const subTotal  = qty * item.unitPrice
-  const vatAmt    = subTotal * ((item.vatPer || 0) / 100)
-  const lineTotal = subTotal + vatAmt
+  const { subTotal, vatAmt, lineTotal } = calcLineTotals({ ...item, qty })
 
   const handleSave = () => {
-    const state    = usePosStore.getState()
-    const newItems = state.cartItems.map(i =>
-      i.barcode === item.barcode
-        ? { ...i, qty, lineTotal: +lineTotal.toFixed(3), vatAmt: +vatAmt.toFixed(3) }
-        : i
-    )
-    usePosStore.setState({ cartItems: newItems })
-    state.recalc(newItems)
+    if (!rowKey) return
+    const signed = isReturnLine ? -Math.abs(Number(qty)) : Number(qty)
+    if (!signed || signed === 0) return
+    updateLine(rowKey, { qty: signed })
     onClose()
   }
 
-  const handleRemove = () => { removeItem(item.productId != null ? `pid_${item.productId}` : `bc_${item.barcode}`); onClose() }
+  const handleRemove = () => { if (rowKey) removeItem(rowKey); onClose() }
 
   return (
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,

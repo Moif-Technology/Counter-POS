@@ -1,5 +1,6 @@
 import { usePosStore } from '../../store/posStore'
 import { fmt3 } from '../../lib/utils'
+import { calcLineTotals } from '../../lib/cartLine'
 import { ScanLine } from 'lucide-react'
 
 function Cell({ label, value, accent, mono }) {
@@ -33,6 +34,8 @@ export default function ItemPreview() {
     </div>
   )
 
+  const line = calcLineTotals(item)
+
   return (
     <div style={{
       height: '100%', display: 'flex', alignItems: 'center', gap: 20,
@@ -54,10 +57,11 @@ export default function ItemPreview() {
 
       <Cell label="Barcode"    value={item.barcode} />
       <Cell label="Qty"        value={item.qty} mono />
-      <Cell label="Unit Price" value={fmt3(item.unitPrice)} mono />
-      <Cell label="VAT %"      value={(item.vatPer || 0).toFixed(2) + '%'} mono />
+      <Cell label="Unit Price" value={fmt3(line.unitPriceGross)} mono />
+      <Cell label="VAT %"      value={line.vatPer.toFixed(2) + '%'} mono />
+      <Cell label="VAT Amt"    value={fmt3(line.vatAmt)} mono />
 
-      <Cell label="Line Total" value={fmt3(item.lineTotal)} accent mono />
+      <Cell label="Line Total" value={fmt3(line.lineTotal)} accent mono />
     </div>
   )
 }

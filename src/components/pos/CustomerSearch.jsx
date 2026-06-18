@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { User, UserPlus, X, Search, CreditCard, Phone, ChevronDown } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
+import { normalizePaymentMode, PM } from '../../lib/paymentModes'
 import { api } from '../../lib/api'
+import { fmtMoney } from '../../lib/currencyFormat'
+import { focusBarcodeScan } from '../../lib/posFocus'
 
 const WALK_IN_LABEL = 'Walk-in Customer'
 
@@ -38,17 +41,17 @@ function CustomerRow({ c, onSelect }) {
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
-        {c.paymentMode && c.paymentMode !== 'CASH' && (
+        {c.paymentMode && normalizePaymentMode(c.paymentMode) !== PM.CASH && (
           <span style={{
             fontSize: 9, fontWeight: 800, letterSpacing: 0.4,
             color: 'var(--amber)', background: 'var(--amber-bg)',
             border: '1px solid var(--amber-border)',
             borderRadius: 4, padding: '1px 5px',
-          }}>{c.paymentMode}</span>
+          }}>{normalizePaymentMode(c.paymentMode)}</span>
         )}
         {c.osAmount > 0 && (
           <span style={{ fontSize: 10, color: 'var(--red)', fontWeight: 700 }}>
-            O/S {c.osAmount.toFixed(3)}
+            O/S {fmtMoney(c.osAmount)}
           </span>
         )}
       </div>
@@ -72,6 +75,11 @@ export default function CustomerSearch() {
   const inputRef  = useRef()
   const wrapRef   = useRef()
   const timerRef  = useRef()
+
+  useEffect(() => {
+    if (open) return
+    focusBarcodeScan(50)
+  }, [open])
 
   // Close on outside click
   useEffect(() => {
@@ -119,10 +127,7 @@ export default function CustomerSearch() {
 
   // Map DB payment mode → store mode keys
   function resolveMode(dbMode) {
-    const m = String(dbMode || '').toUpperCase()
-    if (m === 'CREDITCARD' || m === 'CARD') return 'CARD'
-    if (m === 'CREDIT')                     return 'CREDIT'
-    return 'CASH'
+    return normalizePaymentMode(dbMode)
   }
 
   const handleSelect = (c) => {
@@ -192,7 +197,9 @@ export default function CustomerSearch() {
 
       {/* ── Dropdown panel ── */}
       {open && (
-        <div style={{
+        <div
+          data-pos-customer-dropdown
+          style={{
           position: 'absolute', top: 'calc(100% + 6px)', left: 0,
           width: 320, zIndex: 999,
           background: 'var(--surface)',

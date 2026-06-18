@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Hash } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
+import { findCartItemByKey } from '../../lib/cartLine'
 import Numpad from '../ui/Numpad'
 
 export default function QtyChangeModal({ onClose }) {
   const cartItems      = usePosStore(s => s.cartItems)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
-  const item           = cartItems.find(i => i.barcode === selectedRowKey)
+  const updateLine     = usePosStore(s => s.updateLine)
+  const item           = findCartItemByKey(cartItems, selectedRowKey)
 
   const [newQty, setNewQty] = useState('')
   const overlayRef = useRef()
@@ -30,16 +32,8 @@ export default function QtyChangeModal({ onClose }) {
 
   const handleDone = () => {
     if (!parsed || parsed <= 0) return
-    const state    = usePosStore.getState()
-    const newItems = state.cartItems.map(i => {
-      if (i.barcode !== item.barcode) return i
-      const vatPer   = i.vatPer || 0
-      const subTotal = parsed * i.unitPrice
-      const vatAmt   = subTotal * (vatPer / 100)
-      return { ...i, qty: parsed, lineTotal: +(subTotal + vatAmt).toFixed(3), vatAmt: +vatAmt.toFixed(3) }
-    })
-    usePosStore.setState({ cartItems: newItems })
-    state.recalc(newItems)
+    const signed = Number(item.qty) < 0 ? -Math.abs(parsed) : parsed
+    updateLine(selectedRowKey, { qty: signed })
     onClose()
   }
 
@@ -56,7 +50,7 @@ export default function QtyChangeModal({ onClose }) {
 
   return (
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
@@ -72,7 +66,7 @@ export default function QtyChangeModal({ onClose }) {
       `}</style>
 
       <div style={{
-        width: 500, maxWidth: '96vw',
+        width: 500, maxWidth: '96vw', maxHeight: '90vh',
         background: '#fff', borderRadius: 24, overflow: 'hidden',
         boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
         display: 'flex', flexDirection: 'column',

@@ -2,55 +2,68 @@ import { useState } from 'react'
 import { Banknote, CreditCard, UserCheck, Layers } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import CreditCustomerModal from '../popup/CreditCustomerModal'
+import MultiPaymentModal from '../popup/MultiPaymentModal'
+import { closeAndFocusBarcode } from '../../lib/posFocus'
+import { BILL_PAYMENT_MODES, PM } from '../../lib/paymentModes'
 
-const MODES = [
-  { key: 'CASH',   label: 'Cash',      icon: Banknote,   feature: 'pos.settlement.cash',   color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { key: 'CARD',   label: 'Card',      icon: CreditCard, feature: 'pos.settlement.card',   color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { key: 'CREDIT', label: 'Credit',    icon: UserCheck,  feature: 'pos.settlement.credit', color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { key: 'MULTI',  label: 'Multi Pay', icon: Layers,     feature: 'pos.split_payment',     color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
-]
+const ICONS = { [PM.CASH]: Banknote, [PM.CREDITCARD]: CreditCard, [PM.CREDIT]: UserCheck, [PM.MULTIPAYMENT]: Layers }
+const STYLES = {
+  [PM.CASH]:        { color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
+  [PM.CREDITCARD]:  { color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  [PM.CREDIT]:      { color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+  [PM.MULTIPAYMENT]:{ color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+}
 
-/* Compact payment-mode strip — modes show only when the company's
-   plan/software type enables the matching settlement feature */
 export default function PaymentButtons() {
   const [showCreditModal, setShowCreditModal] = useState(false)
+  const showMultiModal = usePosStore(s => s.multiPayModalOpen)
+  const setMultiPayModalOpen = usePosStore(s => s.setMultiPayModalOpen)
   const paymentMode    = usePosStore(s => s.paymentMode)
-  const netAmount      = usePosStore(s => s.netAmount)
   const setPaymentMode = usePosStore(s => s.setPaymentMode)
-  const setPayment     = usePosStore(s => s.setPayment)
   const setCustomer    = usePosStore(s => s.setCustomer)
+  const setPaymentSplits = usePosStore(s => s.setPaymentSplits)
+
   const handleCreditApply = (c) => {
     setCustomer(c.customerId, c.customerName, c.customerCode, c.paymentMode, c.osAmount)
     setPaymentMode('CREDIT')
   }
 
-  const visibleModes = MODES
-
   return (
     <>
     {showCreditModal && (
       <CreditCustomerModal
-        onClose={() => setShowCreditModal(false)}
-        onApply={handleCreditApply}
+        onClose={closeAndFocusBarcode(() => setShowCreditModal(false))}
+        onApply={closeAndFocusBarcode((c) => {
+          handleCreditApply(c)
+          setShowCreditModal(false)
+        })}
       />
     )}
-    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(visibleModes.length, 1)},1fr)`, gap: 5, padding: '6px 8px' }}>
-      {visibleModes.map(m => {
-        const Icon   = m.icon
+    {showMultiModal && (
+      <MultiPaymentModal
+        onClose={closeAndFocusBarcode(() => setMultiPayModalOpen(false))}
+      />
+    )}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 5, padding: '6px 8px' }}>
+      {BILL_PAYMENT_MODES.map(m => {
+        const Icon   = ICONS[m.key]
+        const style  = STYLES[m.key]
         const active = paymentMode === m.key
         return (
           <button
             key={m.key}
             onClick={() => {
-              if (m.key === 'CREDIT') { setShowCreditModal(true); return }
+              if (m.key === PM.CREDIT) { setShowCreditModal(true); return }
+              if (m.key === PM.MULTIPAYMENT)  { setMultiPayModalOpen(true); return }
               setPaymentMode(m.key)
-              if (m.key === 'CASH' || m.key === 'CARD') setPayment(netAmount)
+              setPaymentSplits(null)
+              if (m.key === PM.CASH || m.key === PM.CREDITCARD) usePosStore.getState().resetBillPaymentDefaults()
             }}
             style={{
               padding: '9px 4px', borderRadius: 'var(--r-md)',
-              border: `1.5px solid ${active ? m.border : 'var(--border)'}`,
-              background: active ? m.bg : 'var(--surface)',
-              color: active ? m.color : 'var(--text-2)',
+              border: `1.5px solid ${active ? style.border : 'var(--border)'}`,
+              background: active ? style.bg : 'var(--surface)',
+              color: active ? style.color : 'var(--text-2)',
               cursor: 'pointer',
               display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
@@ -60,9 +73,9 @@ export default function PaymentButtons() {
             }}
             onMouseEnter={e => {
               if (!active) {
-                e.currentTarget.style.background  = m.bg
-                e.currentTarget.style.color       = m.color
-                e.currentTarget.style.borderColor = m.border
+                e.currentTarget.style.background  = style.bg
+                e.currentTarget.style.color       = style.color
+                e.currentTarget.style.borderColor = style.border
               }
             }}
             onMouseLeave={e => {

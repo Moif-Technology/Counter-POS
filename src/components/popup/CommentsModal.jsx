@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, MessageSquare, Keyboard, Check, Trash2 } from 'lucide-react'
 import TouchKeyboard from '../ui/TouchKeyboard'
+import { usePosStore } from '../../store/posStore'
 
 export default function CommentsModal({ onClose, onSave }) {
-  const [text,         setText]         = useState('')
+  const billComment    = usePosStore(s => s.billComment)
+  const setBillComment = usePosStore(s => s.setBillComment)
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const textareaRef = useRef()
   const overlayRef  = useRef()
@@ -16,19 +18,19 @@ export default function CommentsModal({ onClose, onSave }) {
   }, [onClose])
 
   const handleKbKey = k => {
-    if (k === '⌫')    { setText(v => v.slice(0, -1)); return }
-    if (k === 'ENTER') { setText(v => v + '\n'); return }
-    setText(v => v + k)
+    if (k === '⌫')    { setBillComment(v => v.slice(0, -1)); return }
+    if (k === 'ENTER') { setBillComment(v => v + '\n'); return }
+    setBillComment(v => v + k)
   }
 
   const handleDone = () => {
-    onSave?.(text.trim())
+    onSave?.(billComment.trim())
     onClose()
   }
 
   return (
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
@@ -96,9 +98,9 @@ export default function CommentsModal({ onClose, onSave }) {
             </span>
             <div style={{ display: 'flex', gap: 6 }}>
               {/* Clear button */}
-              {text && (
+              {billComment && (
                 <button
-                  onClick={() => { setText(''); textareaRef.current?.focus() }}
+                  onClick={() => { setBillComment(''); textareaRef.current?.focus() }}
                   style={{
                     width: 30, height: 30, borderRadius: 7,
                     border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
@@ -136,8 +138,8 @@ export default function CommentsModal({ onClose, onSave }) {
 
           <textarea
             ref={textareaRef}
-            value={text}
-            onChange={e => setText(e.target.value)}
+            value={billComment}
+            onChange={e => setBillComment(e.target.value)}
             placeholder="Type your comment here…"
             rows={keyboardOpen ? 3 : 6}
             style={{
@@ -156,7 +158,7 @@ export default function CommentsModal({ onClose, onSave }) {
 
           {/* Character count */}
           <div style={{ textAlign: 'right', marginTop: 4, fontSize: 10, color: 'var(--text-4)', fontWeight: 600 }}>
-            {text.length} characters
+            {billComment.length} characters
           </div>
         </div>
 
