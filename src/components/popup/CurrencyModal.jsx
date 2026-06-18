@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { X, Coins } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import Numpad from '../ui/Numpad'
+import { fmtMoney } from '../../lib/currencyFormat'
 
 const CURRENCIES = [
   { sl: 1, name: 'DIRHAM',       rate: 1 },
@@ -31,9 +32,9 @@ export default function CurrencyModal({ onClose }) {
     setPaidAmount(v => v + k)
   }
 
-  const convertedBill = (billTotal * selected.rate).toFixed(3)
+  const convertedBill = fmtMoney(billTotal * selected.rate)
   const paid          = parseFloat(paidAmount) || 0
-  const balance       = (paid - parseFloat(convertedBill)).toFixed(3)
+  const balance       = fmtMoney(paid - parseFloat(convertedBill))
   const hasBalance    = paid > 0
 
   const handleEnter = () => {

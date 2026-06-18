@@ -8,6 +8,8 @@ import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
 import { fmt3 } from '../../lib/utils'
 import { applyAmountKey, useAmountNumpadKeyboard } from '../../lib/posNumpadKeys'
+import { CREDIT_SETTLEMENT_PAY_MODES, PM, normalizePaymentMode } from '../../lib/paymentModes'
+import { printCreditReceiptVoucher, receiptFromSettlementResult } from '../../lib/printCreditReceiptVoucher'
 
 const NUM_KEYS = [
   ['7', '8', '9'],
@@ -15,10 +17,11 @@ const NUM_KEYS = [
   ['1', '2', '3'],
 ]
 
-const PAY_MODES = [
-  { key: 'CASH', label: 'Cash', icon: Banknote, color: 'var(--green)', bg: 'var(--green-bg)', border: 'var(--green-border)' },
-  { key: 'CARD', label: 'Card', icon: CreditCard, color: 'var(--blue)', bg: 'var(--blue-bg)', border: 'var(--blue-border)' },
-]
+const PAY_MODE_ICONS = { [PM.CASH]: Banknote, [PM.CREDITCARD]: CreditCard }
+const PAY_MODE_STYLES = {
+  [PM.CASH]:       { color: 'var(--brand)', bg: 'var(--brand-bg)', border: 'var(--brand-border)' },
+  [PM.CREDITCARD]: { color: 'var(--blue)',  bg: 'var(--blue-bg)',  border: 'var(--blue-border)' },
+}
 
 export default function CreditSettlementModal({ onClose }) {
   const [step, setStep]           = useState('list')
@@ -27,7 +30,7 @@ export default function CreditSettlementModal({ onClose }) {
   const [selected, setSelected]   = useState(null)
   const [billData, setBillData]   = useState(null)
   const [amountStr, setAmountStr] = useState('')
-  const [payMode, setPayMode]     = useState('CASH')
+  const [payMode, setPayMode]     = useState(PM.CASH)
   const [loading, setLoading]     = useState(false)
   const [loadingBills, setLoadingBills] = useState(false)
   const [saving, setSaving]       = useState(false)
@@ -38,6 +41,8 @@ export default function CreditSettlementModal({ onClose }) {
   const debounceRef = useRef(null)
   const accessToken = usePosStore(s => s.accessToken)
   const counterNo   = usePosStore(s => s.counterNo)
+  const shopName    = usePosStore(s => s.shopName)
+  const cashier     = usePosStore(s => s.cashier)
 
   useEffect(() => {
     const onKey = e => {
@@ -118,6 +123,11 @@ export default function CreditSettlementModal({ onClose }) {
         counterNo,
       }, accessToken)
       setSuccess(result)
+      printCreditReceiptVoucher(receiptFromSettlementResult(result), {
+        companyName: shopName,
+        cashierName: cashier?.staffName,
+        counterNo,
+      })
       setAmountStr('')
       const data = await api.counterPos.customerOutstandingBills(selected.customerId, accessToken)
       setBillData(data)
@@ -127,7 +137,7 @@ export default function CreditSettlementModal({ onClose }) {
     } finally {
       setSaving(false)
     }
-  }, [selected, saving, amountStr, billData, payMode, counterNo, accessToken, search, loadCustomers])
+  }, [selected, saving, amountStr, billData, payMode, counterNo, accessToken, search, loadCustomers, shopName, cashier])
 
   useAmountNumpadKeyboard(setAmountStr, {
     onEnter: handleSettle,
@@ -315,13 +325,19 @@ export default function CreditSettlementModal({ onClose }) {
                   border: `1px solid ${billsTotal > 0 ? 'var(--red-border)' : 'var(--green-border)'}`,
                 }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: billsTotal > 0 ? 'var(--red)' : 'var(--green)' }}>
-                    Outstanding Balance
+                    Outstanding (Ledger)
                   </span>
                   <span style={{
                     fontSize: 20, fontWeight: 900,
                     fontFamily: "'JetBrains Mono', monospace",
                     color: billsTotal > 0 ? 'var(--red)' : 'var(--green)',
                   }}>{fmt3(billsTotal)}</span>
+                  {(billData?.bills ?? []).length > 0 && (
+                    <span style={{ fontSize: 10, color: 'var(--text-4)', marginTop: 4, display: 'block' }}>
+                      Bills listed: {fmt3(billData?.billsSum ?? (billData?.bills ?? []).reduce((s, b) => s + Number(b.currentAmount || 0), 0))}
+                      {' '}(FIFO — pay up to ledger)
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -399,8 +415,9 @@ export default function CreditSettlementModal({ onClose }) {
 
               <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase' }}>Payment Mode</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {PAY_MODES.map(m => {
-                  const Icon = m.icon
+                {CREDIT_SETTLEMENT_PAY_MODES.map(m => {
+                  const Icon = PAY_MODE_ICONS[m.key]
+                  const style = PAY_MODE_STYLES[m.key]
                   const active = payMode === m.key
                   return (
                     <button
@@ -408,9 +425,9 @@ export default function CreditSettlementModal({ onClose }) {
                       onClick={() => setPayMode(m.key)}
                       style={{
                         padding: '14px 8px', borderRadius: 10, cursor: 'pointer',
-                        border: `2px solid ${active ? m.border : 'var(--border)'}`,
-                        background: active ? m.bg : '#fff',
-                        color: active ? m.color : 'var(--text-3)',
+                        border: `2px solid ${active ? style.border : 'var(--border)'}`,
+                        background: active ? style.bg : '#fff',
+                        color: active ? style.color : 'var(--text-3)',
                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                         fontWeight: active ? 800 : 600, fontSize: 12,
                       }}
@@ -440,7 +457,7 @@ export default function CreditSettlementModal({ onClose }) {
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontWeight: 800, marginBottom: 4 }}>
                     <CheckCircle2 size={14} /> Settled — RCV #{success.transactionNo}
                   </div>
-                  <div>Paid: {fmt3(success.amount)} ({success.paymentMode})</div>
+                  <div>Paid: {fmt3(success.amount)} ({normalizePaymentMode(success.paymentMode)})</div>
                   <div>Remaining O/S: {fmt3(success.remainingOs)}</div>
                   {success.billsCleared?.length > 0 && (
                     <div style={{ marginTop: 4, opacity: 0.85 }}>

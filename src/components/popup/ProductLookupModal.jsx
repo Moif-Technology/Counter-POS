@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { X, Search, Trash2, Loader2 } from 'lucide-react'
 import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
+import { fmtMoney } from '../../lib/currencyFormat'
 
 const COLUMNS = [
   { key: 'barcode',       label: 'Barcode',     w: 130 },
@@ -12,7 +13,7 @@ const COLUMNS = [
 
 const DEBOUNCE_MS = 350
 
-export default function ProductLookupModal({ onClose, onSelect }) {
+export default function ProductLookupModal({ onClose, onSelect, groupId = null, groupLabel = '' }) {
   const [query,    setQuery]    = useState('')
   const [price,    setPrice]    = useState('')
   const [results,  setResults]  = useState([])
@@ -32,18 +33,18 @@ export default function ProductLookupModal({ onClose, onSelect }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const runSearch = useCallback(async (q, p) => {
-    if (!q.trim()) { setResults([]); setSearched(false); return }
+  const runSearch = useCallback(async (q, p, gid = groupId) => {
+    if (!q.trim() && gid == null) { setResults([]); setSearched(false); return }
     setLoading(true)
     setError(null)
     setSearched(true)
     try {
-      const { products } = await api.counterPos.productLookup(q, p || null, accessToken)
+      const { products } = await api.counterPos.productLookup(q, p || null, accessToken, gid)
       setResults((products ?? []).map(prod => ({
         barcode:       prod.barcode ?? prod.productCode,
         description:   prod.description,
         packetDetails: prod.unitName ?? '—',
-        price:         Number(prod.unitPrice ?? 0).toFixed(3),
+        price:         fmtMoney(prod.unitPrice ?? 0),
         _raw:          prod,
       })))
     } catch (e) {
@@ -52,7 +53,11 @@ export default function ProductLookupModal({ onClose, onSelect }) {
     } finally {
       setLoading(false)
     }
-  }, [accessToken])
+  }, [accessToken, groupId])
+
+  useEffect(() => {
+    if (groupId != null) runSearch('', price, groupId)
+  }, [groupId])
 
   const scheduleSearch = (q, p) => {
     clearTimeout(debounceRef.current)

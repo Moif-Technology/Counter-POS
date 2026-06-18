@@ -1,10 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  X, Receipt, Calendar, User, Search, RefreshCw, Loader2, ChevronDown,
+  X, Receipt, Calendar, User, Search, RefreshCw, Loader2, ChevronDown, Printer,
 } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { api } from '../../lib/api'
-import { fmt3 } from '../../lib/utils'
+import { fmtMoney } from '../../lib/currencyFormat'
+import { fmtQty } from '../../lib/utils'
+import { salesViewerSummaryRows } from '../../lib/salesViewerSummary'
+import { printBillReceipt } from '../../lib/printBillReceipt'
+import { posNotifyError } from '../../lib/posNotify'
+
+import { isMultiPaymentMode, normalizePaymentMode } from '../../lib/paymentModes'
+
+function isMultiPayment(mode) {
+  return isMultiPaymentMode(mode)
+}
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10)
@@ -189,8 +199,10 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect }) {
 }
 
 function BillDetailModal({ salesId, accessToken, onClose }) {
+  const shopName = usePosStore(s => s.shopName)
   const [bill, setBill]       = useState(null)
   const [loading, setLoading] = useState(true)
+  const [printing, setPrinting] = useState(false)
   const [error, setError]     = useState(null)
   const overlayRef = useRef()
 
@@ -210,6 +222,18 @@ function BillDetailModal({ salesId, accessToken, onClose }) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  async function handlePrint() {
+    if (printing || loading) return
+    setPrinting(true)
+    try {
+      await printBillReceipt(salesId, accessToken, { companyName: shopName })
+    } catch (e) {
+      posNotifyError(e.message ?? 'Print failed', { title: 'Print Invoice' })
+    } finally {
+      setPrinting(false)
+    }
+  }
 
   const gridCols = 'minmax(70px,1fr) minmax(120px,2fr) 60px 70px 60px 70px 80px'
 
@@ -267,7 +291,7 @@ function BillDetailModal({ salesId, accessToken, onClose }) {
               }}>
                 {[
                   ['Date', fmtDateTime(bill.billDate)],
-                  ['Payment', bill.paymentMode],
+                  ['Payment', normalizePaymentMode(bill.paymentMode)],
                   ['Customer', bill.customer?.customerName ?? 'Walk-in'],
                   ['Staff', bill.staffName ?? '—'],
                   ['Counter', bill.counterNo],
@@ -312,11 +336,11 @@ function BillDetailModal({ salesId, accessToken, onClose }) {
                     >
                       <span style={{ fontWeight: 600 }}>{it.productCode}</span>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.description}</span>
-                      <span style={{ textAlign: 'right' }}>{fmt3(it.qty)}</span>
-                      <span style={{ textAlign: 'right' }}>{fmt3(it.unitPrice)}</span>
-                      <span style={{ textAlign: 'right' }}>{fmt3(it.vatAmt)}</span>
-                      <span style={{ textAlign: 'right' }}>{fmt3(it.discount)}</span>
-                      <span style={{ textAlign: 'right', fontWeight: 700 }}>{fmt3(it.lineTotal)}</span>
+                      <span style={{ textAlign: 'right' }}>{fmtQty(it.qty)}</span>
+                      <span style={{ textAlign: 'right' }}>{fmtMoney(it.unitPrice)}</span>
+                      <span style={{ textAlign: 'right' }}>{fmtMoney(it.vatAmt)}</span>
+                      <span style={{ textAlign: 'right' }}>{fmtMoney(it.discount)}</span>
+                      <span style={{ textAlign: 'right', fontWeight: 700 }}>{fmtMoney(it.lineTotal)}</span>
                     </div>
                   ))}
                   {(bill.items ?? []).length === 0 && (
@@ -327,15 +351,10 @@ function BillDetailModal({ salesId, accessToken, onClose }) {
 
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <div style={{ minWidth: 220 }}>
-                  {[
-                    ['Sub Total', bill.subTotal],
-                    ['Discount', bill.discountAmt],
-                    ['Tax', bill.taxAmt],
-                    ['Round Off', bill.roundOff],
-                  ].map(([k, v]) => (
+                  {salesViewerSummaryRows(bill).map(([k, v]) => (
                     <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 12 }}>
                       <span style={{ color: 'var(--text-3)' }}>{k}</span>
-                      <span style={{ fontWeight: 600 }}>{fmt3(v)}</span>
+                      <span style={{ fontWeight: 600 }}>{fmtMoney(v)}</span>
                     </div>
                   ))}
                   <div style={{
@@ -344,17 +363,87 @@ function BillDetailModal({ salesId, accessToken, onClose }) {
                     fontSize: 14, fontWeight: 800,
                   }}>
                     <span>Total</span>
-                    <span style={{ color: 'var(--brand)' }}>{fmt3(bill.amount)}</span>
+                    <span style={{ color: 'var(--brand)' }}>{fmtMoney(bill.amount)}</span>
                   </div>
-                  {bill.paymentSplits?.length > 1 && (
-                    <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
-                      <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', marginBottom: 4 }}>Payment split</div>
-                      {bill.paymentSplits.map(s => (
-                        <div key={s.payerNo} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, padding: '2px 0' }}>
-                          <span>{s.payMode}</span>
-                          <span>{fmt3(s.amount)}</span>
+
+                  {isMultiPayment(bill.paymentMode) && (
+                    <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                      <div style={{
+                        fontSize: 9, fontWeight: 800, color: 'var(--purple)',
+                        textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8,
+                      }}>
+                        Split Payment
+                      </div>
+                      {(bill.paymentSplits ?? []).length > 0 ? (
+                        <div style={{
+                          border: '1.5px solid var(--border)', borderRadius: 8, overflow: 'hidden',
+                        }}>
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '28px 1fr 72px 64px 52px',
+                            gap: 6,
+                            background: 'var(--surface-2)',
+                            padding: '6px 8px',
+                            borderBottom: '1px solid var(--border)',
+                          }}>
+                            {['#', 'Mode', 'Amount', 'Tip', 'Ref'].map(h => (
+                              <span key={h} style={{
+                                fontSize: 8, fontWeight: 700, color: 'var(--text-3)',
+                                textTransform: 'uppercase',
+                                textAlign: h === 'Amount' || h === 'Tip' ? 'right' : 'left',
+                              }}>
+                                {h}
+                              </span>
+                            ))}
+                          </div>
+                          {bill.paymentSplits.map(s => (
+                            <div
+                              key={s.payerNo}
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: '28px 1fr 72px 64px 52px',
+                                gap: 6,
+                                padding: '6px 8px',
+                                borderBottom: '1px solid var(--border)',
+                                fontSize: 10,
+                                background: '#fff',
+                              }}
+                            >
+                              <span style={{ fontWeight: 700 }}>{s.payerNo}</span>
+                              <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {s.payMode}
+                              </span>
+                              <span style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>
+                                {fmtMoney(s.amount)}
+                              </span>
+                              <span style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}>
+                                {fmtMoney(s.tip ?? 0)}
+                              </span>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-3)' }}>
+                                {s.refNo || '—'}
+                              </span>
+                            </div>
+                          ))}
+                          <div style={{
+                            display: 'flex', justifyContent: 'space-between',
+                            padding: '6px 8px', background: 'var(--purple-bg)',
+                            fontSize: 10, fontWeight: 800, color: 'var(--purple)',
+                          }}>
+                            <span>Split total</span>
+                            <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                              {fmtMoney(bill.paymentSplits.reduce((a, s) => a + Number(s.amount || 0), 0))}
+                            </span>
+                          </div>
                         </div>
-                      ))}
+                      ) : (
+                        <div style={{
+                          padding: '10px 12px', borderRadius: 8,
+                          background: 'var(--surface-2)', border: '1px solid var(--border)',
+                          fontSize: 11, color: 'var(--text-4)', fontWeight: 600,
+                        }}>
+                          No split rows recorded for this bill.
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -363,7 +452,23 @@ function BillDetailModal({ salesId, accessToken, onClose }) {
           )}
         </div>
 
-        <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', textAlign: 'right' }}>
+        <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button
+            type="button"
+            disabled={loading || printing || !!error}
+            onClick={handlePrint}
+            style={{
+              height: 34, padding: '0 18px', borderRadius: 9,
+              border: 'none',
+              background: loading || error ? 'var(--surface-3)' : 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
+              color: loading || error ? 'var(--text-4)' : '#fff',
+              fontSize: 12, fontWeight: 700, cursor: loading || error ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6,
+              boxShadow: loading || error ? 'none' : '0 2px 10px rgba(107,0,0,0.25)',
+            }}
+          >
+            <Printer size={14} /> {printing ? 'Printing…' : 'Print Invoice'}
+          </button>
           <button onClick={onClose} style={{
             height: 34, padding: '0 18px', borderRadius: 9,
             border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
@@ -554,9 +659,9 @@ export default function SalesViewerModal({ onClose }) {
                 <span>{fmtDate(b.billDate)}</span>
                 <span style={{ fontWeight: 700 }}>{b.billNoDisplay ?? b.billNo}</span>
                 <span>{fmtTime(b.billTime)}</span>
-                <span>{b.paymentMode}</span>
+                <span>{normalizePaymentMode(b.paymentMode)}</span>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.customerName}</span>
-                <span style={{ fontWeight: 700, textAlign: 'right' }}>{fmt3(b.amount)}</span>
+                <span style={{ fontWeight: 700, textAlign: 'right' }}>{fmtMoney(b.amount)}</span>
                 <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{b.counterCloseNo}</span>
               </button>
             ))}
@@ -568,7 +673,7 @@ export default function SalesViewerModal({ onClose }) {
           padding: '10px 18px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', flexShrink: 0,
         }}>
           <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>
-            {bills.length} bill{bills.length !== 1 ? 's' : ''} · Total {fmt3(totalAmount)}
+            {bills.length} bill{bills.length !== 1 ? 's' : ''} · Total {fmtMoney(totalAmount)}
           </span>
           <span style={{ fontSize: 10, color: 'var(--text-4)' }}>Click a row to open bill with details</span>
           <button onClick={onClose} style={{

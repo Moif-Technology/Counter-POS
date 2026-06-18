@@ -4,6 +4,7 @@ import Numpad from '../ui/Numpad'
 import TouchKeyboard from '../ui/TouchKeyboard'
 import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
+import { fmtMoney, moneyPlaceholder } from '../../lib/currencyFormat'
 
 const IN_CATEGORIES  = ['Cash', 'Petty Cash']
 const OUT_CATEGORIES = ['Cash', 'Expense From Cash Counter']
@@ -28,7 +29,7 @@ export default function CashInOutModal({ onClose }) {
   const accent       = isIn ? 'var(--green)'        : 'var(--red)'
   const accentBg     = isIn ? 'var(--green-bg)'     : 'var(--red-bg)'
   const accentBorder = isIn ? 'var(--green-border)' : 'var(--red-border)'
-  const totalAmount  = entries.reduce((s, e) => s + parseFloat(e.amount), 0).toFixed(3)
+  const totalAmount  = fmtMoney(entries.reduce((s, e) => s + parseFloat(e.amount), 0))
   const parsed       = parseFloat(amount) || 0
 
   useEffect(() => {
@@ -67,7 +68,7 @@ export default function CashInOutModal({ onClose }) {
       id:          Date.now(),
       accountName: typeDesc.trim() || category,
       category,
-      amount:      parsed.toFixed(3),
+      amount:      fmtMoney(parsed),
     }])
     setAmount('')
     setTypeDesc('')
@@ -431,7 +432,7 @@ export default function CashInOutModal({ onClose }) {
                   fontFamily: "'JetBrains Mono', monospace",
                   transition: 'border-color 0.15s, background 0.15s',
                 }}>
-                  {amount || <span style={{ fontSize: 13, fontWeight: 500 }}>0.000</span>}
+                  {amount || <span style={{ fontSize: 13, fontWeight: 500 }}>{moneyPlaceholder()}</span>}
                 </div>
               </div>
 

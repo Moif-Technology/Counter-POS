@@ -66,7 +66,7 @@ export default function QtyChangeModal({ onClose }) {
       `}</style>
 
       <div style={{
-        width: 500, maxWidth: '96vw',
+        width: 500, maxWidth: '96vw', maxHeight: '90vh',
         background: '#fff', borderRadius: 24, overflow: 'hidden',
         boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
         display: 'flex', flexDirection: 'column',

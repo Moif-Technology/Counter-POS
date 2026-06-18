@@ -1,33 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Tag, Delete, Loader2 } from 'lucide-react'
-import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
+import { moneyPlaceholder } from '../../lib/currencyFormat'
+import { isGroupBrowseMode } from '../../lib/groupUtils'
 
 export default function GroupModal({ onClose, onSelect }) {
-  const [groups,   setGroups]   = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [error,    setError]    = useState(null)
+  const productGroups = usePosStore(s => s.productGroups)
+  const groupsLoading = usePosStore(s => s.groupsLoading)
+  const groupsError   = usePosStore(s => s.groupsError)
+  const fetchProductGroups = usePosStore(s => s.fetchProductGroups)
+  const accessToken   = usePosStore(s => s.accessToken)
+
   const [selected, setSelected] = useState(null)
   const [price,    setPrice]    = useState('')
   const [search,   setSearch]   = useState('')
   const overlayRef              = useRef()
-  const accessToken             = usePosStore(s => s.accessToken)
 
   useEffect(() => {
-    async function load() {
-      setLoading(true)
-      setError(null)
-      try {
-        const { groups: list } = await api.counterPos.groupsList(accessToken)
-        setGroups(list ?? [])
-      } catch (e) {
-        setError(e.message)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [accessToken])
+    if (accessToken) fetchProductGroups()
+  }, [accessToken, fetchProductGroups])
+
+  const groups = productGroups
+  const loading = groupsLoading
+  const error = groupsError
 
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose() }
@@ -48,8 +43,7 @@ export default function GroupModal({ onClose, onSelect }) {
   const handleGroupClick = (g) => {
     setSelected(g)
     setPrice('')
-    if (g.keyShift === 1) {
-      // Product lookup mode — pass control back to caller to open product lookup
+    if (isGroupBrowseMode(g)) {
       onSelect?.({ group: g, mode: 'product_lookup' })
       onClose()
     }
@@ -179,7 +173,7 @@ export default function GroupModal({ onClose, onSelect }) {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                   {filtered.map(g => {
                     const active    = selected?.groupId === g.groupId
-                    const isLookup  = g.keyShift === 1
+                    const isLookup  = isGroupBrowseMode(g)
                     return (
                       <button
                         key={g.groupId}
@@ -219,11 +213,11 @@ export default function GroupModal({ onClose, onSelect }) {
           <div style={{ width: 210, flexShrink: 0, display: 'flex', flexDirection: 'column', padding: '10px 12px 0' }}>
 
             <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }}>
-              Unit Price
+              Unit Price (incl. VAT)
             </p>
             <div style={{
               height: 40, borderRadius: 8, marginBottom: 8,
-              border: `1.5px solid ${selected && selected.keyShift !== 1 ? 'var(--brand)' : 'var(--border)'}`,
+              border: `1.5px solid ${selected && !isGroupBrowseMode(selected) ? 'var(--brand)' : 'var(--border)'}`,
               background: 'var(--surface-2)',
               display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
               padding: '0 12px',
@@ -234,7 +228,7 @@ export default function GroupModal({ onClose, onSelect }) {
                 fontFamily: "'JetBrains Mono', monospace",
                 fontVariantNumeric: 'tabular-nums',
               }}>
-                {price || '0.000'}
+                {price || moneyPlaceholder()}
               </span>
             </div>
 

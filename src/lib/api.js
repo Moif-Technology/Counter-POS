@@ -29,11 +29,23 @@ export const api = {
     pinLogin:      (body)           => request('POST', '/counter-pos/pin-login',    body),
     enrollDevice:  (body)           => request('POST', '/counter-pos/device/enroll', body),
     productSearch:  (barcode, token)      => request('GET',  `/counter-pos/products/search?barcode=${encodeURIComponent(barcode)}`, null, token),
-    productLookup:  (q, maxPrice, token)  => request('GET',  `/counter-pos/products/lookup?q=${encodeURIComponent(q ?? '')}${maxPrice ? `&maxPrice=${encodeURIComponent(maxPrice)}` : ''}`, null, token),
+    productLookup:  (q, maxPrice, token, groupId) => {
+      const params = new URLSearchParams()
+      params.set('q', q ?? '')
+      if (maxPrice) params.set('maxPrice', String(maxPrice))
+      if (groupId != null && groupId !== '') params.set('groupId', String(groupId))
+      return request('GET', `/counter-pos/products/lookup?${params.toString()}`, null, token)
+    },
     customerSearch: (q, limit, token)    => request('GET',  `/counter-pos/customers/search?q=${encodeURIComponent(q ?? '')}&limit=${limit ?? 30}`, null, token),
     nextBillNo:     (token)              => request('GET',   `/counter-pos/sales/next-bill-no`, null, token),
     saveBill:       (body, token)        => request('POST',  `/counter-pos/sales/save`, body, token),
     holdBill:       (body, token)        => request('POST',  `/counter-pos/sales/hold`, body, token),
+    saveDelivery:   (body, token)        => request('POST',  `/counter-pos/sales/delivery`, body, token),
+    getDeliveryBills: (token)            => request('GET',   `/counter-pos/sales/delivery`, null, token),
+    recallDelivery: (salesId, token)     => request('GET',   `/counter-pos/sales/delivery/${salesId}`, null, token),
+    cancelDelivery: (salesId, token)     => request('DELETE',`/counter-pos/sales/delivery/${salesId}`, null, token),
+    settleDelivery: (salesId, body, token) => request('POST', `/counter-pos/sales/delivery/${salesId}/settle`, body, token),
+    settleDeliveryBulk: (body, token) => request('POST', '/counter-pos/sales/delivery/settle-bulk', body, token),
     getHeldBills:   (token)              => request('GET',   `/counter-pos/sales/held`, null, token),
     recallBill:     (salesId, token)     => request('GET',   `/counter-pos/sales/held/${salesId}`, null, token),
     cancelHold:     (salesId, token)     => request('DELETE',`/counter-pos/sales/held/${salesId}`, null, token),

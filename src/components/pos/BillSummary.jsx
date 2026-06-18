@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { usePosStore } from '../../store/posStore'
+import { normalizePaymentMode } from '../../lib/paymentModes'
 import { getGvTax } from '../../lib/gvtax'
 import { fmt3 } from '../../lib/utils'
 import { ChevronUp, ChevronDown, Receipt } from 'lucide-react'
@@ -46,7 +47,7 @@ export default function BillSummary() {
   const [collapsed, setCollapsed] = useState(false)
 
   const {
-    subTotal, discountAmt, taxableAmt, taxAmt, voucherAmt,
+    subTotal, lineDiscountAmt, billDiscountAmt, discountAmt, taxableAmt, taxAmt, voucherAmt,
     roundOff, netAmount, paidAmount, balanceAmount,
     paymentMode,
   } = usePosStore()
@@ -79,7 +80,15 @@ export default function BillSummary() {
       {!collapsed && (
         <div style={{ padding: '8px 14px' }}>
           <SummaryRow label="Sub Total"       value={fmt3(subTotal)} />
-          <SummaryRow label="Discount"        value={fmt3(discountAmt)} muted={discountAmt === 0} />
+          {lineDiscountAmt > 0 && (
+            <SummaryRow label="Line Discount" value={fmt3(lineDiscountAmt)} muted />
+          )}
+          {billDiscountAmt > 0 && (
+            <SummaryRow label="Bill Discount" value={fmt3(billDiscountAmt)} muted />
+          )}
+          {lineDiscountAmt <= 0 && billDiscountAmt <= 0 && (
+            <SummaryRow label="Discount" value={fmt3(discountAmt)} muted />
+          )}
           <SummaryRow label="Taxable Amt"     value={fmt3(taxableAmt)} />
           <SummaryRow label={`Tax Amount (${getGvTax()}%)`} value={fmt3(taxAmt)} />
           {voucherAmt > 0 && (
@@ -140,7 +149,7 @@ export default function BillSummary() {
           fontSize: 9, fontWeight: 800, color: '#fff',
           letterSpacing: 0.6, textTransform: 'uppercase',
         }}>
-          {paymentMode}
+          {normalizePaymentMode(paymentMode)}
         </div>
       </div>
 

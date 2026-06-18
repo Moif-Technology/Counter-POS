@@ -1,23 +1,29 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { X, Percent } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
-import { findCartItemByKey } from '../../lib/cartLine'
 import {
-  lineDiscountInitialState,
-  lineTaxableBeforeDiscount,
-  previewLineDiscount,
+  billDiscountInitialState,
+  billTaxableBeforeDiscount,
+  previewBillDiscount,
   resolveDiscountOnTaxable,
 } from '../../lib/discountCalc'
 import DiscountEntryPanel from './DiscountEntryPanel'
 
-export default function DiscountModal({ onClose, rowKey: rowKeyProp, zIndex = 1000 }) {
-  const cartItems      = usePosStore(s => s.cartItems)
-  const selectedRowKey = usePosStore(s => s.selectedRowKey)
-  const updateLine     = usePosStore(s => s.updateLine)
-  const activeKey      = rowKeyProp ?? selectedRowKey
-  const item           = findCartItemByKey(cartItems, activeKey)
+export default function BillDiscountModal({ onClose }) {
+  const cartItems = usePosStore(s => s.cartItems)
+  const billDiscountAmt = usePosStore(s => s.billDiscountAmt)
+  const setBillDiscount = usePosStore(s => s.setBillDiscount)
 
-  const initial = lineDiscountInitialState(item)
+  const taxableBase = useMemo(
+    () => billTaxableBeforeDiscount(cartItems),
+    [cartItems],
+  )
+
+  const initial = useMemo(
+    () => billDiscountInitialState(cartItems, billDiscountAmt),
+    [cartItems, billDiscountAmt],
+  )
+
   const [mode, setMode]       = useState(initial.mode)
   const [discPct, setDiscPct] = useState(initial.discPct)
   const [discAmt, setDiscAmt] = useState(initial.discAmt)
@@ -29,10 +35,9 @@ export default function DiscountModal({ onClose, rowKey: rowKeyProp, zIndex = 10
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  if (!item) return null
+  if (!cartItems.length) return null
 
-  const taxableBase = lineTaxableBeforeDiscount(item)
-  const preview = previewLineDiscount(item, mode, discPct, discAmt)
+  const preview = previewBillDiscount(cartItems, mode, discPct, discAmt)
   const displayPct = mode === 'pct' ? discPct : (preview.pct ? String(preview.pct) : '')
   const displayAmt = mode === 'amt' ? discAmt : (preview.discountAmt ? String(preview.discountAmt) : '')
 
@@ -67,19 +72,13 @@ export default function DiscountModal({ onClose, rowKey: rowKeyProp, zIndex = 10
   }
 
   const handleDone = () => {
-    const { discountAmt, pct } = resolveDiscountOnTaxable(
+    const { discountAmt } = resolveDiscountOnTaxable(
       taxableBase,
       mode,
       mode === 'pct' ? discPct : displayPct,
       mode === 'amt' ? discAmt : displayAmt,
     )
-    if (discountAmt <= 0 && pct <= 0) {
-      updateLine(activeKey, { discount: 0, discountAmt: 0, discountMode: 'pct' })
-    } else if (mode === 'amt') {
-      updateLine(activeKey, { discount: 0, discountAmt, discountMode: 'amt' })
-    } else {
-      updateLine(activeKey, { discount: pct, discountAmt: 0, discountMode: 'pct' })
-    }
+    setBillDiscount(discountAmt)
     onClose()
   }
 
@@ -89,7 +88,7 @@ export default function DiscountModal({ onClose, rowKey: rowKeyProp, zIndex = 10
       data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
-        position: 'fixed', inset: 0, zIndex,
+        position: 'fixed', inset: 0, zIndex: 1000,
         background: 'rgba(10,8,6,0.44)',
         backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -123,8 +122,8 @@ export default function DiscountModal({ onClose, rowKey: rowKeyProp, zIndex = 10
               <Percent size={16} color="#fff" />
             </div>
             <div>
-              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>Line item</p>
-              <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1 }}>Line Discount</p>
+              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>Bill</p>
+              <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1 }}>Bill Discount</p>
             </div>
           </div>
           <button type="button" onClick={onClose} style={{
@@ -138,13 +137,13 @@ export default function DiscountModal({ onClose, rowKey: rowKeyProp, zIndex = 10
         </div>
 
         <DiscountEntryPanel
-          contextLabel={item.description}
-          contextHint="Discount applies on taxable amount (before VAT)."
+          contextLabel={`${cartItems.length} item${cartItems.length !== 1 ? 's' : ''} on bill`}
+          contextHint="Bill discount on taxable total after line discounts (before VAT)."
           taxableBefore={taxableBase}
           discountAmt={preview.discountAmt}
           taxableAfter={preview.netTaxable}
           totalWithVat={preview.grossTotal}
-          totalLabel="Line total (incl. VAT)"
+          totalLabel="Bill total (incl. VAT)"
           mode={mode}
           setMode={setMode}
           displayPct={displayPct}

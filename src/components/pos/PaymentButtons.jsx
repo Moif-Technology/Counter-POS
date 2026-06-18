@@ -4,18 +4,20 @@ import { usePosStore } from '../../store/posStore'
 import CreditCustomerModal from '../popup/CreditCustomerModal'
 import MultiPaymentModal from '../popup/MultiPaymentModal'
 import { closeAndFocusBarcode } from '../../lib/posFocus'
+import { BILL_PAYMENT_MODES, PM } from '../../lib/paymentModes'
 
-const MODES = [
-  { key: 'CASH',   label: 'Cash',      icon: Banknote,   color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { key: 'CARD',   label: 'Card',      icon: CreditCard, color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { key: 'CREDIT', label: 'Credit',    icon: UserCheck,  color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { key: 'MULTI',  label: 'Multi Pay', icon: Layers,     color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
-]
+const ICONS = { [PM.CASH]: Banknote, [PM.CREDITCARD]: CreditCard, [PM.CREDIT]: UserCheck, [PM.MULTIPAYMENT]: Layers }
+const STYLES = {
+  [PM.CASH]:        { color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
+  [PM.CREDITCARD]:  { color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  [PM.CREDIT]:      { color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+  [PM.MULTIPAYMENT]:{ color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+}
 
-/* Compact 4-button strip — kept for standalone use if needed */
 export default function PaymentButtons() {
   const [showCreditModal, setShowCreditModal] = useState(false)
-  const [showMultiModal,  setShowMultiModal]  = useState(false)
+  const showMultiModal = usePosStore(s => s.multiPayModalOpen)
+  const setMultiPayModalOpen = usePosStore(s => s.setMultiPayModalOpen)
   const paymentMode    = usePosStore(s => s.paymentMode)
   const setPaymentMode = usePosStore(s => s.setPaymentMode)
   const setCustomer    = usePosStore(s => s.setCustomer)
@@ -39,28 +41,29 @@ export default function PaymentButtons() {
     )}
     {showMultiModal && (
       <MultiPaymentModal
-        onClose={closeAndFocusBarcode(() => setShowMultiModal(false))}
+        onClose={closeAndFocusBarcode(() => setMultiPayModalOpen(false))}
       />
     )}
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 5, padding: '6px 8px' }}>
-      {MODES.map(m => {
-        const Icon   = m.icon
+      {BILL_PAYMENT_MODES.map(m => {
+        const Icon   = ICONS[m.key]
+        const style  = STYLES[m.key]
         const active = paymentMode === m.key
         return (
           <button
             key={m.key}
             onClick={() => {
-              if (m.key === 'CREDIT') { setShowCreditModal(true); return }
-              if (m.key === 'MULTI')  { setShowMultiModal(true); return }
+              if (m.key === PM.CREDIT) { setShowCreditModal(true); return }
+              if (m.key === PM.MULTIPAYMENT)  { setMultiPayModalOpen(true); return }
               setPaymentMode(m.key)
               setPaymentSplits(null)
-              if (m.key === 'CASH' || m.key === 'CARD') usePosStore.getState().resetBillPaymentDefaults()
+              if (m.key === PM.CASH || m.key === PM.CREDITCARD) usePosStore.getState().resetBillPaymentDefaults()
             }}
             style={{
               padding: '9px 4px', borderRadius: 'var(--r-md)',
-              border: `1.5px solid ${active ? m.border : 'var(--border)'}`,
-              background: active ? m.bg : 'var(--surface)',
-              color: active ? m.color : 'var(--text-2)',
+              border: `1.5px solid ${active ? style.border : 'var(--border)'}`,
+              background: active ? style.bg : 'var(--surface)',
+              color: active ? style.color : 'var(--text-2)',
               cursor: 'pointer',
               display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
@@ -70,9 +73,9 @@ export default function PaymentButtons() {
             }}
             onMouseEnter={e => {
               if (!active) {
-                e.currentTarget.style.background  = m.bg
-                e.currentTarget.style.color       = m.color
-                e.currentTarget.style.borderColor = m.border
+                e.currentTarget.style.background  = style.bg
+                e.currentTarget.style.color       = style.color
+                e.currentTarget.style.borderColor = style.border
               }
             }}
             onMouseLeave={e => {

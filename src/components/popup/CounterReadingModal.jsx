@@ -3,6 +3,10 @@ import { X, ClipboardList, Printer, XCircle, RefreshCw } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { api } from '../../lib/api'
 import { fmt3 } from '../../lib/utils'
+import { fmtMoney, moneyPlaceholder } from '../../lib/currencyFormat'
+import { printCounterReport } from '../../lib/printCounterReport'
+import { getReceiptPrintMetaFromStore } from '../../lib/receiptPrintTheme'
+import { posNotifyWarning } from '../../lib/posNotify'
 
 const DENOMS = [
   { label: '1000', value: 1000  },
@@ -24,7 +28,6 @@ const initCounts = () => Object.fromEntries(DENOMS.map(d => [d.label, '']))
 export default function CounterReadingModal({ onClose }) {
   const accessToken = usePosStore(s => s.accessToken)
   const counterNo   = usePosStore(s => s.counterNo)
-
   const [summary,     setSummary]     = useState(null)
   const [loading,     setLoading]     = useState(true)
   const [error,       setError]       = useState(null)
@@ -95,6 +98,19 @@ export default function CounterReadingModal({ onClose }) {
         reportType,
         collectedCash: collectedAmount,
       }, accessToken)
+      const printPayload = { ...summary, ...result, collectedCash: collectedAmount, cashDifference: collectedAmount - (summary?.cashToBeCollected ?? 0) }
+      try {
+        await printCounterReport(printPayload, {
+          ...getReceiptPrintMetaFromStore(),
+          reportType,
+          closeNo: result.closeNo ?? '',
+          reportAt: new Date(),
+        })
+      } catch (printErr) {
+        posNotifyWarning(printErr.message ?? `${reportType}-Report saved but print failed`, {
+          title: `${reportType}-Report Print`,
+        })
+      }
       setCloseResult({ ...result, reportType })
       if (reportType === 'Z') {
         setCounts(initCounts())
@@ -163,8 +179,8 @@ export default function CounterReadingModal({ onClose }) {
     ['Bill Count',         summary.billCount],
     ['Cash Bill',          summary.cashBillCount],
     ['Credit Bill',        summary.creditBillCount],
-    ['Credit Card Bill',   summary.cardBillCount],
-    ['Multi Payment',      summary.multiBillCount],
+    ['CREDITCARD',         summary.cardBillCount],
+    ['MULTIPAYMENT',       summary.multiBillCount],
   ] : []
 
   return (
@@ -422,7 +438,7 @@ export default function CounterReadingModal({ onClose }) {
               {DENOMS.map((d, i) => {
                 const isActive = activeDenom === d.label
                 const cnt      = parseFloat(counts[d.label]) || 0
-                const amt      = (d.value * cnt).toFixed(3)
+                const amt      = fmtMoney(d.value * cnt)
                 return (
                   <div
                     key={d.label}
@@ -511,7 +527,7 @@ export default function CounterReadingModal({ onClose }) {
               <input
                 type="text"
                 inputMode="decimal"
-                value={manualInput !== '' ? manualInput : denomTotal > 0 ? denomTotal.toFixed(3) : ''}
+                value={manualInput !== '' ? manualInput : denomTotal > 0 ? fmtMoney(denomTotal) : ''}
                 onChange={e => {
                   const v = e.target.value
                   // Allow only digits and one decimal point
@@ -520,10 +536,10 @@ export default function CounterReadingModal({ onClose }) {
                 onBlur={e => {
                   // Format to 3 decimal places on blur
                   const n = parseFloat(e.target.value)
-                  if (!isNaN(n)) setManualInput(n.toFixed(3))
+                  if (!isNaN(n)) setManualInput(fmtMoney(n))
                 }}
                 onKeyDown={e => e.stopPropagation()} // prevent window keydown from firing
-                placeholder="0.000"
+                placeholder={moneyPlaceholder()}
                 style={{
                   height: 46, borderRadius: 9,
                   border: `1.5px solid ${collectedAmount > 0 ? 'var(--green-border)' : 'var(--border)'}`,
@@ -549,7 +565,7 @@ export default function CounterReadingModal({ onClose }) {
                 color: cashDifference >= 0 ? 'var(--brand)' : 'var(--red)',
                 fontFamily: "'JetBrains Mono', monospace",
               }}>
-                {cashDifference >= 0 ? '+' : ''}{cashDifference.toFixed(3)}
+                {cashDifference >= 0 ? '+' : ''}{fmtMoney(cashDifference)}
               </div>
             </div>
 

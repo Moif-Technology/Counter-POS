@@ -6,16 +6,28 @@ import {
 } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
+import { isMultiPaymentMode } from '../lib/paymentModes'
 import ItemsGrid from '../components/pos/ItemsGrid'
 import BarcodeInput from '../components/pos/BarcodeInput'
 import NumPad from '../components/pos/NumPad'
-import PaymentButtons from '../components/pos/PaymentButtons'
 import BillSummary from '../components/pos/BillSummary'
 import ItemPreview from '../components/pos/ItemPreview'
 import { SideNav, FeatureGrid } from '../components/pos/FunctionButtons'
 import CustomerSearch from '../components/pos/CustomerSearch'
+import { enrichCartItemsForSave } from '../lib/cartLine'
 import { focusBarcodeScan, shouldSkipBarcodeRefocus } from '../lib/posFocus'
 import { setGvTax } from '../lib/gvtax'
+import { setAutoRoundOff } from '../lib/posSettings'
+import { posConfirm, posNotifyError, posNotifySuccess, posNotifyWarning } from '../lib/posNotify'
+import { printBillReceipts } from '../lib/printBillReceipt'
+import {
+  parseLegacyDeliveryScan,
+  parseLegacyHoldScan,
+  parseDocNumber,
+  resolveNumericDocumentScan,
+  DOC_TYPE,
+  formatDocNumberDisplay,
+} from '../lib/documentScan'
 
 /* ── Tiny header chip ─────────────────────────────────────────── */
 function HeaderChip({ icon: Icon, label, dropdown }) {
@@ -77,16 +89,14 @@ export default function POSPage() {
   const setBillNo        = usePosStore(s => s.setBillNo)
   const clearAll         = usePosStore(s => s.clearAll)
   const [now, setNow]           = useState(new Date())
-  const [scanError, setScanError] = useState(null)
   const [scanning, setScanning]   = useState(false)
   const [saving, setSaving]       = useState(false)
-  const [saveMsg, setSaveMsg]     = useState(null)
 
   const fetchNextBillNo = useCallback(async () => {
     const { accessToken } = usePosStore.getState()
     try {
-      const { billNoDisplay } = await api.counterPos.nextBillNo(accessToken)
-      setBillNo(billNoDisplay)
+      const { billNo } = await api.counterPos.nextBillNo(accessToken)
+      setBillNo(String(billNo ?? ''))
     } catch {
       // ignore: bill number is best-effort (POS can still operate)
     }
@@ -101,6 +111,10 @@ export default function POSPage() {
         const { accessToken } = usePosStore.getState()
         const data = await api.appParameters.gvtax(accessToken)
         setGvTax(data?.gvtax ?? 5)
+        usePosStore.getState().setCurrencyPrecision(data?.currencyPrecision ?? 2)
+        setAutoRoundOff(data?.autoRoundOff ?? 0)
+        if (data?.receiptHeader) usePosStore.getState().setReceiptHeader(data.receiptHeader)
+        usePosStore.getState().recalc()
       } catch {
         setGvTax(5)
       }
@@ -109,12 +123,133 @@ export default function POSPage() {
   }, [cashier, navigate, fetchNextBillNo])
 
   const handleEnter = useCallback(async () => {
-    const { barcodeBuffer, qtyBuffer, accessToken } = usePosStore.getState()
+    const state = usePosStore.getState()
+    const { barcodeBuffer, qtyBuffer, accessToken } = state
     const term = barcodeBuffer.trim()
     if (!term || scanning) return
 
-    setScanError(null)
+    const holdNo = parseLegacyHoldScan(term)
+    if (holdNo != null) {
+      if (state.cartItems.length > 0) {
+        const ok = await posConfirm({
+          title: 'Recall Hold',
+          message: `Cart has items. Recall hold ${holdNo} and replace the current bill?`,
+          confirmLabel: 'Recall Hold',
+          cancelLabel: 'Cancel',
+        })
+        if (!ok) {
+          state.setBarcodeBuffer('')
+          focusBarcodeScan(30)
+          return
+        }
+      }
+      setScanning(true)
+      try {
+        await usePosStore.getState().recallHoldByNo(holdNo)
+        state.resetAfterLineScan()
+        posNotifySuccess(`Hold ${holdNo} recalled`, { title: 'Hold Recall', duration: 1200 })
+        focusBarcodeScan(30)
+      } catch (err) {
+        posNotifyError(err.message ?? 'Hold not found', {
+          title: 'Hold Recall',
+          onClose: () => {
+            usePosStore.getState().setBarcodeBuffer('')
+            focusBarcodeScan(30)
+          },
+        })
+      } finally {
+        setScanning(false)
+      }
+      return
+    }
+
+    const deliveryNo = parseLegacyDeliveryScan(term)
+    if (deliveryNo != null) {
+      if (state.cartItems.length > 0) {
+        const ok = await posConfirm({
+          title: 'Recall Delivery',
+          message: `Cart has items. Recall delivery ${deliveryNo} to counter and replace the current bill?`,
+          confirmLabel: 'Recall Delivery',
+          cancelLabel: 'Cancel',
+        })
+        if (!ok) {
+          state.setBarcodeBuffer('')
+          focusBarcodeScan(30)
+          return
+        }
+      }
+      setScanning(true)
+      try {
+        await usePosStore.getState().recallDeliveryByNo(deliveryNo)
+        state.resetAfterLineScan()
+        posNotifySuccess(`Delivery ${deliveryNo} recalled to counter`, {
+          title: 'Delivery Recall',
+          duration: 1200,
+        })
+        focusBarcodeScan(30)
+      } catch (err) {
+        posNotifyError(err.message ?? 'Delivery not found', {
+          title: 'Delivery Recall',
+          onClose: () => {
+            usePosStore.getState().setBarcodeBuffer('')
+            focusBarcodeScan(30)
+          },
+        })
+      } finally {
+        setScanning(false)
+      }
+      return
+    }
+
+    const docNo = parseDocNumber(term)
+    if (docNo != null) {
+      const resolved = await resolveNumericDocumentScan(docNo, accessToken, api)
+      if (resolved) {
+        const isHold = resolved.type === DOC_TYPE.HOLD
+        const label = isHold ? `hold ${resolved.number}` : `delivery ${resolved.number}`
+        if (state.cartItems.length > 0) {
+          const ok = await posConfirm({
+            title: isHold ? 'Recall Hold' : 'Recall Delivery',
+            message: `Cart has items. Recall ${label} and replace the current bill?`,
+            confirmLabel: isHold ? 'Recall Hold' : 'Recall Delivery',
+            cancelLabel: 'Cancel',
+          })
+          if (!ok) {
+            state.setBarcodeBuffer('')
+            focusBarcodeScan(30)
+            return
+          }
+        }
+        setScanning(true)
+        try {
+          if (isHold) {
+            await usePosStore.getState().recallHoldByNo(resolved.number)
+          } else {
+            await usePosStore.getState().recallDeliveryByNo(resolved.number)
+          }
+          state.resetAfterLineScan()
+          posNotifySuccess(`${isHold ? 'Hold' : 'Delivery'} ${resolved.number} recalled`, {
+            title: isHold ? 'Hold Recall' : 'Delivery Recall',
+            duration: 1200,
+          })
+          focusBarcodeScan(30)
+        } catch (err) {
+          posNotifyError(err.message ?? 'Document not found', {
+            title: isHold ? 'Hold Recall' : 'Delivery Recall',
+            onClose: () => {
+              usePosStore.getState().setBarcodeBuffer('')
+              focusBarcodeScan(30)
+            },
+          })
+        } finally {
+          setScanning(false)
+        }
+        return
+      }
+    }
+
     setScanning(true)
+    let added = false
     try {
       const { product } = await api.counterPos.productSearch(term, accessToken)
       const { parseScanQty, resetAfterLineScan } = usePosStore.getState()
@@ -123,46 +258,53 @@ export default function POSPage() {
         productId:   product.productId,
         barcode:     product.barcode,
         productCode: product.productCode,
-        description: product.description,
+        description: product.description ?? product.productName,
         qty,
         unitPrice: product.unitPrice,
         discount:  0,
         vatPer:    product.vatPer ?? 0,
       })
       resetAfterLineScan()
+      added = true
     } catch (err) {
-      setScanError(err.message ?? 'Product not found')
+      posNotifyError(err.message ?? 'Product not found', {
+        title: 'Scan',
+        onClose: () => {
+          usePosStore.getState().setBarcodeBuffer('')
+          focusBarcodeScan(30)
+        },
+      })
     } finally {
       setScanning(false)
-      focusBarcodeScan(30)
+      if (added) focusBarcodeScan(30)
     }
-  }, [addItem, scanning, setBarcodeBuffer, setQtyBuffer])
+  }, [addItem, scanning])
 
   const handleSave = useCallback(async (andPrint = false) => {
     const state = usePosStore.getState()
     if (!state.cartItems.length) {
-      setSaveMsg({ type: 'error', text: 'Cart is empty' })
+      posNotifyWarning('Cart is empty', { title: 'Save Bill' })
       return
     }
 
     const payResult = state.applyPaymentForSettlement()
     if (!payResult.ok) {
-      setSaveMsg({ type: 'error', text: payResult.error })
+      posNotifyError(payResult.error, { title: 'Payment' })
       focusBarcodeScan(30)
       return
     }
 
     setSaving(true)
-    setSaveMsg(null)
     try {
       const fresh = usePosStore.getState()
-      const hasSale   = fresh.cartItems.some(i => Number(i.qty) > 0)
-      const hasReturn = fresh.cartItems.some(i => Number(i.qty) < 0)
+      const cartItems = enrichCartItemsForSave(fresh.cartItems)
+      const hasSale   = cartItems.some(i => Number(i.qty) > 0)
+      const hasReturn = cartItems.some(i => Number(i.qty) < 0)
       const isReturn = fresh.returnMode && !hasSale && hasReturn
       const result = await api.counterPos.saveBill({
-        cartItems:    fresh.cartItems,
+        cartItems,
         paymentMode:  fresh.paymentMode,
-        paymentSplits: fresh.paymentMode === 'MULTI' ? (fresh.paymentSplits ?? []) : undefined,
+        paymentSplits: isMultiPaymentMode(fresh.paymentMode) ? (fresh.paymentSplits ?? []) : undefined,
         counterNo:    fresh.counterNo,
         subTotal:     fresh.subTotal,
         discountAmt:  fresh.discountAmt,
@@ -176,29 +318,39 @@ export default function POSPage() {
         remarks:      fresh.billComment?.trim() || null,
         isReturn,
         recalledHoldSalesId: fresh.recalledHoldSalesId ?? null,
+        recalledDeliverySalesId: fresh.recalledDeliverySalesId ?? null,
       }, fresh.accessToken)
 
       if (result?.isMixed) {
-        setSaveMsg({
-          type: 'success',
-          text: `Saved: ${result.sale?.billNoDisplay} (Sale) + ${result.return?.billNoDisplay} (Return)`,
-        })
+        posNotifySuccess(
+          `Saved: ${formatDocNumberDisplay(result.sale?.billNoDisplay ?? result.sale?.billNo)} (Sale) + ${formatDocNumberDisplay(result.return?.billNoDisplay ?? result.return?.billNo)} (Return)`,
+          { title: 'Bill Saved', duration: 1200 },
+        )
       } else {
-        const savedLabel = result.billNoDisplay ?? `B-${result.billNo ?? result.salesId}`
-        setSaveMsg({
-          type: 'success',
-          text: (result?.isReturn ? `Return ${savedLabel} saved!` : `Bill ${savedLabel} saved!`),
-        })
+        const savedLabel = formatDocNumberDisplay(result.billNoDisplay ?? result.billNo ?? result.salesId)
+        posNotifySuccess(
+          result?.isReturn ? `Return ${savedLabel} saved!` : `Bill ${savedLabel} saved!`,
+          { title: 'Bill Saved', duration: 1200 },
+        )
       }
       usePosStore.setState({ recalledHoldSalesId: null })
+      const { accessToken, counterNo, shopName } = usePosStore.getState()
       clearAll()
       await fetchNextBillNo()
 
       if (andPrint) {
-        window.print()
+        const printMeta = { companyName: shopName, counterNo }
+        const ids = result?.isMixed
+          ? [result.sale?.salesId, result.return?.salesId]
+          : [result.salesId]
+        try {
+          await printBillReceipts(ids, accessToken, printMeta)
+        } catch (printErr) {
+          posNotifyError(printErr.message ?? 'Print failed', { title: 'Print' })
+        }
       }
     } catch (err) {
-      setSaveMsg({ type: 'error', text: err.message ?? 'Save failed' })
+      posNotifyError(err.message ?? 'Save failed', { title: 'Save Bill' })
     } finally {
       setSaving(false)
       focusBarcodeScan(80)
@@ -308,22 +460,6 @@ export default function POSPage() {
             </div>
           </div>
 
-          {scanError && (
-            <div style={{
-              padding: '6px 14px', background: 'var(--red-bg)',
-              border: '1px solid var(--red-border)', borderRadius: 6,
-              color: 'var(--red)', fontSize: 12, fontWeight: 600,
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              flexShrink: 0,
-            }}>
-              <span>{scanError}</span>
-              <button onClick={() => setScanError(null)} style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--red)', fontSize: 14, lineHeight: 1, padding: '0 4px',
-              }}>×</button>
-            </div>
-          )}
-
           {/* Item preview strip */}
           <div className="pos-preview">
             <ItemPreview />
@@ -343,36 +479,22 @@ export default function POSPage() {
 
         {/* RIGHT — payment mode + bill summary + numpad + actions */}
         <div className="pos-right">
-          <div className="pos-pay-zone"><PaymentButtons /></div>
           <div className="pos-bill-zone"><BillSummary /></div>
           <div className="pos-numpad-zone"><NumPad onEnter={handleEnter} /></div>
-          {saveMsg && (
-            <div style={{
-              margin: '0 8px', padding: '7px 12px', borderRadius: 6, flexShrink: 0,
-              background: saveMsg.type === 'success' ? 'var(--green-bg)' : 'var(--red-bg)',
-              border: `1px solid ${saveMsg.type === 'success' ? 'var(--green-border)' : 'var(--red-border)'}`,
-              color: saveMsg.type === 'success' ? 'var(--green)' : 'var(--red)',
-              fontSize: 12, fontWeight: 700,
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            }}>
-              <span>{saveMsg.text}</span>
-              <button onClick={() => setSaveMsg(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: 14, lineHeight: 1, padding: '0 4px' }}>×</button>
-            </div>
-          )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '8px 8px 10px', flexShrink: 0 }}>
             <button
               disabled={saving}
               onClick={() => handleSave(false)}
               style={{
                 padding: '12px 0', borderRadius: 'var(--r-md)',
-                border: '2px solid var(--green-border)',
-                background: 'var(--green-bg)', color: 'var(--green)',
+                border: '2px solid var(--brand-border)',
+                background: 'var(--brand-bg)', color: 'var(--brand)',
                 fontSize: 15, fontWeight: 800, cursor: saving ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 transition: 'all 0.12s', letterSpacing: 0.3, opacity: saving ? 0.6 : 1,
               }}
-              onMouseEnter={e => { if (!saving) { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'var(--green)' } }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--green-bg)'; e.currentTarget.style.color = 'var(--green)'; e.currentTarget.style.borderColor = 'var(--green-border)' }}
+              onMouseEnter={e => { if (!saving) { e.currentTarget.style.background = 'var(--brand)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'var(--brand)' } }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--brand-bg)'; e.currentTarget.style.color = 'var(--brand)'; e.currentTarget.style.borderColor = 'var(--brand-border)' }}
               onMouseDown={e => { if (!saving) e.currentTarget.style.transform = 'scale(0.97)' }}
               onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
             >
@@ -412,8 +534,8 @@ export default function POSPage() {
           <span style={{ fontSize: 10, color: 'var(--text-3)' }}>
             Currency: <span style={{ color: 'var(--text-2)', fontWeight: 700 }}>AED</span>
           </span>
-          <span style={{ fontSize: 10, color: 'var(--green)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} />
+          <span style={{ fontSize: 10, color: 'var(--brand)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--brand)', display: 'inline-block' }} />
             Ready
           </span>
         </div>

@@ -48,44 +48,71 @@ export function unitPricePatchFromInput(editMode, amount, vatPer = getGvTax()) {
   }
 }
 
+/** Resolve line VAT % — group / gross-entry lines always use gvtax; explicit 0 is zero-rated. */
+export function lineVatRate(line) {
+  if (line?.groupId != null || line?.priceIsGross) return getGvTax()
+  const n = Number(line?.vatPer)
+  return Number.isFinite(n) ? n : getGvTax()
+}
+
 /** VAT-inclusive unit price — stable when qty changes (10 × 2 = 20, not 19.99). */
 export function resolveUnitPriceGross(line) {
-  const stored = Number(line.unitPriceGross)
-  if (Number.isFinite(stored) && stored > 0) return stored
+  const storedGross = Number(line.unitPriceGross)
+  if (Number.isFinite(storedGross) && storedGross > 0) return storedGross
+  if (line?.priceIsGross || line?.groupId != null) {
+    return roundMoney(Number(line.unitPrice) || 0)
+  }
   const unitPrice = Number(line.unitPrice) || 0
-  const vatPer = Number(line.vatPer) || getGvTax()
+  const vatPer = lineVatRate(line)
   return netToGross(unitPrice, vatPer)
 }
 
 /**
- * Line totals — gross-first so qty × unit price with VAT stays consistent.
- * (qty × 9.52 net + VAT per line drifts; qty × 10.00 gross does not.)
+ * Line totals — discount on taxable (pre-VAT); VAT on discounted taxable.
  */
-export function calcLineTotals(line) {
+export function lineTaxableBeforeDiscount(line) {
   const qty = Number(line.qty) || 0
-  const unitPrice = Number(line.unitPrice) || 0
-  const vatPer = Number(line.vatPer) || getGvTax()
-  const discPct = Number(line.discount) || 0
-
+  const vatPer = lineVatRate(line)
   const unitGross = resolveUnitPriceGross(line)
   const grossBase = roundMoney(unitGross * qty)
-  const discountAmt = discPct > 0
-    ? roundMoney(grossBase * discPct / 100)
-    : roundMoney(Number(line.discountAmt) || 0)
+  if (vatPer <= 0) return grossBase
+  return roundMoney(grossBase / (1 + vatPer / 100))
+}
 
-  const lineTotal = roundMoney(grossBase - discountAmt)
-  const subTotal = vatPer > 0
-    ? roundMoney(lineTotal / (1 + vatPer / 100))
-    : lineTotal
-  const vatAmt = roundMoney(lineTotal - subTotal)
+export function calcLineTotals(line) {
+  const vatPer = lineVatRate(line)
+  const discPct = Number(line.discount) || 0
+  const taxableBase = lineTaxableBeforeDiscount(line)
+  const absBase = Math.abs(taxableBase)
+  const sign = taxableBase < 0 ? -1 : 1
+
+  let discountAmt
+  if (line.discountMode === 'amt') {
+    discountAmt = roundMoney(Math.min(Math.abs(Number(line.discountAmt) || 0), absBase))
+  } else if (discPct > 0) {
+    discountAmt = roundMoney(absBase * discPct / 100)
+  } else {
+    discountAmt = roundMoney(Math.abs(Number(line.discountAmt) || 0))
+    if (discountAmt > absBase) discountAmt = absBase
+  }
+
+  const signedDisc = roundMoney(discountAmt * sign)
+  const subTotal = roundMoney(taxableBase - signedDisc)
+  const vatAmt = vatPer > 0 ? roundMoney(subTotal * vatPer / 100) : 0
+  const lineTotal = roundMoney(subTotal + vatAmt)
+  const unitGross = resolveUnitPriceGross(line)
+  const unitNet = vatPer > 0
+    ? roundMoney(unitGross / (1 + vatPer / 100))
+    : roundMoney(unitGross)
 
   return {
     vatPer,
     vatAmt,
     lineTotal,
-    discountAmt,
+    discountAmt: roundMoney(discountAmt),
     subTotal,
     unitPriceGross: unitGross,
+    unitPrice: unitNet,
   }
 }
 
@@ -96,9 +123,7 @@ export function sumBillTotals(items) {
   let discountAmt = 0
 
   for (const item of items) {
-    const line = item.subTotal != null && item.vatAmt != null
-      ? item
-      : { ...item, ...calcLineTotals(item) }
+    const line = { ...item, ...calcLineTotals(item) }
     subTotal += Number(line.subTotal) || 0
     taxAmt += Number(line.vatAmt) || 0
     discountAmt += Number(line.discountAmt) || 0
@@ -114,5 +139,39 @@ export function sumBillTotals(items) {
     discountAmt: disc,
     taxableAmt: sub,
     gross: roundMoney(sub + tax),
+    /** Sum of taxable per line before line-level discount. */
+    taxableBeforeLineDisc: roundMoney(
+      items.reduce((s, item) => {
+        const line = { ...item, ...calcLineTotals(item) }
+        const disc = Number(line.discountAmt) || 0
+        return s + (Number(line.subTotal) || 0) + disc
+      }, 0),
+    ),
   }
+}
+
+/** Merge fresh line totals onto cart row (keeps ids; updates money fields). */
+export function normalizeCartLine(item) {
+  const totals = calcLineTotals(item)
+  return { ...item, ...totals }
+}
+
+/** Ensure each line has computed discountAmt / subTotal before save or hold. */
+export function enrichCartItemsForSave(items) {
+  return (items ?? []).map((item) => {
+    const line = normalizeCartLine(item)
+    const productId = line.productId != null && Number(line.productId) > 0
+      ? Number(line.productId)
+      : null
+    const groupId = line.groupId != null && Number(line.groupId) > 0
+      ? Number(line.groupId)
+      : null
+    return {
+      ...line,
+      productId,
+      groupId,
+      productCode: line.productCode ?? line.groupCode ?? null,
+      description: line.description ?? line.short_description ?? '',
+    }
+  })
 }

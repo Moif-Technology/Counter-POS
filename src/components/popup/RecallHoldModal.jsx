@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { X, Archive, RotateCcw, Trash2, AlertCircle, MessageSquare } from 'lucide-react'
 import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
+import { fmtMoney, moneyPlaceholder } from '../../lib/currencyFormat'
+import { posConfirm } from '../../lib/posNotify'
+import { parseHoldBarcode } from '../../lib/holdBarcode'
 
 const ITEM_COLS = [
   { key: 'sl', label: 'SL', w: 36, align: 'center' },
@@ -12,11 +15,6 @@ const ITEM_COLS = [
   { key: 'discount_amount', label: 'Disc', w: 50, align: 'right', money: true },
   { key: 'line_total', label: 'Total', w: 72, align: 'right', money: true },
 ]
-
-function fmt(n) {
-  const value = Number(n)
-  return Number.isFinite(value) ? value.toFixed(3) : '0.000'
-}
 
 function fmtDateTime(value) {
   if (!value) return ''
@@ -140,7 +138,14 @@ export default function RecallHoldModal({ onClose, onRecall }) {
 
   async function handleCancel(hold) {
     if (!hold || cancelling) return
-    if (!window.confirm(`Cancel hold H-${hold.hold_no}?`)) return
+    const ok = await posConfirm({
+      title: 'Cancel Hold',
+      message: `Cancel hold ${hold.hold_no}? This cannot be undone.`,
+      confirmLabel: 'Cancel Hold',
+      cancelLabel: 'Keep',
+      danger: true,
+    })
+    if (!ok) return
 
     setCancelling(hold.sales_id)
     setError(null)
@@ -397,7 +402,7 @@ export default function RecallHoldModal({ onClose, onRecall }) {
                 >
                   {ITEM_COLS.map(col => (
                     <div key={col.key} style={tdStyle(col)}>
-                      {col.key === 'sl' ? i + 1 : col.money ? fmt(item[col.key]) : item[col.key] ?? '-'}
+                      {col.key === 'sl' ? i + 1 : col.money ? fmtMoney(item[col.key]) : item[col.key] ?? '-'}
                     </div>
                   ))}
                 </div>
@@ -466,8 +471,12 @@ export default function RecallHoldModal({ onClose, onRecall }) {
               ref={holdInputRef}
               value={holdNoInput}
               onChange={e => {
-                setHoldNoInput(e.target.value)
-                const idx = holds.findIndex(h => String(h.hold_no) === e.target.value)
+                const raw = e.target.value
+                setHoldNoInput(raw)
+                const holdNo = parseHoldBarcode(raw)
+                const idx = holdNo != null
+                  ? holds.findIndex(h => String(h.hold_no) === String(holdNo))
+                  : holds.findIndex(h => String(h.hold_no) === raw)
                 if (idx >= 0) setSelectedIdx(idx)
               }}
               onKeyDown={e => e.key === 'Enter' && handleRecall()}
@@ -495,7 +504,7 @@ export default function RecallHoldModal({ onClose, onRecall }) {
                 fontSize: 15, fontWeight: 800, color: 'var(--brand)',
                 fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums',
               }}>
-                {selected ? fmt(selected.amount) : '0.000'}
+                {selected ? fmtMoney(selected.amount) : moneyPlaceholder()}
               </span>
             </div>
           </div>

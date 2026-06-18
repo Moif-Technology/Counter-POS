@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { X, Package } from 'lucide-react'
 import Table from '../ui/Table'
 import Numpad from '../ui/Numpad'
+import { moneyPlaceholder } from '../../lib/currencyFormat'
 
 const COLUMNS = [
   { key: 'sl',          label: 'Sl#',          width: 40,  align: 'center' },
@@ -36,8 +37,8 @@ export default function PacketScanModal({ onClose }) {
       barcode:     barcode.trim(),
       description: '—',
       packDetails: '—',
-      unitPrice:   '0.000',
-      discount:    '0.00',
+      unitPrice:   moneyPlaceholder(),
+      discount:    moneyPlaceholder(),
     }
     setRows(prev => [...prev, newRow])
     setBarcode('')

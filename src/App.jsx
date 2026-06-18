@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import LoginPage from './pages/LoginPage'
 import POSPage from './pages/POSPage'
 import EnrollPage from './pages/EnrollPage'
+import PosNotifyHost from './components/ui/PosNotifyHost'
 import { usePosStore } from './store/posStore'
 import { getEnrollment } from './lib/device'
 
@@ -23,6 +24,7 @@ function RequireAuth({ children }) {
 export default function App() {
   return (
     <QueryClientProvider client={qc}>
+      <PosNotifyHost />
       <BrowserRouter>
         <Routes>
           <Route path="/enroll" element={<EnrollPage />} />

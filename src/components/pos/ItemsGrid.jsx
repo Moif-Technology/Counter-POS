@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Trash2, Minus, Plus, Save } from 'lucide-react'
+import { Trash2, Minus, Plus } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { calcLineTotals, getCartRowKey } from '../../lib/cartLine'
 import { fmt3 } from '../../lib/utils'
@@ -11,15 +11,16 @@ const COLS = [
   { key: 'barcode',     label: 'Barcode',   w: 110 },
   { key: 'description', label: 'Item',      flex: true },
   { key: 'qty',         label: 'Qty',       w: 88,  align: 'center' },
-  { key: 'unitPrice',   label: 'Price',     w: 78,  align: 'right', render: v => fmt3(v) },
-  { key: 'discount',    label: 'Disc',      w: 60,  align: 'right', render: v => fmt3(v || 0) },
-  { key: '_sub',        label: 'Sub Total', w: 84,  align: 'right', render: (_, r) => fmt3(calcLineTotals(r).subTotal) },
-  { key: 'vatPer',      label: 'VAT%',      w: 52,  align: 'right', render: v => (v || 0).toFixed(2) + '%' },
-  { key: 'lineTotal',   label: 'Total',     w: 84,  align: 'right', render: v => fmt3(v) },
+  { key: 'unitPrice',   label: 'Price',     w: 78,  align: 'right', render: (_, r) => fmt3(r.unitPriceGross ?? r.unitPrice) },
+  { key: 'discountAmt', label: 'Disc',      w: 60,  align: 'right', render: (_, r) => fmt3(r.discountAmt || 0) },
+  { key: '_sub',        label: 'Taxable',   w: 84,  align: 'right', render: (_, r) => fmt3(calcLineTotals(r).subTotal) },
+  { key: 'vatPer',      label: 'VAT%',      w: 58,  align: 'right', render: (_, r) => calcLineTotals(r).vatPer.toFixed(2) + '%' },
+  { key: 'vatAmt',      label: 'VAT',       w: 60,  align: 'right', render: (_, r) => fmt3(calcLineTotals(r).vatAmt) },
+  { key: 'lineTotal',   label: 'Total',     w: 84,  align: 'right', render: (_, r) => fmt3(calcLineTotals(r).lineTotal) },
   { key: '_del',        label: '',          w: 34,  align: 'center' },
 ]
 
-const NUM_KEYS = new Set(['unitPrice', 'discount', '_sub', 'vatPer', 'lineTotal'])
+const NUM_KEYS = new Set(['unitPrice', 'discountAmt', '_sub', 'vatPer', 'vatAmt', 'lineTotal'])
 
 export default function ItemsGrid() {
   const cartItems      = usePosStore(s => s.cartItems)
@@ -183,7 +184,7 @@ export default function ItemsGrid() {
                     textAlign: col.align || 'left',
                     fontSize: 12,
                     fontWeight: isTotal ? 700 : isDesc ? 500 : 400,
-                    color: isTotal ? 'var(--blue)' : isDesc ? 'var(--text-1)' : 'var(--text-2)',
+                    color: isTotal ? 'var(--brand)' : isDesc ? 'var(--text-1)' : 'var(--text-2)',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     fontVariantNumeric: isNum ? 'tabular-nums' : undefined,
                     fontFamily: isNum ? "'JetBrains Mono', monospace" : undefined,
@@ -207,7 +208,7 @@ export default function ItemsGrid() {
         })}
       </div>
 
-      {/* ── Footer bar — totals + Save Bill ─────────── */}
+      {/* ── Footer bar — totals ─────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center',
         background: 'var(--surface-2)',
@@ -239,33 +240,14 @@ export default function ItemsGrid() {
           <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.6, textTransform: 'uppercase' }}>Total Amount</span>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
             <span style={{
-              fontSize: 20, fontWeight: 900, color: 'var(--blue)', lineHeight: 1,
+              fontSize: 20, fontWeight: 900, color: 'var(--brand)', lineHeight: 1,
               fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums',
             }}>
               {fmt3(netAmount)}
             </span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', opacity: 0.6 }}>AED</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--brand)', opacity: 0.6 }}>AED</span>
           </div>
         </div>
-
-        {/* Save Bill button */}
-        <button style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '0 18px', height: 36, borderRadius: 'var(--r-md)',
-          background: 'linear-gradient(145deg, var(--brand) 0%, var(--brand-2) 100%)',
-          border: 'none', color: '#fff',
-          fontSize: 12, fontWeight: 800, cursor: 'pointer',
-          boxShadow: '0 3px 10px rgba(107,0,0,0.2)',
-          transition: 'box-shadow 0.12s, transform 0.08s',
-          flexShrink: 0,
-        }}
-          onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 5px 16px rgba(107,0,0,0.32)' }}
-          onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 3px 10px rgba(107,0,0,0.2)' }}
-          onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.97)' }}
-          onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-        >
-          <Save size={13} /> Save Bill
-        </button>
       </div>
 
       {/* ── Item detail modal ───────────────────────── */}

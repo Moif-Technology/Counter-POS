@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
 import { getEnrollment, clearEnrollment } from '../lib/device'
+import { posNotifyError, posNotifyWarning } from '../lib/posNotify'
 
 const NUMPAD = ['7','8','9','4','5','6','1','2','3','C','0','⌫']
 
@@ -14,12 +15,11 @@ export default function LoginPage() {
   const enrollment = getEnrollment()
 
   const [pin,     setPin]     = useState('')
-  const [error,   setError]   = useState('')
   const [loading, setLoading] = useState(false)
 
   const pressKey = useCallback((k) => {
     if (k === '⌫' || k === 'Backspace') { setPin(p => p.slice(0, -1)); return }
-    if (k === 'C' || k === 'Escape')    { setPin(''); setError(''); return }
+    if (k === 'C' || k === 'Escape')    { setPin(''); return }
     if (/^\d$/.test(k) && pin.length < 6) setPin(p => p + k)
   }, [pin])
 
@@ -34,8 +34,7 @@ export default function LoginPage() {
   }, [pressKey])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = async () => {
-    setError('')
-    if (pin.length < 4) { setError('PIN must be 4–6 digits'); return }
+    if (pin.length < 4) { posNotifyWarning('PIN must be 4–6 digits', { title: 'Login' }); return }
     if (!enrollment)    { navigate('/enroll'); return }
 
     setLoading(true)
@@ -47,7 +46,7 @@ export default function LoginPage() {
 
       const cashier = {
         staffId:   session.user.staffId,
-        name:      session.user.staffName,
+        staffName: session.user.staffName,
         staffCode: session.user.staffCode ?? '',
         role:      session.user.role,
         roleName:  session.user.roleName,
@@ -60,10 +59,17 @@ export default function LoginPage() {
         enrollment.companyId,
         enrollment.branchId,
       )
-      setBillNo(`B-${String(Date.now()).slice(-5)}`)
+      if (session.company) {
+        usePosStore.getState().setReceiptHeader({
+          companyName: session.company.companyName,
+          branchName: session.company.stationName,
+          companyAddress: session.company.address,
+        })
+      }
+      setBillNo('')
       navigate('/pos')
     } catch (err) {
-      setError(err.message)
+      posNotifyError(err.message, { title: 'Login' })
       setPin('')
     } finally {
       setLoading(false)
@@ -170,20 +176,6 @@ export default function LoginPage() {
             <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.1 }}>Staff Sign In</h1>
             <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 5 }}>Enter your PIN to continue</p>
           </div>
-
-          {error && (
-            <div style={{
-              background: 'var(--red-bg)', border: '1px solid var(--red-border)',
-              borderRadius: 'var(--r-md)', padding: '10px 14px', marginBottom: 18,
-              color: 'var(--red)', fontSize: 12.5, fontWeight: 500,
-              display: 'flex', alignItems: 'center', gap: 8,
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              {error}
-            </div>
-          )}
 
           {/* PIN dots */}
           <div style={{ marginBottom: 22 }}>

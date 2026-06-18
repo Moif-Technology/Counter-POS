@@ -3,6 +3,7 @@ import { X, Users, RefreshCw, Download } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { api } from '../../lib/api'
 import { fmt3 } from '../../lib/utils'
+import { buildReportPrintFontCss, escReceipt, openReceiptPrintWindow } from '../../lib/receiptPrintTheme'
 
 export default function StaffWiseReportModal({ onClose }) {
   const accessToken = usePosStore(s => s.accessToken)
@@ -48,7 +49,7 @@ export default function StaffWiseReportModal({ onClose }) {
     const tableRows = rows.map((r, i) => `
       <tr style="background:${i % 2 === 0 ? '#fff' : '#f8f9fa'}">
         <td>${i + 1}</td>
-        <td>${r.staffName}</td>
+        <td>${escReceipt(r.staffName)}</td>
         <td style="text-align:center">${r.billCount}</td>
         <td style="text-align:right">${fmt3(r.grossAmount)}</td>
         <td style="text-align:right">${fmt3(r.totalDiscount)}</td>
@@ -66,35 +67,30 @@ export default function StaffWiseReportModal({ onClose }) {
   <meta charset="utf-8"/>
   <title>Staff Wise Report</title>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: Arial, sans-serif; font-size: 11px; color: #111; padding: 20px; }
+    ${buildReportPrintFontCss()}
     .header { text-align: center; margin-bottom: 16px; }
     .header h1 { font-size: 18px; font-weight: 800; }
-    .header h2 { font-size: 13px; font-weight: 600; color: #555; margin-top: 2px; }
-    .meta { display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-bottom: 12px; }
+    .header h2 { font-size: 13px; font-weight: 700; color: #333; margin-top: 2px; }
+    .meta { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 12px; flex-wrap: nowrap; white-space: nowrap; }
     table { width: 100%; border-collapse: collapse; }
-    th { background: #1a1a2e; color: #fff; padding: 7px 8px; font-size: 10px; font-weight: 700; text-align: left; }
+    th { background: #000; color: #fff; padding: 7px 8px; font-size: 12px; font-weight: 700; text-align: left; }
     th.right { text-align: right; }
     th.center { text-align: center; }
-    td { padding: 6px 8px; border-bottom: 1px solid #e8e8e8; font-size: 10.5px; }
-    .tfoot td { background: #1a1a2e; color: #fff; font-weight: 700; padding: 7px 8px; border: none; }
+    td { padding: 6px 8px; border-bottom: 1px solid #ccc; font-size: 13px; }
+    .tfoot td { background: #000; color: #fff; font-weight: 700; padding: 7px 8px; border: none; }
     .tfoot td.right { text-align: right; }
     .tfoot td.center { text-align: center; }
-    @media print {
-      body { padding: 10px; }
-      @page { margin: 10mm; }
-    }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>${companyName}</h1>
-    <h2>${branchName}</h2>
-    <h2 style="margin-top:6px;font-size:14px;color:#1a1a2e">Staff Wise Sales Report</h2>
+    <h1>${escReceipt(companyName)}</h1>
+    <h2>${escReceipt(branchName)}</h2>
+    <h2 style="margin-top:6px;font-size:14px">Staff Wise Sales Report</h2>
   </div>
   <div class="meta">
-    <span>Counter No: ${counterNo}</span>
-    <span>Date: ${dateStr} ${timeStr}</span>
+    <span>Counter No: ${escReceipt(counterNo)}</span>
+    <span>Date: ${escReceipt(dateStr)} ${escReceipt(timeStr)}</span>
   </div>
   <table>
     <thead>
@@ -128,14 +124,15 @@ export default function StaffWiseReportModal({ onClose }) {
       </tr>
     </tfoot>
   </table>
+  <script>
+    window.onload = function() {
+      setTimeout(function() { window.focus(); window.print(); }, 400);
+    };
+  </script>
 </body>
 </html>`
 
-    const win = window.open('', '_blank', 'width=900,height=650')
-    win.document.write(html)
-    win.document.close()
-    win.focus()
-    setTimeout(() => { win.print() }, 400)
+    openReceiptPrintWindow(html, { width: 900, height: 650 })
   }
 
   return (

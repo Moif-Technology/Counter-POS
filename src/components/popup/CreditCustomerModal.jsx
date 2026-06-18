@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { X, Delete, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { normalizePaymentMode, PM } from '../../lib/paymentModes'
 import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
 import { fmtMoney } from '../../lib/currencyFormat'
@@ -11,10 +12,7 @@ const NUM_KEYS = [
 ]
 
 function resolveMode(dbMode) {
-  const m = String(dbMode || '').toUpperCase()
-  if (m === 'CREDITCARD' || m === 'CARD') return 'CARD'
-  if (m === 'CREDIT')                     return 'CREDIT'
-  return 'CASH'
+  return normalizePaymentMode(dbMode)
 }
 
 export default function CreditCustomerModal({ onClose, onApply }) {
@@ -41,7 +39,7 @@ export default function CreditCustomerModal({ onClose, onApply }) {
     setError(null)
     try {
       const { customers: list } = await api.counterPos.customerSearch(q, 200, accessToken)
-      const creditOnly = (list ?? []).filter(c => resolveMode(c.paymentMode) === 'CREDIT')
+      const creditOnly = (list ?? []).filter(c => resolveMode(c.paymentMode) === PM.CREDIT)
       setCustomers(creditOnly)
       setSelectedIdx(-1)
     } catch (e) {

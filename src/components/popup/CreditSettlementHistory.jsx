@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Loader2, History, Calendar, User, Search, X, ChevronDown } from 'lucide-react'
+import { Loader2, History, Calendar, User, Search, X, ChevronDown, Printer } from 'lucide-react'
+import { normalizePaymentMode, PM } from '../../lib/paymentModes'
 import { api } from '../../lib/api'
 import { fmt3 } from '../../lib/utils'
+import { usePosStore } from '../../store/posStore'
+import { printCreditReceiptVoucher } from '../../lib/printCreditReceiptVoucher'
 
 function fmtDateTime(d) {
   if (!d) return '—'
@@ -23,14 +26,11 @@ function daysAgoISO(n) {
 }
 
 function resolveMode(dbMode) {
-  const m = String(dbMode || '').toUpperCase()
-  if (m === 'CREDITCARD' || m === 'CARD') return 'CARD'
-  if (m === 'CREDIT') return 'CREDIT'
-  return 'CASH'
+  return normalizePaymentMode(dbMode)
 }
 
 function creditCustomersOnly(list) {
-  return (list ?? []).filter(c => resolveMode(c.paymentMode) === 'CREDIT')
+  return (list ?? []).filter(c => resolveMode(c.paymentMode) === PM.CREDIT)
 }
 
 function SearchableCustomerFilter({ accessToken, customerId, onSelect }) {
@@ -299,6 +299,9 @@ export function CreditSettlementReceiptDetail({ accessToken, transactionId, onBa
   const [receipt, setReceipt] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
+  const shopName  = usePosStore(s => s.shopName)
+  const cashier   = usePosStore(s => s.cashier)
+  const counterNo = usePosStore(s => s.counterNo)
 
   useEffect(() => {
     setLoading(true)
@@ -330,7 +333,7 @@ export function CreditSettlementReceiptDetail({ accessToken, transactionId, onBa
       <div style={{ padding: 14, borderRadius: 12, border: '1px solid var(--border)', marginBottom: 12 }}>
         <div style={rowStyle}><span style={labelStyle}>Customer</span><span style={{ fontWeight: 700 }}>{receipt.customerName}</span></div>
         <div style={rowStyle}><span style={labelStyle}>Code</span><span style={valueStyle}>{receipt.customerCode}</span></div>
-        <div style={rowStyle}><span style={labelStyle}>Payment Mode</span><span style={{ fontWeight: 700 }}>{receipt.paymentMode}</span></div>
+        <div style={rowStyle}><span style={labelStyle}>Payment Mode</span><span style={{ fontWeight: 700 }}>{normalizePaymentMode(receipt.paymentMode)}</span></div>
         {receipt.voucher && (
           <div style={rowStyle}>
             <span style={labelStyle}>Voucher</span>
@@ -386,13 +389,31 @@ export function CreditSettlementReceiptDetail({ accessToken, transactionId, onBa
         ))}
       </div>
 
-      <button onClick={onBack} style={{
-        marginTop: 14, width: '100%', height: 40, borderRadius: 8,
-        border: '1.5px solid var(--border)', background: '#fff',
-        fontSize: 12, fontWeight: 700, cursor: 'pointer',
-      }}>
-        Back to History
-      </button>
+      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        <button
+          type="button"
+          onClick={() => printCreditReceiptVoucher(receipt, {
+            companyName: shopName,
+            cashierName: cashier?.staffName,
+            counterNo: receipt.counterNo ?? counterNo,
+          })}
+          style={{
+            flex: 1, height: 40, borderRadius: 8, border: 'none',
+            background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
+            color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}
+        >
+          <Printer size={14} /> Print Receipt
+        </button>
+        <button onClick={onBack} style={{
+          flex: 1, height: 40, borderRadius: 8,
+          border: '1.5px solid var(--border)', background: '#fff',
+          fontSize: 12, fontWeight: 700, cursor: 'pointer',
+        }}>
+          Back to History
+        </button>
+      </div>
     </div>
   )
 }
