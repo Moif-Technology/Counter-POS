@@ -26,6 +26,7 @@ export const api = {
 
   // Counter-POS specific endpoints — /api/counter-pos/*
   counterPos: {
+    staffList:     (body)           => request('POST', '/counter-pos/staff-list',   body),
     pinLogin:      (body)           => request('POST', '/counter-pos/pin-login',    body),
     enrollDevice:  (body)           => request('POST', '/counter-pos/device/enroll', body),
     productSearch:  (barcode, token)      => request('GET',  `/counter-pos/products/search?barcode=${encodeURIComponent(barcode)}`, null, token),

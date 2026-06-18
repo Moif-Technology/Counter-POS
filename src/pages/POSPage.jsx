@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
+import { printReceipt } from '../lib/printReceipt'
 import ItemsGrid from '../components/pos/ItemsGrid'
 import BarcodeInput from '../components/pos/BarcodeInput'
 import NumPad from '../components/pos/NumPad'
@@ -153,12 +154,32 @@ export default function POSPage() {
 
       setSaveMsg({ type: 'success', text: `Bill ${result.billNoDisplay} saved!` })
       usePosStore.setState({ recalledHoldSalesId: null })
-      clearAll()
-      await fetchNextBillNo()
 
       if (andPrint) {
-        window.print()
+        // Snapshot taken before clearAll so the receipt has the bill data.
+        printReceipt({
+          shopName:      state.shopName,
+          shopSubName:   state.shopSubName,
+          billNo:        result.billNoDisplay,
+          billDate:      new Date(),
+          cashierName:   state.cashier?.staffName,
+          counterNo:     state.counterNo,
+          customerName:  state.customerName,
+          items:         state.cartItems,
+          subTotal:      state.subTotal,
+          discountAmt:   state.discountAmt,
+          taxAmt:        state.taxAmt,
+          roundOff:      state.roundOff,
+          netAmount:     state.netAmount,
+          paidAmount:    state.paidAmount,
+          balanceAmount: state.balanceAmount,
+          paymentMode:   state.paymentMode,
+          currency:      state.currency,
+        })
       }
+
+      clearAll()
+      await fetchNextBillNo()
     } catch (err) {
       setSaveMsg({ type: 'error', text: err.message ?? 'Save failed' })
     } finally {

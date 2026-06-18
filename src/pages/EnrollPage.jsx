@@ -36,6 +36,7 @@ export default function EnrollPage() {
       saveEnrollment({
         companyId:  result.companyId,
         branchId:   result.branchId,
+        counterNo:  result.counterNo ?? 1,
         deviceToken,
         label:      result.label,
       })

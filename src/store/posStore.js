@@ -51,9 +51,19 @@ export const usePosStore = create((set, get) => ({
   // UI state
   activeFnTab: '0',
 
-  setSession: (cashier, counterNo, accessToken, refreshToken, companyId, branchId) => {
+  // Entitlements — features/subscription from the login session.
+  // features is a map { 'pos.billing': true, ... } resolved server-side
+  // (plan ∩ company software type, plus overrides).
+  features: null,
+  subscription: null,
+
+  setSession: (cashier, counterNo, accessToken, refreshToken, companyId, branchId, entitlements = {}) => {
     saveTokens(accessToken, refreshToken)
-    set({ cashier, counterNo, accessToken, refreshToken, companyId, branchId })
+    set({
+      cashier, counterNo, accessToken, refreshToken, companyId, branchId,
+      features: entitlements.features ?? null,
+      subscription: entitlements.subscription ?? null,
+    })
   },
 
   logout: () => {
@@ -61,6 +71,7 @@ export const usePosStore = create((set, get) => ({
     set({
       cashier: null, counterNo: '', accessToken: null, refreshToken: null,
       companyId: null, branchId: null,
+      features: null, subscription: null,
       cartItems: [], selectedRowKey: null,
       subTotal: 0, discountAmt: 0, taxableAmt: 0,
       taxAmt: 0, roundOff: 0, netAmount: 0,
@@ -220,3 +231,4 @@ export const usePosStore = create((set, get) => ({
     get().recalc(cartItems)
   },
 }))
+

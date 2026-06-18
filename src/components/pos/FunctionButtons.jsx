@@ -27,40 +27,42 @@ import { usePosStore } from '../../store/posStore'
 import { api } from '../../lib/api'
 
 /* ─── Side nav button data ───────────────────────────────────── */
+/* feature: entitlement code that must be enabled for the company
+   (plan ∩ software type). null/absent = always visible. */
 const SIDE_BUTTONS = [
   { label: 'POS',        icon: ShoppingCart, isPOS: true },
-  { label: 'Hold Bill',  icon: PauseCircle },
-  { label: 'Recall',     icon: Archive },
-  { label: 'Print',      icon: Printer },
-  { label: 'Reprint',    icon: Printer },
-  { label: 'Sub Total',  icon: Receipt },
-  { label: 'Repeat',     icon: RefreshCw },
-  { label: 'Clear All',  icon: Trash2,    danger: true },
-  { label: 'Clear Line', icon: Minus,     danger: true },
-  { label: 'Return',     icon: RotateCcw, danger: true },
+  { label: 'Hold Bill',  icon: PauseCircle,  feature: 'pos.hold_bill' },
+  { label: 'Recall',     icon: Archive,      feature: 'pos.hold_bill' },
+  { label: 'Print',      icon: Printer,      feature: 'pos.billing' },
+  { label: 'Reprint',    icon: Printer,      feature: 'pos.reprint_bill' },
+  { label: 'Sub Total',  icon: Receipt,      feature: 'pos.billing' },
+  { label: 'Repeat',     icon: RefreshCw,    feature: 'pos.billing' },
+  { label: 'Clear All',  icon: Trash2,    danger: true, feature: 'pos.billing' },
+  { label: 'Clear Line', icon: Minus,     danger: true, feature: 'pos.billing' },
+  { label: 'Return',     icon: RotateCcw, danger: true, feature: 'pos.return_bill' },
 ]
 
 /* ─── Bottom feature grid button data ───────────────────────── */
 const FEATURE_BUTTONS = [
-  { label: 'Look Up',      icon: Search,           color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { label: 'Price Change', icon: Tag,              color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Qty Change',   icon: SlidersHorizontal,color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { label: 'Group',        icon: Grid3x3,          color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { label: 'Packet Scan',  icon: Package,       color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
-  { label: 'Discount',     icon: Percent,       color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Price Enquiry',icon: Search,        color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { label: 'Currency',     icon: DollarSign,    color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { label: 'Sales Man',    icon: User,          color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { label: 'Privilege',   icon: Crown,         color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Report',       icon: BarChart2,     color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
-  { label: 'Cash In/Out',  icon: ArrowLeftRight,color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { label: 'Receipt',      icon: FileText,      color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { label: 'Comments',     icon: FileText,      color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
-  { label: 'NP Scale',     icon: Hash,          color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { label: 'Lock',         icon: Lock,          color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)' },
-  { label: 'Price Level',  icon: Layers,        color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Save Delivery',icon: Save,          color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { label: 'Settlement',   icon: Receipt,       color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Look Up',      icon: Search,           feature: 'pos.product_search',     color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Price Change', icon: Tag,              feature: 'pos.price_change',       color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+  { label: 'Qty Change',   icon: SlidersHorizontal,feature: 'pos.quantity_change',    color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+  { label: 'Group',        icon: Grid3x3,          feature: 'pos.group_master',       color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Packet Scan',  icon: Package,       feature: 'pos.packet_scan',        color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+  { label: 'Discount',     icon: Percent,       feature: 'pos.discount',           color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+  { label: 'Price Enquiry',icon: Search,        feature: 'pos.price_enquiry',      color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Currency',     icon: DollarSign,    feature: 'pos.currency',           color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+  { label: 'Sales Man',    icon: User,          feature: 'pos.salesman',           color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Privilege',   icon: Crown,         feature: 'pos.privilege_customer', color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+  { label: 'Report',       icon: BarChart2,     feature: 'pos.counter_reports',    color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+  { label: 'Cash In/Out',  icon: ArrowLeftRight,feature: 'pos.cash_in_out',        color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+  { label: 'Receipt',      icon: FileText,      feature: 'pos.reprint_bill',       color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Comments',     icon: FileText,      feature: 'pos.notes',              color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+  { label: 'NP Scale',     icon: Hash,          feature: 'pos.np_scale',           color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+  { label: 'Lock',         icon: Lock,          feature: 'pos.lock_screen',        color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)' },
+  { label: 'Price Level',  icon: Layers,        feature: 'pos.price_level',        color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+  { label: 'Save Delivery',icon: Save,          feature: 'pos.delivery',           color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+  { label: 'Settlement',   icon: Receipt,       feature: 'pos.settlement',         color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
 ]
 
 /* ─────────────────────────────────────────────────────────────
@@ -264,7 +266,6 @@ export function FeatureGrid() {
   const addGroupItem = usePosStore(s => s.addGroupItem)
   const qtyBuffer = usePosStore(s => s.qtyBuffer)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
-
   function handleGroupSelect({ group, unitPrice, mode }) {
     if (mode === 'price_entry') {
       const qty = parseFloat(qtyBuffer) > 0 ? parseFloat(qtyBuffer) : 1

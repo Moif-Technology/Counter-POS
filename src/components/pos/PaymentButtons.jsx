@@ -4,13 +4,14 @@ import { usePosStore } from '../../store/posStore'
 import CreditCustomerModal from '../popup/CreditCustomerModal'
 
 const MODES = [
-  { key: 'CASH',   label: 'Cash',      icon: Banknote,   color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
-  { key: 'CARD',   label: 'Card',      icon: CreditCard, color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { key: 'CREDIT', label: 'Credit',    icon: UserCheck,  color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { key: 'MULTI',  label: 'Multi Pay', icon: Layers,     color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+  { key: 'CASH',   label: 'Cash',      icon: Banknote,   feature: 'pos.settlement.cash',   color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+  { key: 'CARD',   label: 'Card',      icon: CreditCard, feature: 'pos.settlement.card',   color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { key: 'CREDIT', label: 'Credit',    icon: UserCheck,  feature: 'pos.settlement.credit', color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+  { key: 'MULTI',  label: 'Multi Pay', icon: Layers,     feature: 'pos.split_payment',     color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
 ]
 
-/* Compact 4-button strip — kept for standalone use if needed */
+/* Compact payment-mode strip — modes show only when the company's
+   plan/software type enables the matching settlement feature */
 export default function PaymentButtons() {
   const [showCreditModal, setShowCreditModal] = useState(false)
   const paymentMode    = usePosStore(s => s.paymentMode)
@@ -18,11 +19,12 @@ export default function PaymentButtons() {
   const setPaymentMode = usePosStore(s => s.setPaymentMode)
   const setPayment     = usePosStore(s => s.setPayment)
   const setCustomer    = usePosStore(s => s.setCustomer)
-
   const handleCreditApply = (c) => {
     setCustomer(c.customerId, c.customerName, c.customerCode, c.paymentMode, c.osAmount)
     setPaymentMode('CREDIT')
   }
+
+  const visibleModes = MODES
 
   return (
     <>
@@ -32,8 +34,8 @@ export default function PaymentButtons() {
         onApply={handleCreditApply}
       />
     )}
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 5, padding: '6px 8px' }}>
-      {MODES.map(m => {
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(visibleModes.length, 1)},1fr)`, gap: 5, padding: '6px 8px' }}>
+      {visibleModes.map(m => {
         const Icon   = m.icon
         const active = paymentMode === m.key
         return (
