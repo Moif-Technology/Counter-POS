@@ -433,13 +433,22 @@ export const usePosStore = create((set, get) => ({
       customerPaymentMode: 'CASH', osAmount: 0,
       paymentMode: PM.CASH,
       paymentSplits: null,
+      multiPayModalOpen: false,
       billComment: '',
       scanError: null,
+      recalledHoldSalesId: null,
       recalledDeliverySalesId: null,
       deliveryTime: null,
       deliveryAddress: '',
       deliveryPhone: '',
     })
+  },
+
+  /** Open split-payment modal only when the cart has lines. */
+  openMultiPayModal: () => {
+    if (!get().cartItems.length) return false
+    set({ multiPayModalOpen: true })
+    return true
   },
 
   recalc: (items) => {

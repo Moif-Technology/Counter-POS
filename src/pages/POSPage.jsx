@@ -24,6 +24,7 @@ import {
   parseLegacyDeliveryScan,
   parseLegacyHoldScan,
   parseDocNumber,
+  isDocBarcodeScan,
   resolveNumericDocumentScan,
   DOC_TYPE,
   formatDocNumberDisplay,
@@ -202,7 +203,7 @@ export default function POSPage() {
     }
 
     const docNo = parseDocNumber(term)
-    if (docNo != null) {
+    if (docNo != null && isDocBarcodeScan(term)) {
       const resolved = await resolveNumericDocumentScan(docNo, accessToken, api)
       if (resolved) {
         const isHold = resolved.type === DOC_TYPE.HOLD

@@ -33,6 +33,18 @@ export function parseDocNumber(input) {
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
+/**
+ * True when input looks like a hold/delivery barcode scan — not a short product code.
+ * Printed slips use zero-padded digits (e.g. 000002); legacy scans use H-/D- prefix.
+ */
+export function isDocBarcodeScan(input) {
+  const s = cleanBarcodeScan(input)
+  if (!s) return false
+  if (parseLegacyHoldScan(s) != null || parseLegacyDeliveryScan(s) != null) return true
+  if (!/^\d+$/.test(s)) return false
+  return s.length >= DOC_BARCODE_MIN_DIGITS
+}
+
 export function parseLegacyHoldScan(input) {
   const s = cleanBarcodeScan(input)
   const m = s.match(/^[Hh]-?(\d+)$/i)
