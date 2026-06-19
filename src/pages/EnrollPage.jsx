@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Monitor } from 'lucide-react'
 import { api } from '../lib/api'
 import { getOrCreateDeviceToken, saveEnrollment } from '../lib/device'
+import { posNotifyError, posNotifyWarning } from '../lib/posNotify'
 
 export default function EnrollPage() {
   const navigate = useNavigate()
@@ -12,16 +13,14 @@ export default function EnrollPage() {
     label: '',
   })
   const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState('')
 
   const field = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
 
   const enroll = async (e) => {
     e.preventDefault()
-    setError('')
     const { adminUsername, adminPassword } = form
     if (!adminUsername || !adminPassword) {
-      setError('Email and password are required')
+      posNotifyWarning('Email and password are required', { title: 'Device Setup' })
       return
     }
     setLoading(true)
@@ -36,12 +35,13 @@ export default function EnrollPage() {
       saveEnrollment({
         companyId:  result.companyId,
         branchId:   result.branchId,
+        counterNo:  result.counterNo ?? 1,
         deviceToken,
         label:      result.label,
       })
       navigate('/')
     } catch (err) {
-      setError(err.message)
+      posNotifyError(err.message, { title: 'Device Setup' })
     } finally {
       setLoading(false)
     }
@@ -77,16 +77,6 @@ export default function EnrollPage() {
             </div>
           </div>
         </div>
-
-        {error && (
-          <div style={{
-            background: 'var(--red-bg)', border: '1px solid var(--red-border)',
-            borderRadius: 8, padding: '10px 14px', marginBottom: 18,
-            color: 'var(--red)', fontSize: 12.5, fontWeight: 500,
-          }}>
-            {error}
-          </div>
-        )}
 
         <form onSubmit={enroll}>
           {[

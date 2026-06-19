@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { X, Delete, ScanBarcode } from 'lucide-react'
 import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
+import { fmtMoney as fmt } from '../../lib/currencyFormat'
 
 const COLS = '36px 1fr 120px 70px 64px 52px 64px 70px'
 const HEADS = ['Sl#', 'Description', 'Pack Details', 'Unit Price', 'Discount', 'VAT%', 'VAT Amt', 'Price']
 const NUM_KEYS = [['7','8','9'],['4','5','6'],['1','2','3']]
-const fmt = n => Number(n ?? 0).toFixed(3)
 
 function TableRow({ row, isLast, highlight }) {
   const [hover, setHover] = useState(false)
@@ -133,7 +133,7 @@ export default function PriceEnquiryModal({ onClose }) {
 
   return (
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,

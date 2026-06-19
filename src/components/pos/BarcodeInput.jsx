@@ -10,17 +10,42 @@ export default function BarcodeInput({ onEnter }) {
   const setBarcodeBuffer = usePosStore(s => s.setBarcodeBuffer)
   const barcodeRef       = useRef()
   const qtyRef           = useRef()
+  const barcodeFocusTick = usePosStore(s => s.barcodeFocusTick)
 
   useEffect(() => { barcodeRef.current?.focus() }, [])
 
+  useEffect(() => {
+    if (barcodeFocusTick < 1) return
+    usePosStore.setState({ inputMode: 'barcode' })
+    const t = setTimeout(() => barcodeRef.current?.focus(), 0)
+    return () => clearTimeout(t)
+  }, [barcodeFocusTick])
+
   const handleBackspace = () => {
-    if (inputMode === 'qty') setQtyBuffer(p => p.slice(0, -1) || '0')
-    else setBarcodeBuffer(p => p.slice(0, -1))
+    if (inputMode === 'qty') {
+      setQtyBuffer((p) => {
+        const next = p.slice(0, -1)
+        if (!next || next === '-') return usePosStore.getState().defaultQtyBuffer()
+        return next
+      })
+    } else {
+      setBarcodeBuffer(p => p.slice(0, -1))
+    }
   }
 
   const handleQtyChange = (e) => {
     const val = e.target.value
-    if (/^-?\d*\.?\d*$/.test(val)) setQtyBuffer(val || '1')
+    if (!/^-?\d*\.?\d*$/.test(val)) return
+    if (val === '' || val === '-') {
+      setQtyBuffer(val)
+      return
+    }
+    const isReturn = usePosStore.getState().isReturnContext()
+    if (isReturn && !val.startsWith('-')) {
+      setQtyBuffer(`-${val.replace(/^-/, '')}`)
+      return
+    }
+    setQtyBuffer(val)
   }
 
   const handleQtyKeyDown = (e) => {
@@ -33,10 +58,11 @@ export default function BarcodeInput({ onEnter }) {
 
   const qtyActive     = inputMode === 'qty'
   const barcodeActive = inputMode === 'barcode'
-  const isReturn      = parseFloat(qtyBuffer) < 0
+  const returnMode    = usePosStore(s => s.returnMode)
+  const isReturn      = returnMode || parseFloat(qtyBuffer) < 0
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: '100%', width: '100%' }}>
+    <div data-pos-barcode-input style={{ display: 'flex', alignItems: 'center', gap: 6, height: '100%', width: '100%' }}>
 
       {/* ── QTY input ─────────────────────────── */}
       <div
@@ -86,7 +112,7 @@ export default function BarcodeInput({ onEnter }) {
         }}
       >
         <ScanLine size={15} color={barcodeActive ? 'var(--brand)' : 'var(--text-3)'} style={{ flexShrink: 0 }} />
-        {(qtyBuffer !== '0' && qtyBuffer !== '1') && (
+        {(isReturn || (qtyBuffer !== '0' && qtyBuffer !== '1' && qtyBuffer !== '-1')) && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0,
             background: isReturn ? 'var(--red)' : 'var(--brand)', borderRadius: 5,
@@ -107,7 +133,10 @@ export default function BarcodeInput({ onEnter }) {
           ref={barcodeRef}
           value={barcodeBuffer}
           onChange={e => {
-            if (usePosStore.getState().qtyBuffer === '0') setQtyBuffer('1')
+            const state = usePosStore.getState()
+            if (state.qtyBuffer === '0' || state.qtyBuffer === '') {
+              setQtyBuffer(state.defaultQtyBuffer())
+            }
             setBarcodeBuffer(e.target.value)
           }}
           onFocus={() => usePosStore.setState({ inputMode: 'barcode' })}

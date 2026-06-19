@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { X, Search, Trash2, Loader2 } from 'lucide-react'
 import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
+import { fmtMoney } from '../../lib/currencyFormat'
 
 const COLUMNS = [
   { key: 'barcode',       label: 'Barcode',     w: 130 },
@@ -12,7 +13,7 @@ const COLUMNS = [
 
 const DEBOUNCE_MS = 350
 
-export default function ProductLookupModal({ onClose, onSelect }) {
+export default function ProductLookupModal({ onClose, onSelect, groupId = null, groupLabel = '' }) {
   const [query,    setQuery]    = useState('')
   const [price,    setPrice]    = useState('')
   const [results,  setResults]  = useState([])
@@ -32,18 +33,18 @@ export default function ProductLookupModal({ onClose, onSelect }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const runSearch = useCallback(async (q, p) => {
-    if (!q.trim()) { setResults([]); setSearched(false); return }
+  const runSearch = useCallback(async (q, p, gid = groupId) => {
+    if (!q.trim() && gid == null) { setResults([]); setSearched(false); return }
     setLoading(true)
     setError(null)
     setSearched(true)
     try {
-      const { products } = await api.counterPos.productLookup(q, p || null, accessToken)
+      const { products } = await api.counterPos.productLookup(q, p || null, accessToken, gid)
       setResults((products ?? []).map(prod => ({
         barcode:       prod.barcode ?? prod.productCode,
         description:   prod.description,
         packetDetails: prod.unitName ?? '—',
-        price:         Number(prod.unitPrice ?? 0).toFixed(3),
+        price:         fmtMoney(prod.unitPrice ?? 0),
         _raw:          prod,
       })))
     } catch (e) {
@@ -52,7 +53,11 @@ export default function ProductLookupModal({ onClose, onSelect }) {
     } finally {
       setLoading(false)
     }
-  }, [accessToken])
+  }, [accessToken, groupId])
+
+  useEffect(() => {
+    if (groupId != null) runSearch('', price, groupId)
+  }, [groupId])
 
   const scheduleSearch = (q, p) => {
     clearTimeout(debounceRef.current)
@@ -93,6 +98,20 @@ export default function ProductLookupModal({ onClose, onSelect }) {
     onClose()
   }
 
+  const handleQueryKeyDown = (e) => {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    if (results.length === 1) {
+      handleRowClick(results[0])
+      return
+    }
+    if (selected) {
+      handleRowClick(selected)
+      return
+    }
+    fireNow(query, price)
+  }
+
   const inputStyle = {
     width: '100%', height: 34, borderRadius: 8,
     border: '1.5px solid var(--border)', background: 'var(--surface)',
@@ -112,7 +131,7 @@ export default function ProductLookupModal({ onClose, onSelect }) {
 
   return (
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
@@ -182,7 +201,7 @@ export default function ProductLookupModal({ onClose, onSelect }) {
                   ref={queryRef}
                   value={query}
                   onChange={handleQueryChange}
-                  onKeyDown={e => e.key === 'Enter' && fireNow(query, price)}
+                  onKeyDown={handleQueryKeyDown}
                   placeholder="Type or scan barcode…"
                   style={{ ...inputStyle, paddingRight: 34 }}
                   onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
@@ -288,8 +307,9 @@ export default function ProductLookupModal({ onClose, onSelect }) {
               const isActive = selected?.barcode === row.barcode
               return (
                 <div
-                  key={i}
+                  key={row.barcode ?? row._raw?.productId ?? i}
                   onClick={() => handleRowClick(row)}
+                  onDoubleClick={() => handleRowClick(row)}
                   style={{
                     display: 'flex', alignItems: 'center',
                     padding: '0 14px', height: 36,
@@ -297,7 +317,7 @@ export default function ProductLookupModal({ onClose, onSelect }) {
                     background: isActive ? 'var(--brand-bg)' : i % 2 === 0 ? '#fff' : 'var(--surface-2)',
                     cursor: 'pointer', transition: 'background 0.1s',
                   }}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--surface-3)' }}
+                  onMouseEnter={e => { setSelected(row); if (selected?.barcode !== row.barcode) e.currentTarget.style.background = 'var(--surface-3)' }}
                   onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = i % 2 === 0 ? '#fff' : 'var(--surface-2)' }}
                 >
                   {COLUMNS.map(col => (

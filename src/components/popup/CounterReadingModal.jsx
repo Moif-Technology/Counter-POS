@@ -3,6 +3,10 @@ import { X, ClipboardList, Printer, XCircle, RefreshCw } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { api } from '../../lib/api'
 import { fmt3 } from '../../lib/utils'
+import { fmtMoney, moneyPlaceholder } from '../../lib/currencyFormat'
+import { printCounterReport } from '../../lib/printCounterReport'
+import { getReceiptPrintMetaFromStore } from '../../lib/receiptPrintTheme'
+import { posNotifyWarning } from '../../lib/posNotify'
 
 const DENOMS = [
   { label: '1000', value: 1000  },
@@ -24,7 +28,6 @@ const initCounts = () => Object.fromEntries(DENOMS.map(d => [d.label, '']))
 export default function CounterReadingModal({ onClose }) {
   const accessToken = usePosStore(s => s.accessToken)
   const counterNo   = usePosStore(s => s.counterNo)
-
   const [summary,     setSummary]     = useState(null)
   const [loading,     setLoading]     = useState(true)
   const [error,       setError]       = useState(null)
@@ -33,8 +36,7 @@ export default function CounterReadingModal({ onClose }) {
 
   const [counts,       setCounts]      = useState(initCounts)
   const [activeDenom,  setActiveDenom] = useState('1000')
-  const [manualInput,  setManualInput] = useState('')   // direct cash entry overrides denom total
-  const [zClosed,      setZClosed]     = useState(false) // true after Z Report saved — block re-submit
+  const [manualInput,  setManualInput] = useState('')
   const overlayRef = useRef()
 
   const fetchSummary = useCallback(async () => {
@@ -87,19 +89,32 @@ export default function CounterReadingModal({ onClose }) {
   }
 
   const handleReport = async (reportType) => {
-    if (submitting || zClosed) return
+    if (submitting || loading) return
     setSubmitting(reportType)
+    setError(null)
     try {
       const result = await api.counterPos.counterClose({
         counterNo,
         reportType,
         collectedCash: collectedAmount,
       }, accessToken)
+      const printPayload = { ...summary, ...result, collectedCash: collectedAmount, cashDifference: collectedAmount - (summary?.cashToBeCollected ?? 0) }
+      try {
+        await printCounterReport(printPayload, {
+          ...getReceiptPrintMetaFromStore(),
+          reportType,
+          closeNo: result.closeNo ?? '',
+          reportAt: new Date(),
+        })
+      } catch (printErr) {
+        posNotifyWarning(printErr.message ?? `${reportType}-Report saved but print failed`, {
+          title: `${reportType}-Report Print`,
+        })
+      }
       setCloseResult({ ...result, reportType })
       if (reportType === 'Z') {
         setCounts(initCounts())
         setManualInput('')
-        setZClosed(true)
       }
       await fetchSummary()
     } catch (err) {
@@ -146,29 +161,31 @@ export default function CounterReadingModal({ onClose }) {
 
   // Build summary rows from API data
   const summaryRows = summary ? [
-    { label: 'Total Cash',           value: fmt3(summary.totalCash),          accent: false },
-    { label: 'Total Credit',         value: fmt3(summary.totalCredit),         accent: false },
-    { label: 'Total Card',           value: fmt3(summary.totalCard),           accent: false },
-    { label: 'Refund Amt',           value: fmt3(summary.totalRefund),         accent: false },
-    { label: 'Total Cash IN',        value: fmt3(summary.cashIn),              accent: false },
-    { label: 'Total Cash Out',       value: fmt3(summary.cashOut),             accent: false },
-    { label: 'Cash To Be Collected', value: fmt3(summary.cashToBeCollected),   accent: 'blue', large: true },
-    { label: 'Total Discount',       value: fmt3(summary.totalDiscount),       accent: false },
-    { label: 'Tax Amount',           value: fmt3(summary.totalTax),            accent: false },
-    { label: 'Total Sales',          value: fmt3(summary.grossAmount),         accent: 'brand', large: true },
+    { label: 'Total Cash',              value: fmt3(summary.totalCash),          accent: false },
+    { label: 'Total Credit',            value: fmt3(summary.totalCredit),         accent: false },
+    { label: 'Total Card',              value: fmt3(summary.totalCard),           accent: false },
+    { label: 'Credit Receipt (Cash)',   value: fmt3(summary.creditReceiptCash),   accent: 'green' },
+    { label: 'Credit Receipt (Card)',   value: fmt3(summary.creditReceiptCard),   accent: 'green' },
+    { label: 'Refund Amt',              value: fmt3(summary.totalRefund),         accent: false },
+    { label: 'Total Cash IN',           value: fmt3(summary.cashIn),              accent: 'green' },
+    { label: 'Total Cash Out',          value: fmt3(summary.cashOut),             accent: 'red' },
+    { label: 'Cash To Be Collected',    value: fmt3(summary.cashToBeCollected), accent: 'brand', large: true },
+    { label: 'Total Discount',          value: fmt3(summary.totalDiscount),       accent: false },
+    { label: 'Tax Amount',              value: fmt3(summary.totalTax),            accent: false },
+    { label: 'Total Sales',             value: fmt3(summary.grossAmount),         accent: 'brand', large: true },
   ] : []
 
   const billRows = summary ? [
     ['Bill Count',         summary.billCount],
     ['Cash Bill',          summary.cashBillCount],
     ['Credit Bill',        summary.creditBillCount],
-    ['Credit Card Bill',   summary.cardBillCount],
-    ['Multi Payment',      summary.multiBillCount],
+    ['CREDITCARD',         summary.cardBillCount],
+    ['MULTIPAYMENT',       summary.multiBillCount],
   ] : []
 
   return (
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1100,
@@ -184,7 +201,6 @@ export default function CounterReadingModal({ onClose }) {
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         .denom-row:hover { background: var(--brand-bg) !important; }
         @media (max-width: 900px) {
-          .cr-left { width: 200px !important; }
           .cr-right { width: 200px !important; }
         }
         @media (max-width: 768px) {
@@ -193,7 +209,7 @@ export default function CounterReadingModal({ onClose }) {
         }
         @media (max-width: 640px) {
           .cr-body { flex-direction: column !important; overflow-y: auto !important; }
-          .cr-mid { border-right: none !important; min-height: 260px; }
+          .cr-mid { flex: none !important; width: 100% !important; max-width: 100% !important; border-right: none !important; min-height: 260px; }
           .cr-right { width: 100% !important; border-top: 1px solid var(--border) !important; max-height: 300px; overflow-y: auto; }
           .cr-footer { flex-wrap: wrap !important; }
           .cr-footer button { flex: 1 1 40% !important; }
@@ -271,7 +287,7 @@ export default function CounterReadingModal({ onClose }) {
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
             {closeResult.reportType === 'Z'
-              ? `Z-Report saved — Counter closed ${closeResult.closeNo ? `(${closeResult.closeNo})` : `#${closeResult.closeId}`}`
+              ? `Z-Report saved — ${closeResult.closeNo || `#${closeResult.closeId}`} · ${closeResult.billsClosed ?? closeResult.billCount ?? 0} bill(s) closed`
               : 'X-Report — live snapshot (not saved)'
             }
             <button onClick={() => setCloseResult(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>
@@ -285,7 +301,7 @@ export default function CounterReadingModal({ onClose }) {
 
           {/* ── LEFT: summary ── */}
           <div className="cr-left" style={{
-            width: 280, flexShrink: 0, borderRight: '1px solid var(--border)',
+            flex: 1, minWidth: 260, borderRight: '1px solid var(--border)',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}>
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -303,26 +319,30 @@ export default function CounterReadingModal({ onClose }) {
                   borderRadius: 8,
                   background: row.accent === 'brand'
                     ? 'var(--brand-bg)'
-                    : row.accent === 'blue'
-                    ? 'rgba(59,130,246,0.08)'
+                    : row.accent === 'green'
+                    ? 'var(--green-bg)'
+                    : row.accent === 'red'
+                    ? 'var(--red-bg)'
                     : 'transparent',
                   border: row.accent === 'brand'
                     ? '1px solid var(--brand-border)'
-                    : row.accent === 'blue'
-                    ? '1px solid rgba(59,130,246,0.2)'
+                    : row.accent === 'green'
+                    ? '1px solid var(--green-border)'
+                    : row.accent === 'red'
+                    ? '1px solid var(--red-border)'
                     : '1px solid transparent',
                   marginBlock: row.large ? 4 : 0,
                 }}>
                   <span style={{
                     fontSize: row.large ? 11 : 10, fontWeight: 700,
-                    color: row.accent === 'brand' ? 'var(--brand)' : row.accent === 'blue' ? '#2563eb' : 'var(--text-2)',
+                    color: row.accent === 'brand' ? 'var(--brand)' : row.accent === 'green' ? 'var(--green)' : row.accent === 'red' ? 'var(--red)' : 'var(--text-2)',
                   }}>
                     {row.label}
                   </span>
                   <span style={{
                     fontSize: row.large ? 14 : 12, fontWeight: 800,
                     fontFamily: "'JetBrains Mono', monospace",
-                    color: row.accent === 'brand' ? 'var(--brand)' : row.accent === 'blue' ? '#2563eb' : 'var(--text-1)',
+                    color: row.accent === 'brand' ? 'var(--brand)' : row.accent === 'green' ? 'var(--green)' : row.accent === 'red' ? 'var(--red)' : 'var(--text-1)',
                   }}>
                     {row.value}
                   </span>
@@ -339,6 +359,12 @@ export default function CounterReadingModal({ onClose }) {
                       <span style={{ fontSize: 11, color: 'var(--text-1)', fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{v}</span>
                     </div>
                   ))}
+                  {summary.creditReceiptCount > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', marginTop: 4 }}>
+                      <span style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 600 }}>Credit Receipts</span>
+                      <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{summary.creditReceiptCount}</span>
+                    </div>
+                  )}
                   {summary.startBillNo && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
                       <span style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 600 }}>Bill Range</span>
@@ -349,14 +375,59 @@ export default function CounterReadingModal({ onClose }) {
                   )}
                 </div>
               )}
+
+              {!loading && summary?.cashInOutList?.length > 0 && (
+                <div style={{ marginTop: 8, padding: '10px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Cash In / Out ({summary.cashInOutList.length})
+                  </p>
+                  {summary.cashInOutList.map((row, i) => {
+                    const isIn = row.transactionType === 'CASH_IN'
+                    return (
+                      <div
+                        key={row.id ?? i}
+                        style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          padding: '5px 0',
+                          borderBottom: i < summary.cashInOutList.length - 1 ? '1px solid var(--border)' : 'none',
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <span style={{
+                            fontSize: 9, fontWeight: 800, letterSpacing: 0.4,
+                            color: isIn ? 'var(--green)' : 'var(--red)',
+                            textTransform: 'uppercase',
+                          }}>
+                            {isIn ? 'IN' : 'OUT'}
+                          </span>
+                          <span style={{ fontSize: 10, color: 'var(--text-3)', marginLeft: 6 }}>
+                            {row.remarks || '—'}
+                          </span>
+                        </div>
+                        <span style={{
+                          fontSize: 11, fontWeight: 800, flexShrink: 0,
+                          fontFamily: "'JetBrains Mono', monospace",
+                          color: isIn ? 'var(--green)' : 'var(--red)',
+                        }}>
+                          {fmt3(row.amount)}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* ── MIDDLE: denomination entry ── */}
-          <div className="cr-mid" style={{ flex: 1, borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* ── MIDDLE: denomination entry (compact — fixed width) ── */}
+          <div className="cr-mid" style={{
+            flex: '0 0 228px', width: 228, maxWidth: 228,
+            borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          }}>
             <div style={{
-              display: 'grid', gridTemplateColumns: '80px 1fr 100px',
-              padding: '8px 16px', background: 'var(--brand-bg)',
+              display: 'grid', gridTemplateColumns: '58px 56px 82px', columnGap: 8,
+              padding: '8px 12px', background: 'var(--brand-bg)',
               borderBottom: '1px solid rgba(0,0,0,0.1)', flexShrink: 0,
             }}>
               {['Denom', 'Count', 'Amount'].map((h, i) => (
@@ -367,14 +438,14 @@ export default function CounterReadingModal({ onClose }) {
               {DENOMS.map((d, i) => {
                 const isActive = activeDenom === d.label
                 const cnt      = parseFloat(counts[d.label]) || 0
-                const amt      = (d.value * cnt).toFixed(3)
+                const amt      = fmtMoney(d.value * cnt)
                 return (
                   <div
                     key={d.label}
                     className="denom-row"
                     style={{
-                      display: 'grid', gridTemplateColumns: '80px 1fr 100px',
-                      padding: '8px 16px', alignItems: 'center',
+                      display: 'grid', gridTemplateColumns: '58px 56px 82px', columnGap: 8,
+                      padding: '6px 12px', alignItems: 'center',
                       borderBottom: i < DENOMS.length - 1 ? '1px solid var(--border)' : 'none',
                       borderLeft: `3px solid ${isActive ? 'var(--brand)' : 'transparent'}`,
                       background: isActive ? 'rgba(107,0,0,0.06)' : '#fff',
@@ -383,9 +454,9 @@ export default function CounterReadingModal({ onClose }) {
                   >
                     <span
                       onClick={() => setActiveDenom(d.label)}
-                      style={{ fontSize: 14, fontWeight: 800, color: isActive ? 'var(--brand)' : 'var(--text-2)', fontFamily: "'JetBrains Mono', monospace", cursor: 'pointer' }}
+                      style={{ fontSize: 13, fontWeight: 800, color: isActive ? 'var(--brand)' : 'var(--text-2)', fontFamily: "'JetBrains Mono', monospace", cursor: 'pointer', whiteSpace: 'nowrap' }}
                     >
-                      {d.label} ×
+                      {d.label}×
                     </span>
                     <input
                       type="text"
@@ -401,17 +472,17 @@ export default function CounterReadingModal({ onClose }) {
                       }}
                       onKeyDown={e => e.stopPropagation()}
                       style={{
-                        height: 34, borderRadius: 7, marginRight: 12,
+                        width: 56, maxWidth: 56, height: 32, borderRadius: 7,
                         border: `1.5px solid ${isActive ? 'var(--brand)' : 'var(--border)'}`,
                         background: isActive ? 'var(--brand-bg)' : 'var(--surface)',
-                        padding: '0 10px',
-                        fontSize: 14, fontWeight: 700,
+                        padding: '0 6px', textAlign: 'center',
+                        fontSize: 13, fontWeight: 700,
                         color: counts[d.label] ? 'var(--text-1)' : 'var(--text-4)',
                         fontFamily: "'JetBrains Mono', monospace",
-                        outline: 'none', width: '100%', boxSizing: 'border-box',
+                        outline: 'none', boxSizing: 'border-box',
                       }}
                     />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: cnt > 0 ? 'var(--green)' : 'var(--text-4)', textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: cnt > 0 ? 'var(--green)' : 'var(--text-4)', textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap' }}>
                       {cnt > 0 ? amt : '—'}
                     </span>
                   </div>
@@ -428,11 +499,11 @@ export default function CounterReadingModal({ onClose }) {
               <span style={labelSt}>Cash To Collect</span>
               <div style={{
                 height: 38, borderRadius: 9,
-                border: '1.5px solid rgba(59,130,246,0.25)',
-                background: 'rgba(59,130,246,0.07)',
+                border: '1.5px solid var(--brand-border)',
+                background: 'var(--brand-bg)',
                 display: 'flex', alignItems: 'center', padding: '0 12px',
                 fontSize: 15, fontWeight: 900,
-                color: '#2563eb',
+                color: 'var(--brand)',
                 fontFamily: "'JetBrains Mono', monospace",
               }}>
                 {loading ? '...' : fmt3(cashToCollect)}
@@ -456,7 +527,7 @@ export default function CounterReadingModal({ onClose }) {
               <input
                 type="text"
                 inputMode="decimal"
-                value={manualInput !== '' ? manualInput : denomTotal > 0 ? denomTotal.toFixed(3) : ''}
+                value={manualInput !== '' ? manualInput : denomTotal > 0 ? fmtMoney(denomTotal) : ''}
                 onChange={e => {
                   const v = e.target.value
                   // Allow only digits and one decimal point
@@ -465,10 +536,10 @@ export default function CounterReadingModal({ onClose }) {
                 onBlur={e => {
                   // Format to 3 decimal places on blur
                   const n = parseFloat(e.target.value)
-                  if (!isNaN(n)) setManualInput(n.toFixed(3))
+                  if (!isNaN(n)) setManualInput(fmtMoney(n))
                 }}
                 onKeyDown={e => e.stopPropagation()} // prevent window keydown from firing
-                placeholder="0.000"
+                placeholder={moneyPlaceholder()}
                 style={{
                   height: 46, borderRadius: 9,
                   border: `1.5px solid ${collectedAmount > 0 ? 'var(--green-border)' : 'var(--border)'}`,
@@ -487,14 +558,14 @@ export default function CounterReadingModal({ onClose }) {
               <span style={labelSt}>Cash Difference</span>
               <div style={{
                 height: 46, borderRadius: 9,
-                border: `1.5px solid ${cashDifference >= 0 ? 'var(--blue-border)' : 'var(--red-border)'}`,
-                background: cashDifference >= 0 ? 'rgba(59,130,246,0.07)' : 'var(--red-bg)',
+                border: `1.5px solid ${cashDifference >= 0 ? 'var(--brand-border)' : 'var(--red-border)'}`,
+                background: cashDifference >= 0 ? 'var(--brand-bg)' : 'var(--red-bg)',
                 display: 'flex', alignItems: 'center', padding: '0 12px',
                 fontSize: 18, fontWeight: 900,
-                color: cashDifference >= 0 ? '#2563eb' : 'var(--red)',
+                color: cashDifference >= 0 ? 'var(--brand)' : 'var(--red)',
                 fontFamily: "'JetBrains Mono', monospace",
               }}>
-                {cashDifference >= 0 ? '+' : ''}{cashDifference.toFixed(3)}
+                {cashDifference >= 0 ? '+' : ''}{fmtMoney(cashDifference)}
               </div>
             </div>
 
@@ -550,19 +621,18 @@ export default function CounterReadingModal({ onClose }) {
             { label: 'Z-Report',  reportType: 'Z', color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
           ].map(btn => {
             const busy = submitting === btn.reportType
-            const isZDone = btn.reportType === 'Z' && zClosed
             return (
               <button
                 key={btn.label}
                 onClick={() => handleReport(btn.reportType)}
-                disabled={!!submitting || loading || isZDone}
+                disabled={!!submitting || loading}
                 style={{
                   flex: 1, height: 40, borderRadius: 10,
                   border: `1.5px solid ${btn.border}`,
                   background: btn.bg, color: btn.color,
                   fontSize: 12, fontWeight: 800,
-                  cursor: (submitting || loading || isZDone) ? 'not-allowed' : 'pointer',
-                  opacity: (submitting && !busy) || isZDone ? 0.4 : 1,
+                  cursor: (submitting || loading) ? 'not-allowed' : 'pointer',
+                  opacity: submitting && !busy ? 0.5 : 1,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   transition: 'all 0.12s',
                 }}
@@ -575,7 +645,7 @@ export default function CounterReadingModal({ onClose }) {
                   ? <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />
                   : <Printer size={13} />
                 }
-                {busy ? 'Saving...' : isZDone ? 'Counter Closed' : btn.label}
+                {busy ? 'Saving...' : btn.label}
               </button>
             )
           })}

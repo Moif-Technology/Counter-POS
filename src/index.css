@@ -37,10 +37,10 @@
   --brand-border: #f5b8b8;
   --brand-glow:   rgba(107, 0, 0, 0.10);
 
-  /* Semantic */
-  --green:         #157a3a;
-  --green-bg:      #f0fdf4;
-  --green-border:  #a7f3c0;
+  /* Semantic — success/positive aliases use brand theme */
+  --green:         var(--brand);
+  --green-bg:      var(--brand-bg);
+  --green-border:  var(--brand-border);
   --blue:          #1d4ed8;
   --blue-bg:       #eff6ff;
   --blue-border:   #bfdbfe;

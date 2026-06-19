@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Printer, FileText, CalendarDays } from 'lucide-react'
+import { X, Printer, FileText, CalendarDays, Receipt, Truck, Package } from 'lucide-react'
 import Calendar from '../ui/Calendar'
 import Numpad from '../ui/Numpad'
+import { usePosStore } from '../../store/posStore'
+import { printBillReprintByNo } from '../../lib/printBillReceipt'
+import { printHoldReprintByNo } from '../../lib/printHoldReceipt'
+import { printDeliveryReprintByNo } from '../../lib/printDeliveryReceipt'
+import { DOC_TYPE } from '../../lib/documentScan'
+import { posNotifyError } from '../../lib/posNotify'
 
 const today = new Date()
 const isoDate = d => d.toISOString().split('T')[0]
@@ -11,18 +17,32 @@ const formatDisplay = iso => {
   return `${d} / ${m} / ${y}`
 }
 
+const DOC_OPTIONS = [
+  { key: DOC_TYPE.INVOICE, label: 'Invoice', icon: Receipt },
+  { key: DOC_TYPE.HOLD, label: 'Hold', icon: Package },
+  { key: DOC_TYPE.DELIVERY, label: 'Delivery Note', icon: Truck },
+]
+
 export default function BillReprintModal({ onClose }) {
-  const [billNo,      setBillNo]      = useState('')
-  const [counterNo,   setCounterNo]   = useState('1')
+  const accessToken = usePosStore(s => s.accessToken)
+  const shopName    = usePosStore(s => s.shopName)
+  const storeCounter = usePosStore(s => s.counterNo)
+
+  const [docType,     setDocType]     = useState(DOC_TYPE.INVOICE)
+  const [docNo,       setDocNo]       = useState('')
+  const [counterNo,   setCounterNo]   = useState(String(storeCounter ?? 1))
   const [billDate,    setBillDate]    = useState(isoDate(today))
   const [calOpen,     setCalOpen]     = useState(false)
-  const [focus,       setFocus]       = useState('billNo')
+  const [focus,       setFocus]       = useState('docNo')
+  const [printing,    setPrinting]    = useState(false)
   const overlayRef   = useRef()
-  const billRef      = useRef()
+  const docNoRef     = useRef()
   const calWrapRef   = useRef()
 
+  const showDate = docType === DOC_TYPE.INVOICE
+
   useEffect(() => {
-    billRef.current?.focus()
+    docNoRef.current?.focus()
     const onKey = e => { if (e.key === 'Escape') { if (calOpen) setCalOpen(false); else onClose() } }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -38,14 +58,40 @@ export default function BillReprintModal({ onClose }) {
   }, [calOpen])
 
   const handleKey = k => {
-    if (focus !== 'billNo') return
-    if (k === 'C' || k === '⌫' && billNo === '') { setBillNo(''); return }
-    if (k === '⌫') { setBillNo(v => v.slice(0, -1)); return }
-    setBillNo(v => v + k)
+    if (focus !== 'docNo') return
+    if (k === 'C' || (k === '⌫' && docNo === '')) { setDocNo(''); return }
+    if (k === '⌫') { setDocNo(v => v.slice(0, -1)); return }
+    setDocNo(v => v + k)
   }
 
-  const handlePrint     = () => { onClose() }
-  const handleOtherBill = () => { setBillNo(''); setFocus('billNo'); billRef.current?.focus() }
+  const handlePrint = async () => {
+    const n = docNo.trim()
+    if (printing || !n) {
+      if (!n) posNotifyError('Enter document number', { title: 'Reprint' })
+      return
+    }
+    if (!/^\d+$/.test(n)) {
+      posNotifyError('Enter numbers only (no prefix)', { title: 'Reprint' })
+      return
+    }
+    setPrinting(true)
+    const meta = { companyName: shopName, counterNo: counterNo || storeCounter }
+    try {
+      if (docType === DOC_TYPE.INVOICE) {
+        await printBillReprintByNo(n, accessToken, meta)
+      } else if (docType === DOC_TYPE.HOLD) {
+        await printHoldReprintByNo(n, accessToken, meta)
+      } else {
+        await printDeliveryReprintByNo(n, accessToken, meta)
+      }
+    } catch (e) {
+      posNotifyError(e.message ?? 'Print failed', { title: 'Reprint' })
+    } finally {
+      setPrinting(false)
+    }
+  }
+
+  const handleOther = () => { setDocNo(''); setFocus('docNo'); docNoRef.current?.focus() }
 
   const fieldStyle = active => ({
     height: 36, borderRadius: 8, width: '100%', boxSizing: 'border-box',
@@ -56,9 +102,11 @@ export default function BillReprintModal({ onClose }) {
     outline: 'none', cursor: 'pointer', transition: 'border-color 0.12s, background 0.12s',
   })
 
+  const docLabel = DOC_OPTIONS.find(d => d.key === docType)?.label ?? 'Document'
+
   return (
     <div
-      ref={overlayRef}
+      ref={overlayRef} data-pos-overlay
       onClick={e => e.target === overlayRef.current && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
@@ -81,7 +129,6 @@ export default function BillReprintModal({ onClose }) {
         animation: 'br-slide 0.18s cubic-bezier(.22,.68,0,1.2)',
       }}>
 
-        {/* ── Header ── */}
         <div style={{
           background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
           padding: '14px 18px',
@@ -98,178 +145,144 @@ export default function BillReprintModal({ onClose }) {
             </div>
             <div>
               <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>Receipt</p>
-              <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1 }}>Bill Reprint</p>
+              <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1 }}>Reprint</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              width: 32, height: 32, borderRadius: 9,
-              background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', cursor: 'pointer', transition: 'background 0.12s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.28)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
-          >
+          <button onClick={onClose} style={{
+            width: 32, height: 32, borderRadius: 9,
+            background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', cursor: 'pointer',
+          }}>
             <X size={14} />
           </button>
         </div>
 
-        {/* ── Body ── */}
         <div style={{ display: 'flex', gap: 0 }}>
-
-          {/* LEFT — form fields */}
           <div style={{ flex: 1, padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: 14, borderRight: '1px solid var(--border)' }}>
 
-            {/* Bill No */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>
+                Document Type
+              </label>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {DOC_OPTIONS.map(opt => {
+                  const Icon = opt.icon
+                  const active = docType === opt.key
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setDocType(opt.key)}
+                      style={{
+                        flex: 1, height: 40, borderRadius: 10, cursor: 'pointer',
+                        border: `1.5px solid ${active ? 'var(--brand-border)' : 'var(--border)'}`,
+                        background: active ? 'var(--brand-bg)' : 'var(--surface)',
+                        color: active ? 'var(--brand)' : 'var(--text-3)',
+                        fontSize: 10, fontWeight: 800,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+                      }}
+                    >
+                      <Icon size={14} />
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>
-                Bill No
+                {docLabel} No
               </label>
               <input
-                ref={billRef}
-                value={billNo}
-                onChange={e => setBillNo(e.target.value)}
-                onFocus={() => setFocus('billNo')}
-                placeholder="0"
-                style={fieldStyle(focus === 'billNo')}
+                ref={docNoRef}
+                value={docNo}
+                onChange={e => setDocNo(e.target.value.replace(/\D/g, ''))}
+                onFocus={() => setFocus('docNo')}
+                placeholder="42"
+                inputMode="numeric"
+                style={fieldStyle(focus === 'docNo')}
               />
             </div>
 
-            {/* Counter No */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>
-                Counter No
-              </label>
-              <select
-                value={counterNo}
-                onChange={e => setCounterNo(e.target.value)}
-                style={{
-                  ...fieldStyle(false),
-                  cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 10px center',
-                  paddingRight: 32,
-                }}
-              >
-                {[1,2,3,4,5,6,7,8].map(n => (
-                  <option key={n} value={String(n)}>Counter {n}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Bill Date */}
-            <div ref={calWrapRef} style={{ display: 'flex', flexDirection: 'column', gap: 4, position: 'relative' }}>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>
-                Bill Date
-              </label>
-
-              {/* Trigger input */}
-              <button
-                onClick={() => setCalOpen(o => !o)}
-                style={{
-                  ...fieldStyle(calOpen),
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  cursor: 'pointer', textAlign: 'left',
-                }}
-              >
-                <span style={{ fontSize: 14, fontWeight: 700, color: billDate ? 'var(--text-1)' : 'var(--text-4)', fontFamily: "'JetBrains Mono', monospace" }}>
-                  {billDate ? formatDisplay(billDate) : 'DD / MM / YYYY'}
-                </span>
-                <CalendarDays size={15} color={calOpen ? 'var(--brand)' : 'var(--text-4)'} />
-              </button>
-
-              {/* Calendar dropdown — opens upward */}
-              {calOpen && (
-                <div style={{
-                  position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, right: 0,
-                  zIndex: 200,
-                  boxShadow: '0 -8px 40px rgba(0,0,0,0.14)',
-                  borderRadius: 12, overflow: 'hidden',
-                }}>
-                  <Calendar
-                    value={billDate}
-                    onChange={d => { setBillDate(d); setCalOpen(false) }}
-                  />
+            {showDate && (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>
+                    Counter No
+                  </label>
+                  <select
+                    value={counterNo}
+                    onChange={e => setCounterNo(e.target.value)}
+                    style={{ ...fieldStyle(false), cursor: 'pointer' }}
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+                      <option key={n} value={String(n)}>Counter {n}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
-            </div>
 
+                <div ref={calWrapRef} style={{ display: 'flex', flexDirection: 'column', gap: 4, position: 'relative' }}>
+                  <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>
+                    Bill Date
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setCalOpen(o => !o)}
+                    style={{ ...fieldStyle(calOpen), display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                  >
+                    <span style={{ fontSize: 14, fontWeight: 700, color: billDate ? 'var(--text-1)' : 'var(--text-4)', fontFamily: "'JetBrains Mono', monospace" }}>
+                      {billDate ? formatDisplay(billDate) : 'DD / MM / YYYY'}
+                    </span>
+                    <CalendarDays size={15} color={calOpen ? 'var(--brand)' : 'var(--text-4)'} />
+                  </button>
+                  {calOpen && (
+                    <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 200, boxShadow: '0 -8px 40px rgba(0,0,0,0.14)', borderRadius: 12, overflow: 'hidden' }}>
+                      <Calendar value={billDate} onChange={d => { setBillDate(d); setCalOpen(false) }} />
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
-          {/* RIGHT — numpad */}
           <div style={{ width: 188, flexShrink: 0, padding: '20px 14px' }}>
-            <Numpad
-              onKey={handleKey}
-              showDot={false}
-              showClear={true}
-              showBackspace={true}
-              btnHeight={42}
-              fontSize={17}
-              gap={6}
-            />
+            <Numpad onKey={handleKey} showDot={false} showClear showBackspace btnHeight={42} fontSize={17} gap={6} />
           </div>
         </div>
 
-        {/* ── Footer ── */}
         <div style={{
           display: 'flex', gap: 8, padding: '12px 18px',
           borderTop: '1px solid var(--border)', background: 'var(--surface-2)', flexShrink: 0,
           borderRadius: '0 0 24px 24px',
         }}>
-          {/* Print */}
           <button
             onClick={handlePrint}
+            disabled={printing}
             style={{
               flex: 2, height: 40, borderRadius: 10, border: 'none',
-              background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
-              color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+              background: printing ? 'var(--surface-3)' : 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
+              color: '#fff', fontSize: 12, fontWeight: 800, cursor: printing ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-              boxShadow: '0 4px 14px rgba(107,0,0,0.22)',
-              transition: 'box-shadow 0.12s, transform 0.08s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(107,0,0,0.32)' }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(107,0,0,0.22)' }}
-            onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.97)' }}
-            onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
           >
-            <Printer size={14} /> Print
+            <Printer size={14} /> {printing ? 'Printing…' : 'Print'}
           </button>
-
-          {/* Other Bill */}
-          <button
-            onClick={handleOtherBill}
-            style={{
-              flex: 1, height: 40, borderRadius: 10,
-              border: '1.5px solid var(--border)', background: 'var(--surface)',
-              color: 'var(--text-2)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              transition: 'background 0.12s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)' }}
-          >
-            <FileText size={13} /> Other Bill
+          <button onClick={handleOther} style={{
+            flex: 1, height: 40, borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--surface)',
+            color: 'var(--text-2)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}>
+            <FileText size={13} /> Other
           </button>
-
-          {/* Close */}
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1, height: 40, borderRadius: 10,
-              border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
-              color: 'var(--red)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              transition: 'background 0.12s, color 0.12s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--red)'; e.currentTarget.style.color = '#fff' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'var(--red-bg)'; e.currentTarget.style.color = 'var(--red)' }}
-          >
+          <button onClick={onClose} style={{
+            flex: 1, height: 40, borderRadius: 10, border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
+            color: 'var(--red)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          }}>
             Close
           </button>
         </div>
-
       </div>
     </div>
   )
