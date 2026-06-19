@@ -4,6 +4,7 @@ import { usePosStore } from '../../store/posStore'
 import CreditCustomerModal from '../popup/CreditCustomerModal'
 import MultiPaymentModal from '../popup/MultiPaymentModal'
 import { closeAndFocusBarcode } from '../../lib/posFocus'
+import { posNotifyWarning } from '../../lib/posNotify'
 import {
   applyPosNumpadKey,
   togglePosQtyMode,
@@ -38,6 +39,7 @@ const NUM_BTN = {
 export default function NumPad({ onEnter }) {
   const [showCreditModal, setShowCreditModal] = useState(false)
   const showMultiModal = usePosStore(s => s.multiPayModalOpen)
+  const openMultiPayModal = usePosStore(s => s.openMultiPayModal)
   const setMultiPayModalOpen = usePosStore(s => s.setMultiPayModalOpen)
   const inputMode        = usePosStore(s => s.inputMode)
   const paymentMode      = usePosStore(s => s.paymentMode)
@@ -53,7 +55,9 @@ export default function NumPad({ onEnter }) {
       return
     }
     if (mode.key === PM.MULTIPAYMENT) {
-      setMultiPayModalOpen(true)
+      if (!openMultiPayModal()) {
+        posNotifyWarning('Add items to the cart first', { title: 'Multi Payment' })
+      }
       return
     }
     setPaymentMode(mode.key)

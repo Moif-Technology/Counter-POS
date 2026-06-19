@@ -4,6 +4,7 @@ import { usePosStore } from '../../store/posStore'
 import CreditCustomerModal from '../popup/CreditCustomerModal'
 import MultiPaymentModal from '../popup/MultiPaymentModal'
 import { closeAndFocusBarcode } from '../../lib/posFocus'
+import { posNotifyWarning } from '../../lib/posNotify'
 import { BILL_PAYMENT_MODES, PM } from '../../lib/paymentModes'
 
 const ICONS = { [PM.CASH]: Banknote, [PM.CREDITCARD]: CreditCard, [PM.CREDIT]: UserCheck, [PM.MULTIPAYMENT]: Layers }
@@ -17,6 +18,7 @@ const STYLES = {
 export default function PaymentButtons() {
   const [showCreditModal, setShowCreditModal] = useState(false)
   const showMultiModal = usePosStore(s => s.multiPayModalOpen)
+  const openMultiPayModal = usePosStore(s => s.openMultiPayModal)
   const setMultiPayModalOpen = usePosStore(s => s.setMultiPayModalOpen)
   const paymentMode    = usePosStore(s => s.paymentMode)
   const setPaymentMode = usePosStore(s => s.setPaymentMode)
@@ -54,7 +56,12 @@ export default function PaymentButtons() {
             key={m.key}
             onClick={() => {
               if (m.key === PM.CREDIT) { setShowCreditModal(true); return }
-              if (m.key === PM.MULTIPAYMENT)  { setMultiPayModalOpen(true); return }
+              if (m.key === PM.MULTIPAYMENT) {
+                if (!openMultiPayModal()) {
+                  posNotifyWarning('Add items to the cart first', { title: 'Multi Payment' })
+                }
+                return
+              }
               setPaymentMode(m.key)
               setPaymentSplits(null)
               if (m.key === PM.CASH || m.key === PM.CREDITCARD) usePosStore.getState().resetBillPaymentDefaults()
