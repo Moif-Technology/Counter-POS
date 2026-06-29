@@ -317,6 +317,7 @@ export function FeatureGrid() {
       barcode:     product.barcode ?? product.productCode,
       productCode: product.productCode,
       description: product.description ?? product.productName,
+      descriptionArabic: product.descriptionArabic ?? null,
       qty,
       unitPrice: product.unitPrice,
       discount:  0,

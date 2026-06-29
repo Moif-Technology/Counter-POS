@@ -11,6 +11,15 @@ import {
   parseBillSalesId,
   buildReceiptDiscountAdjustmentHtml,
   buildReceiptBarcodeBlockHtml,
+  buildReceiptItemDescHtml,
+  buildReceiptItemsTableHeadHtml,
+  buildReceiptTotalLineHtml,
+  buildReceiptSettlementLineHtml,
+  buildReceiptBillSummaryHtml,
+  buildReceiptItemsQtySummaryHtml,
+  buildReceiptTaxDetailsHtml,
+  buildReceiptBiLabel,
+  RECEIPT_LABELS,
   RECEIPT_BARCODE_EXTRA_CSS,
 } from './receiptPrintTheme'
 import { buildCode39Svg } from './barcodeSvg'
@@ -80,7 +89,7 @@ export function buildBillReceiptHtml(bill, meta = {}) {
     const isLast = idx === items.length - 1
     return `
       <tr class="item-main">
-        <td class="desc">${esc(it.description || 'Item')}</td>
+        <td class="desc">${buildReceiptItemDescHtml(it, esc)}</td>
         <td class="c">${fmtQty(it.qty)}</td>
         <td class="r">${lineUnitDisplay(it)}</td>
         <td class="r b">${fmtMoney(it.lineTotal)}</td>
@@ -112,7 +121,7 @@ export function buildBillReceiptHtml(bill, meta = {}) {
     creditBlock = `
       <div class="pair-row">
         <span></span>
-        <span class="pair"><span class="lbl">O/S BALANCE</span><span class="val b">: ${fmtMoney(os)}</span></span>
+        <span class="pair">${buildReceiptBiLabel(RECEIPT_LABELS.osBalance, ` : ${fmtMoney(os)}`)}</span>
       </div>
     `
   }
@@ -159,12 +168,7 @@ export function buildBillReceiptHtml(bill, meta = {}) {
   <hr class="dash" />
   <table class="items">
     <thead>
-      <tr>
-        <th>Description</th>
-        <th class="c">Qty</th>
-        <th class="r">Price</th>
-        <th class="r">Total</th>
-      </tr>
+      ${buildReceiptItemsTableHeadHtml({ withPrice: true })}
     </thead>
     <tbody>
       ${itemRows || '<tr><td colspan="4" class="center">No items</td></tr>'}
@@ -173,47 +177,14 @@ export function buildBillReceiptHtml(bill, meta = {}) {
 
   <hr class="dash" />
   ${buildReceiptDiscountAdjustmentHtml({ taxableAmt, discountAmt, roundOff, fmtMoney })}
-  <div class="total-line">
-    <span>TOTAL :</span>
-    <span>${fmtMoney(billAmount)}</span>
-  </div>
-  <div class="pair-row">
-    <span class="lbl">SETTLEMENT : ${esc(settlement)}</span>
-  </div>
+  ${buildReceiptTotalLineHtml(billAmount, fmtMoney)}
+  ${buildReceiptSettlementLineHtml(settlement, esc)}
   ${splitBlock}
-
-  <div class="pair-row">
-    <span><span class="lbl">ITEMS</span> : ${itemCount}</span>
-    <span class="pair"><span class="lbl">BILL AMOUNT</span><span class="val">: ${fmtMoney(billAmount)}</span></span>
-  </div>
-  <div class="pair-row">
-    <span><span class="lbl">QTY</span> : ${fmtQty(qtyTotal)}</span>
-    <span class="pair"><span class="lbl">PAID AMOUNT</span><span class="val">: ${fmtMoney(paidAmount)}</span></span>
-  </div>
-  <div class="pair-row">
-    <span></span>
-    <span class="pair"><span class="lbl">BAL. AMOUNT</span><span class="val">: ${fmtMoney(balAmount)}</span></span>
-  </div>
+  ${buildReceiptBillSummaryHtml({ itemCount, qtyTotal, billAmount, paidAmount, balAmount, fmtMoney, fmtQty })}
   ${creditBlock}
 
   <hr class="dash" />
-  <div class="tax-head">Tax Details</div>
-  <table class="tax">
-    <thead>
-      <tr>
-        <th>Taxable Amount</th>
-        <th>Tax Amount</th>
-        <th>Bill Amount</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>${fmtMoney(taxableAmt)}</td>
-        <td>${fmtMoney(taxAmt)}</td>
-        <td>${fmtMoney(billAmount)}</td>
-      </tr>
-    </tbody>
-  </table>
+  ${buildReceiptTaxDetailsHtml(taxableAmt, taxAmt, billAmount, fmtMoney)}
 
   <hr class="dash" />
   ${buildReceiptBarcodeBlockHtml({

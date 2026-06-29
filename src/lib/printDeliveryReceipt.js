@@ -10,6 +10,11 @@ import {
   openReceiptPrintWindow,
   buildReceiptDiscountAdjustmentHtml,
   buildReceiptBarcodeBlockHtml,
+  buildReceiptItemDescHtml,
+  buildReceiptItemsTableHeadHtml,
+  buildReceiptTotalLineHtml,
+  buildReceiptItemsQtySummaryHtml,
+  buildReceiptTaxDetailsHtml,
   RECEIPT_BARCODE_EXTRA_CSS,
   wrapReceiptBodyCopies,
   resolveReceiptCompanyMeta,
@@ -62,7 +67,7 @@ export function buildDeliveryReceiptHtml(delivery, meta = {}, copies = 1) {
     const isLast = idx === items.length - 1
     return `
       <tr class="item-main">
-        <td class="desc">${esc(it.description || 'Item')}</td>
+        <td class="desc">${buildReceiptItemDescHtml(it, esc)}</td>
         <td class="c">${fmtQty(it.qty)}</td>
         <td class="r">${lineUnitDisplay(it)}</td>
         <td class="r b">${fmtMoney(it.lineTotal)}</td>
@@ -117,12 +122,7 @@ export function buildDeliveryReceiptHtml(delivery, meta = {}, copies = 1) {
   <hr class="dash" />
   <table class="items">
     <thead>
-      <tr>
-        <th>Description</th>
-        <th class="c">Qty</th>
-        <th class="r">Price</th>
-        <th class="r">Total</th>
-      </tr>
+      ${buildReceiptItemsTableHeadHtml({ withPrice: true })}
     </thead>
     <tbody>
       ${itemRows || '<tr><td colspan="4" class="center">No items</td></tr>'}
@@ -131,33 +131,11 @@ export function buildDeliveryReceiptHtml(delivery, meta = {}, copies = 1) {
 
   <hr class="dash" />
   ${buildReceiptDiscountAdjustmentHtml({ taxableAmt, discountAmt, roundOff, fmtMoney })}
-  <div class="total-line">
-    <span>TOTAL :</span>
-    <span>${fmtMoney(billAmount)}</span>
-  </div>
-  <div class="pair-row">
-    <span><span class="lbl">ITEMS</span> : ${itemCount}</span>
-    <span class="pair"><span class="lbl">QTY</span><span class="val">: ${fmtQty(qtyTotal)}</span></span>
-  </div>
+  ${buildReceiptTotalLineHtml(billAmount, fmtMoney)}
+  ${buildReceiptItemsQtySummaryHtml(itemCount, qtyTotal, fmtQty)}
 
   <hr class="dash" />
-  <div class="tax-head">Tax Details</div>
-  <table class="tax">
-    <thead>
-      <tr>
-        <th>Taxable Amount</th>
-        <th>Tax Amount</th>
-        <th>Bill Amount</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>${fmtMoney(taxableAmt)}</td>
-        <td>${fmtMoney(taxAmt)}</td>
-        <td>${fmtMoney(billAmount)}</td>
-      </tr>
-    </tbody>
-  </table>
+  ${buildReceiptTaxDetailsHtml(taxableAmt, taxAmt, billAmount, fmtMoney)}
 
   <hr class="dash" />
   ${buildReceiptBarcodeBlockHtml({
@@ -228,6 +206,7 @@ export async function printDeliveryReprintByNo(deliveryNo, accessToken, meta = {
     taxRate: getGvTax(),
     items: (Array.isArray(items) ? items : []).map(it => ({
       description: it.short_description,
+      descriptionArabic: it.description_arabic ?? null,
       qty: it.qty,
       unitPrice: it.unit_price,
       lineTotal: it.line_total,
@@ -244,6 +223,7 @@ export async function printDeliveryReprintByNo(deliveryNo, accessToken, meta = {
 export function deliveryDataFromPosState(state, result, details) {
   const items = (state.cartItems ?? []).map(it => ({
     description: it.description,
+    descriptionArabic: it.descriptionArabic ?? null,
     qty: it.qty,
     unitPrice: it.unitPrice,
     lineTotal: it.lineTotal,

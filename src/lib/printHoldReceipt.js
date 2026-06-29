@@ -11,6 +11,10 @@ import {
   resolveCashierName,
   resolveReceiptCompanyMeta,
   buildReceiptBarcodeBlockHtml,
+  buildReceiptItemDescHtml,
+  buildReceiptItemsTableHeadHtml,
+  buildReceiptTotalLineHtml,
+  buildReceiptItemsQtySummaryHtml,
   RECEIPT_BARCODE_EXTRA_CSS,
 } from './receiptPrintTheme'
 import { buildHoldBarcodeSvg, formatHoldBarcode } from './holdBarcode'
@@ -53,7 +57,7 @@ export function buildHoldReceiptHtml(hold, meta = {}, copies = 1) {
     const code = it.productCode ?? it.barcode ?? ''
     return `
       <tr class="item-main">
-        <td class="desc">${esc(it.description || 'Item')}</td>
+        <td class="desc">${buildReceiptItemDescHtml(it, esc)}</td>
         <td class="c">${fmtQty(it.qty)}</td>
         <td class="r b">${fmtMoney(it.lineTotal)}</td>
       </tr>
@@ -94,11 +98,7 @@ export function buildHoldReceiptHtml(hold, meta = {}, copies = 1) {
   <hr class="dash" />
   <table class="items hold-items">
     <thead>
-      <tr>
-        <th>Description</th>
-        <th class="c">Qty</th>
-        <th class="r">Total</th>
-      </tr>
+      ${buildReceiptItemsTableHeadHtml({ withPrice: false })}
     </thead>
     <tbody>
       ${itemRows || '<tr><td colspan="3" class="center">No items</td></tr>'}
@@ -106,14 +106,8 @@ export function buildHoldReceiptHtml(hold, meta = {}, copies = 1) {
   </table>
 
   <hr class="dash" />
-  <div class="total-line">
-    <span>TOTAL :</span>
-    <span>${fmtMoney(netAmount)}</span>
-  </div>
-  <div class="pair-row">
-    <span><span class="lbl">ITEMS</span> : ${itemCount}</span>
-    <span class="pair"><span class="lbl">QTY</span><span class="val">: ${fmtQty(qtyTotal)}</span></span>
-  </div>
+  ${buildReceiptTotalLineHtml(netAmount, fmtMoney)}
+  ${buildReceiptItemsQtySummaryHtml(itemCount, qtyTotal, fmtQty)}
 
   <hr class="dash" />
   ${buildReceiptBarcodeBlockHtml({
@@ -171,6 +165,7 @@ export async function printHoldReprintByNo(holdNo, accessToken, meta = {}) {
     netAmount: Number(hold.amount ?? 0),
     items: (Array.isArray(items) ? items : []).map(it => ({
       description: it.short_description,
+      descriptionArabic: it.description_arabic ?? null,
       qty: it.qty,
       lineTotal: it.line_total,
       productCode: it.product_code,
@@ -184,6 +179,7 @@ export async function printHoldReprintByNo(holdNo, accessToken, meta = {}) {
 export function holdDataFromPosState(state, result) {
   const items = (state.cartItems ?? []).map(it => ({
     description: it.description,
+    descriptionArabic: it.descriptionArabic ?? null,
     qty: it.qty,
     lineTotal: it.lineTotal,
     productCode: it.productCode ?? it.barcode,

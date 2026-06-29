@@ -69,6 +69,137 @@ export function escReceipt(s) {
     .replace(/"/g, '&quot;')
 }
 
+/** English + Arabic item description for thermal receipts. */
+export function buildReceiptItemDescHtml(it, esc = escReceipt) {
+  const en = String(it?.description ?? it?.short_description ?? 'Item').trim()
+  const ar = String(it?.descriptionArabic ?? it?.description_arabic ?? '').trim()
+  if (!ar || ar === en) return esc(en || 'Item')
+  return `${esc(en || 'Item')}<div class="desc-ar">${esc(ar)}</div>`
+}
+
+/** Standard bilingual receipt labels — UAE retail / VAT invoice wording. */
+export const RECEIPT_LABELS = {
+  description:      { en: 'Description', ar: 'البيان' },
+  qty:              { en: 'Qty', ar: 'الكمية' },
+  price:            { en: 'Price', ar: 'السعر' },
+  lineTotal:        { en: 'Total', ar: 'المبلغ' },
+  grandTotal:       { en: 'TOTAL', ar: 'الإجمالي' },
+  settlement:       { en: 'SETTLEMENT', ar: 'طريقة الدفع' },
+  items:            { en: 'ITEMS', ar: 'عدد الأصناف' },
+  qtyTotal:         { en: 'QTY', ar: 'الكمية' },
+  billAmount:       { en: 'BILL AMOUNT', ar: 'مبلغ الفاتورة' },
+  paidAmount:       { en: 'PAID AMOUNT', ar: 'المبلغ المدفوع' },
+  balAmount:        { en: 'BAL. AMOUNT', ar: 'المبلغ المتبقي' },
+  osBalance:        { en: 'O/S BALANCE', ar: 'الرصيد المستحق' },
+  taxDetails:       { en: 'Tax Details', ar: 'تفاصيل الضريبة' },
+  taxableAmount:    { en: 'Taxable Amount', ar: 'المبلغ الخاضع للضريبة' },
+  taxAmount:        { en: 'Tax Amount', ar: 'مبلغ الضريبة' },
+  taxableBeforeDisc:{ en: 'TAXABLE BEFORE DISC', ar: 'الخاضع للضريبة قبل الخصم' },
+  discount:         { en: 'DISCOUNT', ar: 'الخصم' },
+  taxableAfterDisc: { en: 'TAXABLE AFTER DISC', ar: 'الخاضع للضريبة بعد الخصم' },
+  roundOff:         { en: 'ROUND OFF', ar: 'فرق التقريب' },
+}
+
+function receiptTh(label, alignClass = '') {
+  return `<th class="${alignClass}"><div class="th-en">${label.en}</div><div class="th-ar">${label.ar}</div></th>`
+}
+
+/** Bilingual inline label (English line + Arabic sub-line). */
+export function buildReceiptBiLabel(label, suffix = '') {
+  return `<span class="bi-lbl"><span class="en">${label.en}${suffix}</span><span class="ar">${label.ar}</span></span>`
+}
+
+/** Item table header — Description / Qty / Price / Total. */
+export function buildReceiptItemsTableHeadHtml({ withPrice = true } = {}) {
+  const L = RECEIPT_LABELS
+  if (withPrice) {
+    return `<tr>
+      ${receiptTh(L.description, 'desc')}
+      ${receiptTh(L.qty, 'c')}
+      ${receiptTh(L.price, 'r')}
+      ${receiptTh(L.lineTotal, 'r')}
+    </tr>`
+  }
+  return `<tr>
+    ${receiptTh(L.description, 'desc')}
+    ${receiptTh(L.qty, 'c')}
+    ${receiptTh(L.lineTotal, 'r')}
+  </tr>`
+}
+
+export function buildReceiptTotalLineHtml(amount, fmtMoney) {
+  const L = RECEIPT_LABELS.grandTotal
+  return `<div class="total-line">
+    <span>${buildReceiptBiLabel(L, ' :')}</span>
+    <span>${fmtMoney(amount)}</span>
+  </div>`
+}
+
+export function buildReceiptSettlementLineHtml(settlementText, esc = escReceipt) {
+  const L = RECEIPT_LABELS.settlement
+  return `<div class="pair-row">
+    <span>${buildReceiptBiLabel(L, ` : ${esc(settlementText)}`)}</span>
+  </div>`
+}
+
+/** Invoice summary rows: items, qty, bill/paid/balance amounts. */
+export function buildReceiptBillSummaryHtml({
+  itemCount,
+  qtyTotal,
+  billAmount,
+  paidAmount,
+  balAmount,
+  fmtMoney,
+  fmtQty,
+}) {
+  const L = RECEIPT_LABELS
+  return `<div class="pair-row">
+    <span>${buildReceiptBiLabel(L.items, ` : ${itemCount}`)}</span>
+    <span class="pair">${buildReceiptBiLabel(L.billAmount, ` : ${fmtMoney(billAmount)}`)}</span>
+  </div>
+  <div class="pair-row">
+    <span>${buildReceiptBiLabel(L.qtyTotal, ` : ${fmtQty(qtyTotal)}`)}</span>
+    <span class="pair">${buildReceiptBiLabel(L.paidAmount, ` : ${fmtMoney(paidAmount)}`)}</span>
+  </div>
+  <div class="pair-row">
+    <span></span>
+    <span class="pair">${buildReceiptBiLabel(L.balAmount, ` : ${fmtMoney(balAmount)}`)}</span>
+  </div>`
+}
+
+/** Hold / delivery compact summary — items + qty only. */
+export function buildReceiptItemsQtySummaryHtml(itemCount, qtyTotal, fmtQty) {
+  const L = RECEIPT_LABELS
+  return `<div class="pair-row">
+    <span>${buildReceiptBiLabel(L.items, ` : ${itemCount}`)}</span>
+    <span class="pair">${buildReceiptBiLabel(L.qtyTotal, ` : ${fmtQty(qtyTotal)}`)}</span>
+  </div>`
+}
+
+export function buildReceiptTaxDetailsHtml(taxableAmt, taxAmt, billAmount, fmtMoney) {
+  const L = RECEIPT_LABELS
+  return `<div class="tax-head">
+    <div>${L.taxDetails.en}</div>
+    <div class="tax-head-ar">${L.taxDetails.ar}</div>
+  </div>
+  <table class="tax">
+    <thead>
+      <tr>
+        ${receiptTh(L.taxableAmount)}
+        ${receiptTh(L.taxAmount, 'r')}
+        ${receiptTh(L.billAmount, 'r')}
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>${fmtMoney(taxableAmt)}</td>
+        <td>${fmtMoney(taxAmt)}</td>
+        <td>${fmtMoney(billAmount)}</td>
+      </tr>
+    </tbody>
+  </table>`
+}
+
 /** Receipt date/time — 17/Jun/2026 - 11:18 PM (single line on 80mm) */
 export function fmtReceiptDateTime(d) {
   if (!d) return '—'
@@ -108,24 +239,25 @@ export function buildReceiptDiscountAdjustmentHtml({ taxableAmt, discountAmt, ro
   let html = ''
   if (hasDiscount) {
     const beforeDisc = taxable + disc
+    const L = RECEIPT_LABELS
     html += `
   <div class="pair-row">
-    <span class="lbl">TAXABLE BEFORE DISC</span>
+    <span>${buildReceiptBiLabel(L.taxableBeforeDisc)}</span>
     <span class="val">${fmtMoney(beforeDisc)}</span>
   </div>
   <div class="pair-row">
-    <span class="lbl">DISCOUNT</span>
+    <span>${buildReceiptBiLabel(L.discount)}</span>
     <span class="val">${fmtMoney(disc)}</span>
   </div>
   <div class="pair-row">
-    <span class="lbl">TAXABLE AFTER DISC</span>
+    <span>${buildReceiptBiLabel(L.taxableAfterDisc)}</span>
     <span class="val">${fmtMoney(taxable)}</span>
   </div>`
   }
   if (hasRoundOff) {
     html += `
   <div class="pair-row">
-    <span class="lbl">ROUND OFF</span>
+    <span>${buildReceiptBiLabel(RECEIPT_LABELS.roundOff)}</span>
     <span class="val">${fmtMoney(ro)}</span>
   </div>`
   }
@@ -209,7 +341,20 @@ export function buildReceiptBaseCss(opts = {}) {
       font-weight: 700; font-size: ${f.title}px; margin: 5px 0;
       flex-wrap: nowrap; white-space: nowrap;
     }
-    .title-ar { font-size: ${f.titleAr}px; font-weight: 700; direction: rtl; flex-shrink: 0; }
+    .title-ar { font-size: ${f.titleAr}px; font-weight: 700; direction: rtl; flex-shrink: 0; font-family: "Segoe UI", Tahoma, Arial, sans-serif; }
+    .th-en { line-height: 1.1; }
+    .th-ar, .bi-lbl .ar, .tax-head-ar {
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      font-size: 10px; font-weight: 700; direction: rtl; line-height: 1.15;
+    }
+    .th-ar { margin-top: 1px; }
+    table.items th.c .th-ar { text-align: center; }
+    table.items th.r .th-ar { text-align: left; }
+    table.tax th .th-ar { font-size: 9px; text-align: left; }
+    table.tax th.r .th-ar { text-align: left; }
+    .bi-lbl { display: inline-flex; flex-direction: column; vertical-align: top; line-height: 1.1; }
+    .bi-lbl .en { white-space: nowrap; }
+    .tax-head-ar { text-align: center; margin-top: 2px; font-size: ${f.itemSub}px; }
     .row {
       display: flex; justify-content: space-between; align-items: center;
       gap: 4px; flex-wrap: nowrap; white-space: nowrap;
@@ -239,6 +384,11 @@ export function buildReceiptBaseCss(opts = {}) {
     table.items th.r { text-align: right; }
     table.items td { padding: 3px 0; vertical-align: top; font-weight: 700; }
     table.items .desc { font-weight: 700; max-width: 42mm; word-wrap: break-word; }
+    table.items .desc-ar {
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      font-size: ${f.itemSub}px; font-weight: 700; direction: rtl; text-align: right;
+      margin-top: 2px; line-height: 1.25; word-wrap: break-word;
+    }
     table.items .c { text-align: center; width: 30px; font-weight: 700; }
     table.items .r { text-align: right; white-space: nowrap; font-weight: 700; }
     table.items .b { font-weight: 700; }
