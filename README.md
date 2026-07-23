@@ -8,7 +8,7 @@ A modern, web-based Point-of-Sale terminal built with React. Designed for fast r
 
 Counter-POS is the cashier-facing POS terminal. The cashier logs in, scans or types product barcodes, manages the cart, and processes payments. The UI is purpose-built for speed — numpad entry, one-click payment modes, and a full-screen layout with no distractions.
 
-**Current State:** Fully functional UI with local/mocked data. Backend API integration is ready to be wired in.
+**Current State:** Frontend is wired to the unified MOIF backend API. Browser development can use the hosted backend through the Vite proxy, so frontend developers do not need to run the backend locally.
 
 ---
 
@@ -234,64 +234,40 @@ Most function buttons are UI stubs ready for backend logic to be attached.
 
 ---
 
-## Connecting to the Backend API
+## Backend API Setup
 
-The app is currently mocked. To wire it to the real backend:
+Counter-POS is wired to the unified MOIF backend through `src/lib/api.js`.
 
-### 1. Create environment file
+For normal frontend development, developers do not need to run the backend locally:
+
+```bash
+npm install
+npm run dev
+```
+
+In browser development, API calls use `VITE_API_URL=/api`. Vite proxies `/api` to the hosted backend configured by `VITE_API_PROXY_TARGET`.
+
+Default remote-backend settings are provided in `.env.example`:
 
 ```env
-# Counter-pos/.env
-VITE_API_BASE_URL=http://localhost:5000
+VITE_API_URL=/api
+VITE_API_PROXY_TARGET=https://api.moifone.com
 ```
 
-### 2. Add proxy to vite.config.js (optional for dev)
+To use a local backend instead, copy `.env.local.example` to `.env.local`:
 
-```js
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  server: {
-    proxy: {
-      '/api': 'http://localhost:5000'
-    }
-  }
-})
+```env
+VITE_API_URL=/api
+VITE_API_PROXY_TARGET=http://localhost:5010
 ```
 
-### 3. Replace login mock in LoginPage.jsx
+Android and production builds do not use the Vite dev proxy, so they must use a full API URL:
 
-```js
-// Replace the fake setTimeout login with:
-const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/pos/login`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ username, password })
-})
-const data = await res.json()
-// data.accessToken, data.cashier, data.stationId
+```env
+VITE_API_URL=https://api.moifone.com/api
 ```
 
-### 4. Replace barcode lookup in POSPage.jsx
-
-```js
-// In handleEnter(), replace dummy product with:
-const res = await fetch(`/api/products/barcode/${barcodeBuffer}`, {
-  headers: { Authorization: `Bearer ${token}` }
-})
-const product = await res.json()
-addItem(product)
-```
-
-### 5. Add bill settlement logic
-
-```js
-// In FunctionButtons settlement handler:
-await fetch('/api/pos/settlement', {
-  method: 'POST',
-  headers: { Authorization: `Bearer ${token}` },
-  body: JSON.stringify({ billNo, cartItems, netAmount, paidAmount, paymentMode })
-})
-```
+That value is already set in `.env.android` and `.env.production`.
 
 ---
 
@@ -309,7 +285,7 @@ Output goes to `dist/`. Deploy to any static web host or serve via Express stati
 
 | Limitation | Notes |
 |---|---|
-| No backend integration | All data is mocked; login accepts anything |
+| Some feature buttons are still stubs | Core POS API flows are wired, but a few secondary buttons still need final business logic |
 | No cart persistence | Cart resets on page refresh (no localStorage) |
 | DB mode toggle is UI only | LOCAL/SERVER switch has no actual effect yet |
 | Print / receipt | Button exists, no print logic implemented |
