@@ -434,8 +434,8 @@ export default function LiteHomePage() {
             className="lite-btn"
             onClick={() => setShowCustomers(o => !o)}
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              maxWidth: 150, padding: '7px 9px', marginBottom: 8, minHeight: 32,
+              display: 'flex', alignItems: 'center', gap: 6,
+              width: '100%', padding: '6px 9px', marginBottom: 8, minHeight: 30,
               borderRadius: 'var(--r-md)',
               border: `1.5px solid ${customer ? 'var(--blue-border)' : 'var(--border)'}`,
               background: customer ? 'var(--blue-bg)' : 'var(--surface)',
@@ -444,22 +444,24 @@ export default function LiteHomePage() {
             }}
           >
             <User size={11} />
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {customer ? customer.customerName : 'Walk-in Customer'}
             </span>
             <ChevronDown size={10} />
           </button>
 
           {showCustomers && (
-            <div
-              onClick={() => setShowCustomers(false)}
-              style={{ position: 'fixed', inset: 0, zIndex: 9 }}
-            >
+            <>
+              {/* Backdrop — click outside to dismiss */}
+              <div
+                onClick={() => setShowCustomers(false)}
+                style={{ position: 'fixed', inset: 0, zIndex: 8 }}
+              />
               <div
                 onClick={e => e.stopPropagation()}
                 style={{
-                  position: 'absolute', top: 100, left: 16,
-                  width: 260, maxWidth: 'calc(100% - 32px)', maxHeight: 300, overflowY: 'auto',
+                  position: 'absolute', top: 48, left: 0, right: 0, zIndex: 9,
+                  maxHeight: 300, overflowY: 'auto',
                   background: 'var(--surface)', border: '1.5px solid var(--border)',
                   borderRadius: 'var(--r-md)', boxShadow: '0 8px 28px rgba(0,0,0,0.18)',
                 }}
@@ -481,40 +483,39 @@ export default function LiteHomePage() {
                     className="lite-btn"
                     onClick={() => selectCustomer(c)}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
                       padding: '10px 12px', borderBottom: '1px solid var(--border)',
                       cursor: 'pointer',
                       background: customer?.customerId === c.customerId ? 'var(--brand-bg)' : 'transparent',
                     }}
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {c.customerName}
-                      </div>
-                      <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>
-                        {c.customerCode} · {c.mobileNo}
-                      </div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-1)' }}>
+                      {c.customerName}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
-                      {normalizePaymentMode(c.paymentMode) !== PM.CASH && (
-                        <span style={{
-                          fontSize: 9, fontWeight: 800, color: 'var(--amber)',
-                          background: 'var(--amber-bg)', border: '1px solid var(--amber-border)',
-                          borderRadius: 4, padding: '1px 5px',
-                        }}>
-                          {normalizePaymentMode(c.paymentMode)}
-                        </span>
-                      )}
-                      {c.osAmount > 0 && (
-                        <span style={{ fontSize: 10, color: 'var(--red)', fontWeight: 700 }}>
-                          O/S {fmtMoney(c.osAmount)}
-                        </span>
-                      )}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 2 }}>
+                      <span style={{ fontSize: 10.5, color: 'var(--text-3)' }}>
+                        {c.customerCode} · {c.mobileNo}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        {normalizePaymentMode(c.paymentMode) !== PM.CASH && (
+                          <span style={{
+                            fontSize: 9, fontWeight: 800, color: 'var(--amber)',
+                            background: 'var(--amber-bg)', border: '1px solid var(--amber-border)',
+                            borderRadius: 4, padding: '1px 5px',
+                          }}>
+                            {normalizePaymentMode(c.paymentMode)}
+                          </span>
+                        )}
+                        {c.osAmount > 0 && (
+                          <span style={{ fontSize: 10, color: 'var(--red)', fontWeight: 700 }}>
+                            O/S {fmtMoney(c.osAmount)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </>
           )}
 
           {/* Billing summary — minimal by default, pinned in view; tap to expand detail */}
