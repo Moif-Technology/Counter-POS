@@ -23,6 +23,7 @@ export const usePosStore = create((set, get) => ({
   refreshToken: null,
   companyId: null,
   branchId: null,
+  stationId: null,
   currency: 'AED',
   /** Display decimals for amounts (default 2; future: load from parameter table). */
   currencyPrecision: 2,
@@ -95,6 +96,10 @@ export const usePosStore = create((set, get) => ({
   /** Incremented to request barcode field focus (BarcodeInput listens). */
   barcodeFocusTick: 0,
 
+  /** Set by super admin in ERP → POS Settings → Customer Display toggle */
+  customerDisplayEnabled: false,
+  setCustomerDisplayEnabled: (v) => set({ customerDisplayEnabled: !!v }),
+
   /** Product groups from biz.group_master (group panel + Group modal). */
   productGroups: [],
   groupsLoading: false,
@@ -106,9 +111,9 @@ export const usePosStore = create((set, get) => ({
     inputMode: 'barcode',
   })),
 
-  setSession: (cashier, counterNo, accessToken, refreshToken, companyId, branchId) => {
+  setSession: (cashier, counterNo, accessToken, refreshToken, companyId, branchId, stationId) => {
     saveTokens(accessToken, refreshToken)
-    set({ cashier, counterNo, accessToken, refreshToken, companyId, branchId })
+    set({ cashier, counterNo, accessToken, refreshToken, companyId, branchId, stationId: stationId ?? branchId })
     get().fetchProductGroups()
   },
 
@@ -150,7 +155,7 @@ export const usePosStore = create((set, get) => ({
     clearTokens()
     set({
       cashier: null, counterNo: '', accessToken: null, refreshToken: null,
-      companyId: null, branchId: null,
+      companyId: null, branchId: null, stationId: null,
       cartItems: [], selectedRowKey: null,
       subTotal: 0, lineDiscountAmt: 0, billDiscountAmt: 0, discountAmt: 0, taxableAmt: 0,
       taxAmt: 0, roundOff: 0, netAmount: 0,
@@ -526,7 +531,7 @@ export const usePosStore = create((set, get) => ({
       err.status = 404
       throw err
     }
-    const items = await api.counterPos.recallBill(hold.sales_id, accessToken)
+    const items = await api.counterPos.recallHeldBill(hold.sales_id, accessToken)
     recallHold(hold, Array.isArray(items) ? items : [])
     return hold
   },

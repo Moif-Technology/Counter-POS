@@ -19,6 +19,7 @@ import {
   buildDeliveryBarcodeSvg,
   formatDeliveryBarcode,
 } from './deliveryBarcode'
+import { IS_ANDROID_POS, printAndroidDelivery } from './androidPosPrinter'
 
 function resolveCompanyHeader(meta) {
   return resolveReceiptCompanyMeta(meta)
@@ -189,10 +190,15 @@ export function buildDeliveryReceiptHtml(delivery, meta = {}, copies = 1) {
   })
 }
 
-export function printDeliveryReceipt(delivery, meta = {}, copies = 1) {
+export async function printDeliveryReceipt(delivery, meta = {}, copies = 1) {
   if (!delivery?.deliveryNo) throw new Error('No delivery number to print')
   const count = Math.max(1, Math.min(20, Math.floor(Number(copies) || 1)))
-  openReceiptPrintWindow(buildDeliveryReceiptHtml(delivery, meta, count))
+  const html = buildDeliveryReceiptHtml(delivery, meta, count)
+  if (IS_ANDROID_POS) {
+    await printAndroidDelivery(delivery, meta, count)
+    return
+  }
+  openReceiptPrintWindow(html)
 }
 
 export async function printDeliveryReprintByNo(deliveryNo, accessToken, meta = {}) {
@@ -236,7 +242,7 @@ export async function printDeliveryReprintByNo(deliveryNo, accessToken, meta = {
       vatAmt: it.tax_1_amount,
     })),
   }
-  printDeliveryReceipt(deliveryPrint, meta)
+  await printDeliveryReceipt(deliveryPrint, meta)
   return deliveryPrint
 }
 

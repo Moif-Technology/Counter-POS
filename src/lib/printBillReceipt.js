@@ -15,6 +15,7 @@ import {
 } from './receiptPrintTheme'
 import { buildCode39Svg } from './barcodeSvg'
 import { formatDocBarcode } from './documentScan'
+import { IS_ANDROID_POS, printAndroidBill } from './androidPosPrinter'
 
 export { parseBillSalesId } from './receiptPrintTheme'
 
@@ -236,14 +237,19 @@ export function buildBillReceiptHtml(bill, meta = {}) {
   })
 }
 
-export function printBillFromData(bill, meta = {}) {
+export async function printBillFromData(bill, meta = {}) {
   if (!bill) throw new Error('No bill data to print')
-  openReceiptPrintWindow(buildBillReceiptHtml(bill, meta))
+  const html = buildBillReceiptHtml(bill, meta)
+  if (IS_ANDROID_POS) {
+    await printAndroidBill(bill, meta)
+    return
+  }
+  openReceiptPrintWindow(html)
 }
 
 export async function printBillReceipt(salesId, accessToken, meta = {}) {
   const bill = await api.counterPos.salesViewerBill(salesId, accessToken)
-  printBillFromData(bill, meta)
+  await printBillFromData(bill, meta)
   return bill
 }
 

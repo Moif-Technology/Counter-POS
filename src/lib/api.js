@@ -28,7 +28,8 @@ export const api = {
   counterPos: {
     staffList:     (body)           => request('POST', '/counter-pos/staff-list',   body),
     pinLogin:      (body)           => request('POST', '/counter-pos/pin-login',    body),
-    enrollDevice:  (body)           => request('POST', '/counter-pos/device/enroll', body),
+    enrollDevice:       (body) => request('POST', '/counter-pos/device/enroll',    body),
+    enrollListStations: (body) => request('POST', '/counter-pos/device/stations', body),
     productSearch:  (barcode, token)      => request('GET',  `/counter-pos/products/search?barcode=${encodeURIComponent(barcode)}`, null, token),
     productLookup:  (q, maxPrice, token, groupId) => {
       const params = new URLSearchParams()
@@ -49,6 +50,7 @@ export const api = {
     settleDeliveryBulk: (body, token) => request('POST', '/counter-pos/sales/delivery/settle-bulk', body, token),
     getHeldBills:   (token)              => request('GET',   `/counter-pos/sales/held`, null, token),
     recallBill:     (salesId, token)     => request('GET',   `/counter-pos/sales/held/${salesId}`, null, token),
+    recallHeldBill: (salesId, token)     => request('POST',  `/counter-pos/sales/held/${salesId}/recall`, {}, token),
     cancelHold:     (salesId, token)     => request('DELETE',`/counter-pos/sales/held/${salesId}`, null, token),
     groupsList:     (token)              => request('GET',   `/counter-pos/groups`, null, token),
 
@@ -118,6 +120,7 @@ export const api = {
   },
 
   appParameters: {
-    gvtax: (token) => request('GET', '/app-parameters/gvtax', null, token),
+    gvtax:     (token) => request('GET', '/app-parameters/gvtax', null, token),
+    posParams: (token) => request('GET', '/parameters/POS', null, token),
   },
 };

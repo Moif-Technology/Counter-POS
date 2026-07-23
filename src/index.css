@@ -291,6 +291,40 @@ button { cursor: pointer; border: none; background: none; }
   .pos-fn-grid button { width: 64px !important; height: 64px !important; }
 }
 
+/* ─── Sunmi scanner status strip (Android only) ─────────────── */
+
+/* Thin status bar shown when isScanning=true (Android) */
+.pos-scanner-preview {
+  flex-shrink: 0;
+  height: 26px;
+  display: none;              /* hidden on web */
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--brand-bg);
+  border-bottom: 1px solid var(--brand-border);
+  padding: 0 12px;
+}
+
+/* JS adds .active when isScanning */
+.pos-scanner-preview.active {
+  display: flex;
+}
+
+.scanner-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+  animation: scanner-pulse 1.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes scanner-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
 /* ─── High-DPI / 4K screens ─────────────────────────────────── */
 @media (min-width: 1920px) {
   :root {

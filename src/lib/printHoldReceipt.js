@@ -14,6 +14,7 @@ import {
   RECEIPT_BARCODE_EXTRA_CSS,
 } from './receiptPrintTheme'
 import { buildHoldBarcodeSvg, formatHoldBarcode } from './holdBarcode'
+import { IS_ANDROID_POS, printAndroidHold } from './androidPosPrinter'
 
 function resolveCompanyHeader(meta) {
   return resolveReceiptCompanyMeta(meta)
@@ -144,10 +145,15 @@ export function buildHoldReceiptHtml(hold, meta = {}, copies = 1) {
 }
 
 /** @param {object} hold — see buildHoldReceiptHtml */
-export function printHoldReceipt(hold, meta = {}, copies = 1) {
+export async function printHoldReceipt(hold, meta = {}, copies = 1) {
   if (!hold?.holdNo) throw new Error('No hold number to print')
   const count = Math.max(1, Math.min(20, Math.floor(Number(copies) || 1)))
-  openReceiptPrintWindow(buildHoldReceiptHtml(hold, meta, count))
+  const html = buildHoldReceiptHtml(hold, meta, count)
+  if (IS_ANDROID_POS) {
+    await printAndroidHold(hold, meta, count)
+    return
+  }
+  openReceiptPrintWindow(html)
 }
 
 export async function printHoldReprintByNo(holdNo, accessToken, meta = {}) {
@@ -176,7 +182,7 @@ export async function printHoldReprintByNo(holdNo, accessToken, meta = {}) {
       productCode: it.product_code,
     })),
   }
-  printHoldReceipt(holdPrint, meta)
+  await printHoldReceipt(holdPrint, meta)
   return holdPrint
 }
 

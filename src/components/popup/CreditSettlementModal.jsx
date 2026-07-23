@@ -123,11 +123,15 @@ export default function CreditSettlementModal({ onClose }) {
         counterNo,
       }, accessToken)
       setSuccess(result)
-      printCreditReceiptVoucher(receiptFromSettlementResult(result), {
-        companyName: shopName,
-        cashierName: cashier?.staffName,
-        counterNo,
-      })
+      try {
+        await printCreditReceiptVoucher(receiptFromSettlementResult(result), {
+          companyName: shopName,
+          cashierName: cashier?.staffName,
+          counterNo,
+        })
+      } catch (printErr) {
+        setError(`Settlement saved, but printing failed: ${printErr.message ?? printErr}`)
+      }
       setAmountStr('')
       const data = await api.counterPos.customerOutstandingBills(selected.customerId, accessToken)
       setBillData(data)

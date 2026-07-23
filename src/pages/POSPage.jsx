@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Monitor, Calendar, Clock, ShoppingCart, ChevronRight, ChevronDown,
-  Search, Maximize2, Bell, User, Save, Printer,
+  Search, Maximize2, Bell, User, Save, Printer, ScanLine,
 } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
@@ -20,6 +20,8 @@ import { setGvTax } from '../lib/gvtax'
 import { setAutoRoundOff } from '../lib/posSettings'
 import { posConfirm, posNotifyError, posNotifySuccess, posNotifyWarning } from '../lib/posNotify'
 import { printBillReceipts } from '../lib/printBillReceipt'
+import { broadcastSaved } from '../lib/customerDisplay'
+import { IS_ANDROID, scanSunmiBarcode } from '../lib/sunmiCameraScanner'
 import {
   parseLegacyDeliveryScan,
   parseLegacyHoldScan,
@@ -91,7 +93,13 @@ export default function POSPage() {
   const clearAll         = usePosStore(s => s.clearAll)
   const [now, setNow]           = useState(new Date())
   const [scanning, setScanning]   = useState(false)
+  const [sunmiScanOpen, setSunmiScanOpen] = useState(false)
   const [saving, setSaving]       = useState(false)
+  const isScanning = false
+  const scannerError = null
+
+  // Ref lets the Sunmi scanner-app callback feed the normal barcode-enter path.
+  const handleEnterRef = useRef(null)
 
   const fetchNextBillNo = useCallback(async () => {
     const { accessToken } = usePosStore.getState()
@@ -110,11 +118,16 @@ export default function POSPage() {
     ;(async () => {
       try {
         const { accessToken } = usePosStore.getState()
-        const data = await api.appParameters.gvtax(accessToken)
+        const [data, posParamsRes] = await Promise.all([
+          api.appParameters.gvtax(accessToken),
+          api.appParameters.posParams(accessToken).catch(() => null),
+        ])
         setGvTax(data?.gvtax ?? 5)
         usePosStore.getState().setCurrencyPrecision(data?.currencyPrecision ?? 2)
         setAutoRoundOff(data?.autoRoundOff ?? 0)
         if (data?.receiptHeader) usePosStore.getState().setReceiptHeader(data.receiptHeader)
+        const pos = posParamsRes?.parameters ?? posParamsRes?.data?.parameters ?? {}
+        usePosStore.getState().setCustomerDisplayEnabled(Number(pos.customer_display_enabled) === 1)
         usePosStore.getState().recalc()
       } catch {
         setGvTax(5)
@@ -281,6 +294,35 @@ export default function POSPage() {
     }
   }, [addItem, scanning])
 
+  // Keep ref current so the Sunmi scanner-app callback invokes the latest handleEnter.
+  handleEnterRef.current = handleEnter
+
+  const handleSunmiScan = useCallback(async () => {
+    if (sunmiScanOpen || scanning) return
+    if (!IS_ANDROID) {
+      posNotifyError('Sunmi scanner is only available on the Android device', { title: 'Scan' })
+      return
+    }
+
+    setSunmiScanOpen(true)
+    try {
+      const barcode = await scanSunmiBarcode()
+      if (!barcode) return
+      setBarcodeBuffer(barcode)
+      await handleEnterRef.current?.()
+    } catch (err) {
+      const message = err?.message ?? String(err ?? '')
+      if (message.toLowerCase() === 'cancelled') return
+      posNotifyError(message || 'Scanner app/result not available', {
+        title: 'Scan',
+        onClose: () => focusBarcodeScan(30),
+      })
+    } finally {
+      setSunmiScanOpen(false)
+      focusBarcodeScan(30)
+    }
+  }, [scanning, setBarcodeBuffer, sunmiScanOpen])
+
   const handleSave = useCallback(async (andPrint = false) => {
     const state = usePosStore.getState()
     if (!state.cartItems.length) {
@@ -335,7 +377,8 @@ export default function POSPage() {
         )
       }
       usePosStore.setState({ recalledHoldSalesId: null })
-      const { accessToken, counterNo, shopName } = usePosStore.getState()
+      const { accessToken, counterNo, shopName, netAmount: net, paidAmount: paid, balanceAmount: change, currency, customerDisplayEnabled } = usePosStore.getState()
+      if (customerDisplayEnabled) broadcastSaved(net, paid, change, currency)
       clearAll()
       await fetchNextBillNo()
 
@@ -459,6 +502,44 @@ export default function POSPage() {
             <div style={{ flex: 1, minWidth: 0, opacity: scanning ? 0.72 : 1 }}>
               <BarcodeInput onEnter={handleEnter} />
             </div>
+
+            <button
+              data-pos-skip-refocus
+              disabled={sunmiScanOpen || scanning}
+              onClick={handleSunmiScan}
+              style={{
+                height: 42, minWidth: 92, flexShrink: 0,
+                borderRadius: 'var(--r-md)',
+                border: '1.5px solid var(--brand-border)',
+                background: sunmiScanOpen ? 'var(--surface-2)' : 'var(--brand)',
+                color: sunmiScanOpen ? 'var(--text-3)' : '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                fontSize: 13, fontWeight: 800, letterSpacing: 0.2,
+                cursor: sunmiScanOpen || scanning ? 'not-allowed' : 'pointer',
+                opacity: sunmiScanOpen || scanning ? 0.72 : 1,
+                transition: 'all 0.12s',
+              }}
+            >
+              <ScanLine size={16} />
+              {sunmiScanOpen ? 'Scanning' : 'Scan'}
+            </button>
+
+          </div>
+
+          {/* Sunmi scanner status strip — visible on Android when scanner is active */}
+          <div className={`pos-scanner-preview${isScanning ? ' active' : ''}`}>
+            {scannerError ? (
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--red)', letterSpacing: 0.3 }}>
+                ⚠ {scannerError}
+              </span>
+            ) : (
+              <>
+                <div className="scanner-dot" />
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)', letterSpacing: 0.5 }}>
+                  SCANNER READY
+                </span>
+              </>
+            )}
           </div>
 
           {/* Item preview strip */}

@@ -44,7 +44,12 @@
         </provider>
     </application>
 
-    <!-- Permissions -->
+    <!-- Android 11+ package visibility for Sunmi scanner app -->
+    <queries>
+        <package android:name="com.sunmi.scanner" />
+        <package android:name="com.sunmi.sunmiqrcodescanner" />
+        <package android:name="woyou.aidlservice.jiuiv5" />
+    </queries>
 
     <uses-permission android:name="android.permission.INTERNET" />
 </manifest>

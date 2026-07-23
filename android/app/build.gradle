@@ -3,6 +3,9 @@ apply plugin: 'com.android.application'
 android {
     namespace "com.moiftech.counterpos"
     compileSdk rootProject.ext.compileSdkVersion
+    buildFeatures {
+        aidl true
+    }
     defaultConfig {
         applicationId "com.moiftech.counterpos"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -40,6 +43,7 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    implementation "androidx.webkit:webkit:1.8.0"
 }
 
 apply from: 'capacitor.build.gradle'

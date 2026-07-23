@@ -1,4 +1,5 @@
 import { fmtMoney } from './currencyFormat'
+import { IS_ANDROID_POS, printAndroidCreditReceiptVoucher } from './androidPosPrinter'
 import { getReceiptPrinterName } from './posPrinter'
 import { normalizePaymentMode } from './paymentModes'
 import {
@@ -163,7 +164,11 @@ export function buildCreditReceiptVoucherHtml(receipt, meta = {}) {
   })
 }
 
-export function printCreditReceiptVoucher(receipt, meta = {}) {
+export async function printCreditReceiptVoucher(receipt, meta = {}) {
   if (!receipt) return
+  if (IS_ANDROID_POS) {
+    await printAndroidCreditReceiptVoucher(receipt, meta)
+    return
+  }
   openReceiptPrintWindow(buildCreditReceiptVoucherHtml(receipt, meta))
 }
