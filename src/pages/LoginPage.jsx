@@ -4,6 +4,7 @@ import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
 import { getEnrollment, clearEnrollment, getOrCreateDeviceToken } from '../lib/device'
 import { posNotifyError, posNotifyWarning } from '../lib/posNotify'
+import { LITE_VERSION_ENABLED, LITE_VERSION_PIN } from '../config/appConfig'
 
 const NUMPAD = ['7','8','9','4','5','6','1','2','3','C','0','⌫']
 
@@ -34,6 +35,7 @@ export default function LoginPage() {
   }, [pressKey])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = async () => {
+    if (LITE_VERSION_ENABLED && pin === LITE_VERSION_PIN) { navigate('/lite'); return }
     if (pin.length < 4) { posNotifyWarning('PIN must be 4–6 digits', { title: 'Login' }); return }
     if (!enrollment)    { navigate('/enroll'); return }
 
