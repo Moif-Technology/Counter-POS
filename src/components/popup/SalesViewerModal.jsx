@@ -42,7 +42,7 @@ function fmtDateTime(d) {
   })
 }
 
-function SearchableCustomerFilter({ accessToken, customerId, onSelect }) {
+function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn = null }) {
   const [open, setOpen]         = useState(false)
   const [query, setQuery]       = useState('')
   const [results, setResults]   = useState([])
@@ -54,14 +54,15 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect }) {
   const doSearch = useCallback(async (q) => {
     setLoading(true)
     try {
-      const { customers } = await api.counterPos.customerSearch(q, 200, accessToken)
+      const run = searchFn ?? ((qq) => api.counterPos.customerSearch(qq, 200, accessToken))
+      const { customers } = await run(q)
       setResults(customers ?? [])
     } catch {
       setResults([])
     } finally {
       setLoading(false)
     }
-  }, [accessToken])
+  }, [accessToken, searchFn])
 
   useEffect(() => { doSearch('') }, [doSearch])
 
@@ -71,13 +72,14 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect }) {
       return
     }
     if (selected?.customerId === Number(customerId)) return
-    api.counterPos.customerSearch('', 200, accessToken)
+    const run = searchFn ?? ((qq) => api.counterPos.customerSearch(qq, 200, accessToken))
+    run('')
       .then(r => {
         const c = (r.customers ?? []).find(x => String(x.customerId) === String(customerId))
         if (c) setSelected(c)
       })
       .catch(() => {})
-  }, [customerId, accessToken, selected?.customerId])
+  }, [customerId, accessToken, selected?.customerId, searchFn])
 
   useEffect(() => {
     const onDoc = (e) => {
@@ -198,7 +200,7 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect }) {
   )
 }
 
-function BillDetailModal({ salesId, accessToken, onClose }) {
+function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, printFn = null }) {
   const shopName = usePosStore(s => s.shopName)
   const [bill, setBill]       = useState(null)
   const [loading, setLoading] = useState(true)
@@ -210,12 +212,13 @@ function BillDetailModal({ salesId, accessToken, onClose }) {
     let cancelled = false
     setLoading(true)
     setError(null)
-    api.counterPos.salesViewerBill(salesId, accessToken)
+    const doDetail = billDetailFn ?? ((id) => api.counterPos.salesViewerBill(id, accessToken))
+    doDetail(salesId)
       .then(data => { if (!cancelled) setBill(data) })
       .catch(e => { if (!cancelled) setError(e.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [salesId, accessToken])
+  }, [salesId, accessToken, billDetailFn])
 
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose() }
@@ -227,7 +230,8 @@ function BillDetailModal({ salesId, accessToken, onClose }) {
     if (printing || loading) return
     setPrinting(true)
     try {
-      await printBillReceipt(salesId, accessToken, { companyName: shopName })
+      const doPrint = printFn ?? ((id, meta) => printBillReceipt(id, accessToken, meta))
+      await doPrint(salesId, { companyName: shopName })
     } catch (e) {
       posNotifyError(e.message ?? 'Print failed', { title: 'Print Invoice' })
     } finally {
@@ -488,7 +492,9 @@ function BillDetailModal({ salesId, accessToken, onClose }) {
 
 const GRID_COLS = '90px 70px 75px 85px 1fr 80px 80px'
 
-export default function SalesViewerModal({ onClose }) {
+export default function SalesViewerModal({
+  onClose, salesListFn = null, customerSearchFn = null, billDetailFn = null, printFn = null,
+}) {
   const accessToken = usePosStore(s => s.accessToken)
   const counterNo   = usePosStore(s => s.counterNo)
 
@@ -505,20 +511,21 @@ export default function SalesViewerModal({ onClose }) {
     setLoading(true)
     setError(null)
     try {
-      const { bills: list } = await api.counterPos.salesViewerList({
+      const doList = salesListFn ?? ((params) => api.counterPos.salesViewerList(params, accessToken))
+      const { bills: list } = await doList({
         counterNo,
         dateFrom,
         dateTo,
         customerId: customerId || undefined,
         limit: 300,
-      }, accessToken)
+      })
       setBills(list ?? [])
     } catch (e) {
       setError(e.message)
     } finally {
       setLoading(false)
     }
-  }, [accessToken, counterNo, dateFrom, dateTo, customerId])
+  }, [accessToken, counterNo, dateFrom, dateTo, customerId, salesListFn])
 
   useEffect(() => { loadBills() }, [loadBills])
 
@@ -588,6 +595,7 @@ export default function SalesViewerModal({ onClose }) {
               accessToken={accessToken}
               customerId={customerId}
               onSelect={setCustomerId}
+              searchFn={customerSearchFn}
             />
             <div>
               <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
@@ -697,6 +705,8 @@ export default function SalesViewerModal({ onClose }) {
         salesId={detailId}
         accessToken={accessToken}
         onClose={() => setDetailId(null)}
+        billDetailFn={billDetailFn}
+        printFn={printFn}
       />
     )}
     </>

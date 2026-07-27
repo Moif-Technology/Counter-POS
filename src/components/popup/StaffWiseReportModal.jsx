@@ -6,7 +6,7 @@ import { fmt3 } from '../../lib/utils'
 import { buildReportPrintFontCss, escReceipt, openReceiptPrintWindow } from '../../lib/receiptPrintTheme'
 import { IS_ANDROID_POS, printAndroidStaffWiseReport } from '../../lib/androidPosPrinter'
 
-export default function StaffWiseReportModal({ onClose }) {
+export default function StaffWiseReportModal({ onClose, reportFn = null }) {
   const accessToken = usePosStore(s => s.accessToken)
   const counterNo   = usePosStore(s => s.counterNo)
   const authStaff   = usePosStore(s => s.authStaff)
@@ -20,14 +20,15 @@ export default function StaffWiseReportModal({ onClose }) {
     setLoading(true)
     setError(null)
     try {
-      const data = await api.counterPos.staffWiseReport(counterNo, accessToken)
+      const doReport = reportFn ?? (() => api.counterPos.staffWiseReport(counterNo, accessToken))
+      const data = await doReport()
       setRows(data)
     } catch (err) {
       setError(err.message ?? 'Failed to load report')
     } finally {
       setLoading(false)
     }
-  }, [counterNo, accessToken])
+  }, [counterNo, accessToken, reportFn])
 
   useEffect(() => { fetchData() }, [fetchData])
 

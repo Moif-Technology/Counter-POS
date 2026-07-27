@@ -23,7 +23,10 @@ const PAY_MODE_STYLES = {
   [PM.CREDITCARD]: { color: 'var(--blue)',  bg: 'var(--blue-bg)',  border: 'var(--blue-border)' },
 }
 
-export default function CreditSettlementModal({ onClose }) {
+export default function CreditSettlementModal({
+  onClose, loadCustomersFn = null, loadBillsFn = null, settleFn = null,
+  historyFn = null, receiptFn = null, customerSearchFn = null,
+}) {
   const [step, setStep]           = useState('list')
   const [search, setSearch]       = useState('')
   const [customers, setCustomers] = useState([])
@@ -59,14 +62,15 @@ export default function CreditSettlementModal({ onClose }) {
     setLoading(true)
     setError(null)
     try {
-      const { customers: list } = await api.counterPos.creditCustomers(q, 200, accessToken)
+      const doLoad = loadCustomersFn ?? ((qq) => api.counterPos.creditCustomers(qq, 200, accessToken))
+      const { customers: list } = await doLoad(q)
       setCustomers(list ?? [])
     } catch (e) {
       setError(e.message)
     } finally {
       setLoading(false)
     }
-  }, [accessToken])
+  }, [accessToken, loadCustomersFn])
 
   useEffect(() => { loadCustomers('') }, [loadCustomers])
 
@@ -84,7 +88,8 @@ export default function CreditSettlementModal({ onClose }) {
     setSuccess(null)
     setLoadingBills(true)
     try {
-      const data = await api.counterPos.customerOutstandingBills(c.customerId, accessToken)
+      const doLoadBills = loadBillsFn ?? ((id) => api.counterPos.customerOutstandingBills(id, accessToken))
+      const data = await doLoadBills(c.customerId)
       setBillData(data)
     } catch (e) {
       setError(e.message)
@@ -116,12 +121,13 @@ export default function CreditSettlementModal({ onClose }) {
     setSaving(true)
     setError(null)
     try {
-      const result = await api.counterPos.saveCreditSettlement({
+      const doSettle = settleFn ?? ((payload) => api.counterPos.saveCreditSettlement(payload, accessToken))
+      const result = await doSettle({
         customerId: selected.customerId,
         amount,
         paymentMode: payMode,
         counterNo,
-      }, accessToken)
+      })
       setSuccess(result)
       try {
         await printCreditReceiptVoucher(receiptFromSettlementResult(result), {
@@ -133,7 +139,8 @@ export default function CreditSettlementModal({ onClose }) {
         setError(`Settlement saved, but printing failed: ${printErr.message ?? printErr}`)
       }
       setAmountStr('')
-      const data = await api.counterPos.customerOutstandingBills(selected.customerId, accessToken)
+      const doLoadBills = loadBillsFn ?? ((id) => api.counterPos.customerOutstandingBills(id, accessToken))
+      const data = await doLoadBills(selected.customerId)
       setBillData(data)
       loadCustomers(search)
     } catch (e) {
@@ -141,7 +148,7 @@ export default function CreditSettlementModal({ onClose }) {
     } finally {
       setSaving(false)
     }
-  }, [selected, saving, amountStr, billData, payMode, counterNo, accessToken, search, loadCustomers, shopName, cashier])
+  }, [selected, saving, amountStr, billData, payMode, counterNo, accessToken, search, loadCustomers, shopName, cashier, settleFn, loadBillsFn])
 
   useAmountNumpadKeyboard(setAmountStr, {
     onEnter: handleSettle,
@@ -302,12 +309,15 @@ export default function CreditSettlementModal({ onClose }) {
           <CreditSettlementHistoryList
             accessToken={accessToken}
             onSelectReceipt={(id) => { setViewReceiptId(id); setStep('receipt') }}
+            historyFn={historyFn}
+            customerSearchFn={customerSearchFn}
           />
         ) : step === 'receipt' ? (
           <CreditSettlementReceiptDetail
             accessToken={accessToken}
             transactionId={viewReceiptId}
             onBack={() => { setStep('history'); setViewReceiptId(null) }}
+            receiptFn={receiptFn}
           />
         ) : (
           <div style={{ display: 'flex', flex: 1, overflow: 'auto', minHeight: 0 }}>

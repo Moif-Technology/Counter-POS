@@ -1,5 +1,5 @@
 import {
-  X, PauseCircle, Printer, Minus, RotateCcw, Percent, Search, Tag,
+  X, PauseCircle, Archive, Printer, Minus, RotateCcw, Percent, Search, Tag,
   SlidersHorizontal, Grid3x3, Package, DollarSign, User, Crown,
   BarChart2, ArrowLeftRight, FileText, Hash, Lock, Layers, Truck, Save, Receipt,
 } from 'lucide-react'
@@ -7,21 +7,23 @@ import {
 /* Mirrors the main POS's feature grid — most actions are informational in Lite mode. */
 export const MORE_OPTIONS = [
   { label: 'Hold Bill',    icon: PauseCircle,      color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
+  { label: 'Recall',       icon: Archive,          color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
   { label: 'Reprint',      icon: Printer,          color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
   { label: 'Clear Line',   icon: Minus,            color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)' },
   { label: 'Return',       icon: RotateCcw,        color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)' },
-  { label: 'Discount',     icon: Percent,          color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
   { label: 'Look Up',      icon: Search,           color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
   { label: 'Price Change', icon: Tag,              color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
   { label: 'Qty Change',   icon: SlidersHorizontal,color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
   { label: 'Group',        icon: Grid3x3,          color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
   { label: 'Packet Scan',  icon: Package,          color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+  { label: 'Discount',     icon: Percent,          color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
   { label: 'Price Enquiry',icon: Search,           color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
   { label: 'Currency',     icon: DollarSign,       color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
   { label: 'Sales Man',    icon: User,             color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
   { label: 'Privilege',    icon: Crown,            color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
   { label: 'Report',       icon: BarChart2,        color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
   { label: 'Cash In/Out',  icon: ArrowLeftRight,   color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+  { label: 'Receipt',      icon: FileText,         color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
   { label: 'Comments',     icon: FileText,         color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
   { label: 'NP Scale',     icon: Hash,             color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
   { label: 'Lock',         icon: Lock,             color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)' },

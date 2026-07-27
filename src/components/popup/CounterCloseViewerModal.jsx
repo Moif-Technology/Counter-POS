@@ -22,7 +22,7 @@ function fmtDateTime(d) {
   })
 }
 
-function CloseDetailModal({ closeId, accessToken, onClose }) {
+function CloseDetailModal({ closeId, accessToken, onClose, detailFn = null }) {
   const [detail, setDetail]   = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
@@ -32,12 +32,13 @@ function CloseDetailModal({ closeId, accessToken, onClose }) {
     let cancelled = false
     setLoading(true)
     setError(null)
-    api.counterPos.counterCloseDetail(closeId, accessToken)
+    const doDetail = detailFn ?? ((id) => api.counterPos.counterCloseDetail(id, accessToken))
+    doDetail(closeId)
       .then(data => { if (!cancelled) setDetail(data) })
       .catch(e => { if (!cancelled) setError(e.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [closeId, accessToken])
+  }, [closeId, accessToken, detailFn])
 
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose() }
@@ -215,7 +216,7 @@ function CloseDetailModal({ closeId, accessToken, onClose }) {
 
 const GRID_COLS = '130px 1fr 52px 52px 72px 72px 72px 72px'
 
-export default function CounterCloseViewerModal({ onClose }) {
+export default function CounterCloseViewerModal({ onClose, historyFn = null, closeDetailFn = null }) {
   const accessToken = usePosStore(s => s.accessToken)
   const counterNo   = usePosStore(s => s.counterNo)
 
@@ -231,19 +232,20 @@ export default function CounterCloseViewerModal({ onClose }) {
     setLoading(true)
     setError(null)
     try {
-      const { closes: list } = await api.counterPos.counterHistory({
+      const doHistory = historyFn ?? ((params) => api.counterPos.counterHistory(params, accessToken))
+      const { closes: list } = await doHistory({
         counterNo,
         dateFrom,
         dateTo,
         limit: 150,
-      }, accessToken)
+      })
       setCloses(list ?? [])
     } catch (e) {
       setError(e.message)
     } finally {
       setLoading(false)
     }
-  }, [accessToken, counterNo, dateFrom, dateTo])
+  }, [accessToken, counterNo, dateFrom, dateTo, historyFn])
 
   useEffect(() => { loadCloses() }, [loadCloses])
 
@@ -417,6 +419,7 @@ export default function CounterCloseViewerModal({ onClose }) {
         closeId={detailId}
         accessToken={accessToken}
         onClose={() => setDetailId(null)}
+        detailFn={closeDetailFn}
       />
     )}
     </>

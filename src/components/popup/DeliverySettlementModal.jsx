@@ -34,7 +34,7 @@ function mapDeliveryRow(d) {
   }
 }
 
-export default function DeliverySettlementModal({ onClose }) {
+export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = null, settleFn = null, recallFn = null }) {
   const accessToken = usePosStore(s => s.accessToken)
   const counterNo = usePosStore(s => s.counterNo)
   const overlayRef = useRef()
@@ -86,7 +86,8 @@ export default function DeliverySettlementModal({ onClose }) {
       setLoading(true)
       setError(null)
       try {
-        const data = await api.counterPos.getDeliveryBills(accessToken)
+        const doLoad = loadDeliveriesFn ?? (() => api.counterPos.getDeliveryBills(accessToken))
+        const data = await doLoad()
         setRows((Array.isArray(data) ? data : []).map(mapDeliveryRow))
       } catch (e) {
         setError(e.message)
@@ -94,7 +95,7 @@ export default function DeliverySettlementModal({ onClose }) {
         setLoading(false)
       }
     })()
-  }, [accessToken])
+  }, [accessToken, loadDeliveriesFn])
 
   function toggleRow(salesId) {
     setRows(prev => prev.map(r => (
@@ -165,7 +166,8 @@ export default function DeliverySettlementModal({ onClose }) {
     setRecalling(true)
     setError(null)
     try {
-      await usePosStore.getState().recallDeliveryByNo(deliveryNo)
+      const doRecall = recallFn ?? ((no) => usePosStore.getState().recallDeliveryByNo(no))
+      await doRecall(deliveryNo)
       onClose()
     } catch (e) {
       setError(e.message)
@@ -212,7 +214,8 @@ export default function DeliverySettlementModal({ onClose }) {
         }
       })
 
-      const result = await api.counterPos.settleDeliveryBulk({ counterNo, items }, accessToken)
+      const doSettle = settleFn ?? ((payload) => api.counterPos.settleDeliveryBulk(payload, accessToken))
+      const result = await doSettle({ counterNo, items })
       const settledIds = new Set((result.results ?? []).map(x => x.salesId))
       setRows(prev => prev.filter(r => !settledIds.has(r.salesId)))
       setSuccess(result.message ?? `${result.count} invoice(s) posted`)

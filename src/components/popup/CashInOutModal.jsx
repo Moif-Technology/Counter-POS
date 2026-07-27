@@ -9,7 +9,7 @@ import { fmtMoney, moneyPlaceholder } from '../../lib/currencyFormat'
 const IN_CATEGORIES  = ['Cash', 'Petty Cash']
 const OUT_CATEGORIES = ['Cash', 'Expense From Cash Counter']
 
-export default function CashInOutModal({ onClose }) {
+export default function CashInOutModal({ onClose, saveFn = null }) {
   const [step,     setStep]     = useState('choose')
   const [type,     setType]     = useState(null)
   const [typeDesc, setTypeDesc] = useState('')
@@ -83,14 +83,15 @@ export default function CashInOutModal({ onClose }) {
     setError(null)
     try {
       const transactionType = isIn ? 'CASH_IN' : 'CASH_OUT'
+      const doSave = saveFn ?? ((entry) => api.counterPos.addCashInOut(entry, accessToken))
       for (const e of entries) {
         const remarks = [e.category, e.accountName].filter(Boolean).join(' — ')
-        await api.counterPos.addCashInOut({
+        await doSave({
           counterNo,
           transactionType,
           amount: parseFloat(e.amount),
           remarks: remarks || null,
-        }, accessToken)
+        })
       }
       onClose()
     } catch (err) {
