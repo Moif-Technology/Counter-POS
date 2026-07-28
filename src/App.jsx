@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage'
 import POSPage from './pages/POSPage'
 import EnrollPage from './pages/EnrollPage'
 import CustomerDisplayPage from './pages/CustomerDisplayPage'
+import LiteHomePage from './pages/lite/LiteHomePage'
 import PosNotifyHost from './components/ui/PosNotifyHost'
 import { usePosStore } from './store/posStore'
 import { getEnrollment } from './lib/device'
@@ -41,6 +42,8 @@ export default function App() {
           } />
           {/* Customer display — no auth required; opened on second screen / tablet */}
           <Route path="/customer-display" element={<CustomerDisplayPage />} />
+          {/* Lite POS — opened via LITE_VERSION_PIN on the login screen */}
+          <Route path="/lite" element={<LiteHomePage />} />
 <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>

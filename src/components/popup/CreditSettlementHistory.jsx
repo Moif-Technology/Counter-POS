@@ -33,7 +33,7 @@ function creditCustomersOnly(list) {
   return (list ?? []).filter(c => resolveMode(c.paymentMode) === PM.CREDIT)
 }
 
-function SearchableCustomerFilter({ accessToken, customerId, onSelect }) {
+function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn = null }) {
   const [open, setOpen]         = useState(false)
   const [query, setQuery]       = useState('')
   const [results, setResults]   = useState([])
@@ -45,14 +45,15 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect }) {
   const doSearch = useCallback(async (q) => {
     setLoading(true)
     try {
-      const { customers } = await api.counterPos.customerSearch(q, 200, accessToken)
+      const run = searchFn ?? ((qq) => api.counterPos.customerSearch(qq, 200, accessToken))
+      const { customers } = await run(q)
       setResults(creditCustomersOnly(customers))
     } catch {
       setResults([])
     } finally {
       setLoading(false)
     }
-  }, [accessToken])
+  }, [accessToken, searchFn])
 
   useEffect(() => { doSearch('') }, [doSearch])
 
@@ -62,13 +63,14 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect }) {
       return
     }
     if (selected?.customerId === Number(customerId)) return
-    api.counterPos.customerSearch('', 200, accessToken)
+    const run = searchFn ?? ((qq) => api.counterPos.customerSearch(qq, 200, accessToken))
+    run('')
       .then(r => {
         const c = creditCustomersOnly(r.customers).find(x => String(x.customerId) === String(customerId))
         if (c) setSelected(c)
       })
       .catch(() => {})
-  }, [customerId, accessToken, selected?.customerId])
+  }, [customerId, accessToken, selected?.customerId, searchFn])
 
   useEffect(() => {
     const onDoc = (e) => {
@@ -189,7 +191,7 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect }) {
   )
 }
 
-export function CreditSettlementHistoryList({ accessToken, onSelectReceipt }) {
+export function CreditSettlementHistoryList({ accessToken, onSelectReceipt, historyFn = null, customerSearchFn = null }) {
   const [customerId, setCustomerId] = useState('')
   const [dateFrom, setDateFrom]       = useState(daysAgoISO(30))
   const [dateTo, setDateTo]           = useState(todayISO())
@@ -201,19 +203,20 @@ export function CreditSettlementHistoryList({ accessToken, onSelectReceipt }) {
     setLoading(true)
     setError(null)
     try {
-      const { receipts: list } = await api.counterPos.settlementHistory({
+      const doLoad = historyFn ?? ((params) => api.counterPos.settlementHistory(params, accessToken))
+      const { receipts: list } = await doLoad({
         customerId: customerId || undefined,
         dateFrom:   dateFrom || undefined,
         dateTo:     dateTo || undefined,
         limit:      150,
-      }, accessToken)
+      })
       setReceipts(list ?? [])
     } catch (e) {
       setError(e.message)
     } finally {
       setLoading(false)
     }
-  }, [accessToken, customerId, dateFrom, dateTo])
+  }, [accessToken, customerId, dateFrom, dateTo, historyFn])
 
   useEffect(() => { loadHistory() }, [loadHistory])
 
@@ -224,6 +227,7 @@ export function CreditSettlementHistoryList({ accessToken, onSelectReceipt }) {
           accessToken={accessToken}
           customerId={customerId}
           onSelect={setCustomerId}
+          searchFn={customerSearchFn}
         />
         <div>
           <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
@@ -295,7 +299,7 @@ export function CreditSettlementHistoryList({ accessToken, onSelectReceipt }) {
   )
 }
 
-export function CreditSettlementReceiptDetail({ accessToken, transactionId, onBack }) {
+export function CreditSettlementReceiptDetail({ accessToken, transactionId, onBack, receiptFn = null }) {
   const [receipt, setReceipt] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
@@ -306,11 +310,12 @@ export function CreditSettlementReceiptDetail({ accessToken, transactionId, onBa
   useEffect(() => {
     setLoading(true)
     setError(null)
-    api.counterPos.settlementReceipt(transactionId, accessToken)
+    const doLoad = receiptFn ?? ((id) => api.counterPos.settlementReceipt(id, accessToken))
+    doLoad(transactionId)
       .then(setReceipt)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
-  }, [accessToken, transactionId])
+  }, [accessToken, transactionId, receiptFn])
 
   if (loading) {
     return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-4)' }}><Loader2 size={20} style={{ animation: 'spin 0.8s linear infinite' }} /></div>

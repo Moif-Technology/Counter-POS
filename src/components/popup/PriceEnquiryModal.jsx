@@ -36,7 +36,7 @@ function TableRow({ row, isLast, highlight }) {
   )
 }
 
-export default function PriceEnquiryModal({ onClose }) {
+export default function PriceEnquiryModal({ onClose, searchFn = null }) {
   const [barcode,  setBarcode]  = useState('')
   const [result,   setResult]   = useState(null)
   const [searched, setSearched] = useState(false)
@@ -66,7 +66,8 @@ export default function PriceEnquiryModal({ onClose }) {
     setSearched(true)
     setError(null)
     try {
-      const { product } = await api.counterPos.productSearch(term, accessToken)
+      const doSearch = searchFn ?? ((t) => api.counterPos.productSearch(t, accessToken))
+      const { product } = await doSearch(term)
       const vatAmt = Number(product.unitPrice) * (Number(product.vatPer) / 100)
       setResult({
         sl: 1,

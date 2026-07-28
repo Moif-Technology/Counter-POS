@@ -84,7 +84,12 @@ const SHORTCUT_MAP = {
   16: 'G',
 }
 
-export default function ReportsModal({ onClose, onSelect }) {
+export default function ReportsModal({
+  onClose, onSelect,
+  counterSummaryFn, counterCloseFn, staffReportFn,
+  salesListFn, billDetailFn, billPrintFn, customerSearchFn,
+  closeHistoryFn, closeDetailFn, cashInOutReportFn,
+}) {
   const [counterReadingOpen, setCounterReadingOpen] = useState(false)
   const [staffWiseOpen,     setStaffWiseOpen]     = useState(false)
   const [salesViewerOpen,       setSalesViewerOpen]       = useState(false)
@@ -359,19 +364,33 @@ export default function ReportsModal({ onClose, onSelect }) {
     </div>
 
     {counterReadingOpen && (
-      <CounterReadingModal onClose={() => setCounterReadingOpen(false)} />
+      <CounterReadingModal
+        onClose={() => setCounterReadingOpen(false)}
+        summaryFn={counterSummaryFn}
+        closeFn={counterCloseFn}
+      />
     )}
     {staffWiseOpen && (
-      <StaffWiseReportModal onClose={() => setStaffWiseOpen(false)} />
+      <StaffWiseReportModal onClose={() => setStaffWiseOpen(false)} reportFn={staffReportFn} />
     )}
     {salesViewerOpen && (
-      <SalesViewerModal onClose={() => setSalesViewerOpen(false)} />
+      <SalesViewerModal
+        onClose={() => setSalesViewerOpen(false)}
+        salesListFn={salesListFn}
+        customerSearchFn={customerSearchFn}
+        billDetailFn={billDetailFn}
+        printFn={billPrintFn}
+      />
     )}
     {counterCloseViewerOpen && (
-      <CounterCloseViewerModal onClose={() => setCounterCloseViewerOpen(false)} />
+      <CounterCloseViewerModal
+        onClose={() => setCounterCloseViewerOpen(false)}
+        historyFn={closeHistoryFn}
+        closeDetailFn={closeDetailFn}
+      />
     )}
     {cashInOutViewerOpen && (
-      <CashInOutViewerModal onClose={() => setCashInOutViewerOpen(false)} />
+      <CashInOutViewerModal onClose={() => setCashInOutViewerOpen(false)} reportFn={cashInOutReportFn} />
     )}
     </>
   )

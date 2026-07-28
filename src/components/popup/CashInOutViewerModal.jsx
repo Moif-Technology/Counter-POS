@@ -24,7 +24,7 @@ function fmtDateTime(d) {
 
 const GRID_COLS = '118px 52px 48px 100px 1fr 80px'
 
-export default function CashInOutViewerModal({ onClose }) {
+export default function CashInOutViewerModal({ onClose, reportFn = null }) {
   const accessToken = usePosStore(s => s.accessToken)
   const storeCounter = usePosStore(s => s.counterNo)
 
@@ -42,13 +42,14 @@ export default function CashInOutViewerModal({ onClose }) {
     setLoading(true)
     setError(null)
     try {
-      const data = await api.counterPos.cashInOutReport({
+      const doReport = reportFn ?? ((params) => api.counterPos.cashInOutReport(params, accessToken))
+      const data = await doReport({
         dateFrom,
         dateTo,
         counterNo: counterNo.trim() || undefined,
         closeNo:   closeNo.trim() || undefined,
         limit:     500,
-      }, accessToken)
+      })
       setRows(data.transactions ?? [])
       setSummary(data.summary ?? null)
     } catch (e) {
@@ -58,7 +59,7 @@ export default function CashInOutViewerModal({ onClose }) {
     } finally {
       setLoading(false)
     }
-  }, [accessToken, counterNo, closeNo, dateFrom, dateTo])
+  }, [accessToken, counterNo, closeNo, dateFrom, dateTo, reportFn])
 
   useEffect(() => { loadReport() }, [loadReport])
 

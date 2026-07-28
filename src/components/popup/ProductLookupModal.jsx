@@ -13,7 +13,7 @@ const COLUMNS = [
 
 const DEBOUNCE_MS = 350
 
-export default function ProductLookupModal({ onClose, onSelect, groupId = null, groupLabel = '' }) {
+export default function ProductLookupModal({ onClose, onSelect, groupId = null, groupLabel = '', searchFn = null }) {
   const [query,    setQuery]    = useState('')
   const [price,    setPrice]    = useState('')
   const [results,  setResults]  = useState([])
@@ -39,7 +39,8 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
     setError(null)
     setSearched(true)
     try {
-      const { products } = await api.counterPos.productLookup(q, p || null, accessToken, gid)
+      const doSearch = searchFn ?? ((qq, pp, gg) => api.counterPos.productLookup(qq, pp || null, accessToken, gg))
+      const { products } = await doSearch(q, p, gid)
       setResults((products ?? []).map(prod => ({
         barcode:       prod.barcode ?? prod.productCode,
         description:   prod.description,
@@ -53,7 +54,7 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
     } finally {
       setLoading(false)
     }
-  }, [accessToken, groupId])
+  }, [accessToken, groupId, searchFn])
 
   useEffect(() => {
     if (groupId != null) runSearch('', price, groupId)

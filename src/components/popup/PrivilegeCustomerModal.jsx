@@ -9,7 +9,7 @@ const NUM_KEYS = [
   ['1','2','3'],
 ]
 
-export default function PrivilegeCustomerModal({ onClose, onApply }) {
+export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = null }) {
   const [customerNo,   setCustomerNo]   = useState('')
   const [customerCode, setCustomerCode] = useState('')
   const [customerName, setCustomerName] = useState('')
@@ -33,7 +33,8 @@ export default function PrivilegeCustomerModal({ onClose, onApply }) {
     setLoading(true)
     setError(null)
     try {
-      const { customers: list } = await api.counterPos.customerSearch(q, 100, accessToken)
+      const doSearch = searchFn ?? ((qq) => api.counterPos.customerSearch(qq, 100, accessToken))
+      const { customers: list } = await doSearch(q)
       setCustomers(list ?? [])
       setSelectedIdx(-1)
     } catch (e) {
@@ -41,7 +42,7 @@ export default function PrivilegeCustomerModal({ onClose, onApply }) {
     } finally {
       setLoading(false)
     }
-  }, [accessToken])
+  }, [accessToken, searchFn])
 
   // Load all customers on open
   useEffect(() => { doSearch('') }, [doSearch])
