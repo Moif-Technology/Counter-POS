@@ -1,5 +1,8 @@
 const NUMPAD_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', '⌫']
 
+const NEU_RAISED = '4px 4px 8px rgba(0,0,0,0.10), -4px -4px 8px rgba(255,255,255,0.75)'
+const NEU_PRESSED = 'inset 2px 2px 5px rgba(0,0,0,0.12), inset -2px -2px 5px rgba(255,255,255,0.6)'
+
 export default function LiteQtyKeypad({ selectedRowKey, qtyBuffer, onPressKey, onApply }) {
   return (
     <div style={{ marginBottom: 8 }}>
@@ -23,18 +26,19 @@ export default function LiteQtyKeypad({ selectedRowKey, qtyBuffer, onPressKey, o
               className="lite-btn"
               onClick={() => onPressKey(k)}
               style={{
-                padding: '22px 0', borderRadius: 'var(--r-md)',
-                border: `1.5px solid ${isAction ? 'var(--red-border)' : 'var(--border)'}`,
-                background: isAction ? 'var(--red-bg)' : 'var(--surface)',
+                padding: '22px 0', borderRadius: 12,
+                border: `1px solid ${isAction ? 'var(--red-border)' : 'var(--border)'}`,
+                background: 'var(--surface-2)',
                 color: isAction ? 'var(--red)' : 'var(--text-1)',
                 fontSize: isAction ? 15 : 22, fontWeight: 700,
                 fontFamily: k === '⌫' ? 'inherit' : "'JetBrains Mono', monospace",
                 cursor: 'pointer',
-                boxShadow: 'var(--shadow-xs)',
-                transition: 'transform 0.07s, background 0.08s',
+                boxShadow: NEU_RAISED,
+                transition: 'transform 0.07s, box-shadow 0.1s',
               }}
-              onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.93)' }}
-              onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+              onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.95)'; e.currentTarget.style.boxShadow = NEU_PRESSED }}
+              onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = NEU_RAISED }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = NEU_RAISED }}
             >
               {k}
             </button>

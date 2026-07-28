@@ -11,18 +11,18 @@ import { posNotifyError, posNotifyInfo, posNotifySuccess, posNotifyWarning } fro
 
 import LitePacketScanModal from './LitePacketScanModal'
 import BillDiscountModal from '../../components/popup/BillDiscountModal'
-import PriceChangeModal from '../../components/popup/PriceChangeModal'
-import QtyChangeModal from '../../components/popup/QtyChangeModal'
-import CurrencyModal from '../../components/popup/CurrencyModal'
-import CommentsModal from '../../components/popup/CommentsModal'
-import SalesManModal from '../../components/popup/SalesManModal'
-import ProductLookupModal from '../../components/popup/ProductLookupModal'
+import PriceChangeModal from './components/LitePriceChangeModal'
+import QtyChangeModal from './components/LiteQtyChangeModal'
+import CurrencyModal from './components/LiteCurrencyModal'
+import CommentsModal from './components/LiteCommentsModal'
+import SalesManModal from './components/LiteSalesManModal'
+import ProductLookupModal from './components/LiteProductLookupModal'
 import GroupModal from '../../components/popup/GroupModal'
 import PriceEnquiryModal from '../../components/popup/PriceEnquiryModal'
 import PrivilegeCustomerModal from '../../components/popup/PrivilegeCustomerModal'
-import CashInOutModal from '../../components/popup/CashInOutModal'
+import CashInOutModal from './components/LiteCashInOutModal'
 import DeliveryCustomerModal from '../../components/popup/DeliveryCustomerModal'
-import CreditSettlementModal from '../../components/popup/CreditSettlementModal'
+import CreditSettlementModal from './components/LiteCreditSettlementModal'
 import DeliverySettlementModal from '../../components/popup/DeliverySettlementModal'
 import ReportsModal from '../../components/popup/ReportsModal'
 
@@ -451,6 +451,17 @@ export default function LiteHomePage() {
     setQtyBuffer('')
   }
 
+  const deleteManyFromCart = (rowKeys) => {
+    const keys = new Set(rowKeys)
+    if (!keys.size) return
+    const newItems = cartItems
+      .filter(i => !keys.has(getCartRowKey(i)))
+      .map((i, idx) => ({ ...i, slNo: idx + 1 }))
+    usePosStore.setState({ cartItems: newItems, selectedRowKey: null })
+    usePosStore.getState().recalc(newItems)
+    posNotifySuccess(`${keys.size} item(s) removed`, { title: 'Delete', duration: 1000 })
+  }
+
   const addToCart = (product) => {
     const price = roundAmt(product.price * (PRICE_LEVELS[priceLevel] ?? 1))
     addItem({
@@ -861,6 +872,7 @@ export default function LiteHomePage() {
           onSelectRow={selectRow}
           onAdjustQty={adjustLineQty}
           onRemoveItem={removeItemStore}
+          onDeleteMany={deleteManyFromCart}
         />
 
         {/* Right: billing summary + keypad */}

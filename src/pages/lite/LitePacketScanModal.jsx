@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Package } from 'lucide-react'
 import Table from '../../components/ui/Table'
-import Numpad from '../../components/ui/Numpad'
+import Numpad from './components/common/NeumorphicNumpad'
 import { fmtMoney, moneyPlaceholder } from '../../lib/currencyFormat'
 import { searchLiteProducts } from './liteProducts'
 import { posNotifySuccess, posNotifyWarning } from '../../lib/posNotify'

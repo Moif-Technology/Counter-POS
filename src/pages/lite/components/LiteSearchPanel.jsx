@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Keyboard, MoreHorizontal } from 'lucide-react'
-import TouchKeyboard from '../../../components/ui/TouchKeyboard'
+import NeumorphicKeyboard from './common/NeumorphicKeyboard'
 import { fmtMoney } from '../../../lib/currencyFormat'
 import { LITE_GROUPS } from '../liteProducts'
 import { groupChipStyle } from '../liteStyles'
@@ -127,7 +127,7 @@ export default function LiteSearchPanel({
               boxShadow: '0 -8px 28px rgba(0,0,0,0.18)',
             }}
           >
-            <TouchKeyboard
+            <NeumorphicKeyboard
               onKey={handleKbKey}
               onClose={() => setShowKeyboard(false)}
             />
