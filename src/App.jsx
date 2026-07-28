@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import LoginPage from './pages/LoginPage'
 import POSPage from './pages/POSPage'
 import EnrollPage from './pages/EnrollPage'
+import CustomerDisplayPage from './pages/CustomerDisplayPage'
 import PosNotifyHost from './components/ui/PosNotifyHost'
 import { usePosStore } from './store/posStore'
 import { getEnrollment } from './lib/device'
@@ -38,6 +39,8 @@ export default function App() {
               <POSPage />
             </RequireAuth>
           } />
+          {/* Customer display — no auth required; opened on second screen / tablet */}
+          <Route path="/customer-display" element={<CustomerDisplayPage />} />
 <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>

@@ -65,6 +65,7 @@ export default function CustomerSearch() {
   const clearCustomer  = usePosStore(s => s.clearCustomer)
   const setPaymentMode = usePosStore(s => s.setPaymentMode)
   const accessToken    = usePosStore(s => s.accessToken)
+  const customerSelectionEnabled = true
 
   const [open, setOpen]         = useState(false)
   const [query, setQuery]       = useState('')
@@ -142,6 +143,8 @@ export default function CustomerSearch() {
   }
 
   const hasCustomer = !!customerName
+
+  if (!customerSelectionEnabled) return null
 
   return (
     <div ref={wrapRef} style={{ position: 'relative', flexShrink: 0 }}>

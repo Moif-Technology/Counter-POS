@@ -6,6 +6,7 @@ import {
   openReceiptPrintWindow,
   resolveReceiptCompanyMeta,
 } from './receiptPrintTheme'
+import { IS_ANDROID_POS, printAndroidCounterReport } from './androidPosPrinter'
 
 function fmtReportDate(d = new Date()) {
   const dt = new Date(d)
@@ -249,6 +250,10 @@ export function buildCounterReportHtml(data, meta = {}) {
   })
 }
 
-export function printCounterReport(data, meta = {}) {
+export async function printCounterReport(data, meta = {}) {
+  if (IS_ANDROID_POS) {
+    await printAndroidCounterReport(data, meta)
+    return
+  }
   openReceiptPrintWindow(buildCounterReportHtml(data, meta), { width: 420, height: 920 })
 }

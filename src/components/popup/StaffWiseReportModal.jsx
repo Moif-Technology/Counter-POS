@@ -4,6 +4,7 @@ import { usePosStore } from '../../store/posStore'
 import { api } from '../../lib/api'
 import { fmt3 } from '../../lib/utils'
 import { buildReportPrintFontCss, escReceipt, openReceiptPrintWindow } from '../../lib/receiptPrintTheme'
+import { IS_ANDROID_POS, printAndroidStaffWiseReport } from '../../lib/androidPosPrinter'
 
 export default function StaffWiseReportModal({ onClose }) {
   const accessToken = usePosStore(s => s.accessToken)
@@ -39,12 +40,26 @@ export default function StaffWiseReportModal({ onClose }) {
   const grandTotal = rows.reduce((s, r) => s + r.netAmount, 0)
   const grandBills = rows.reduce((s, r) => s + r.billCount, 0)
 
-  function handleDownloadPdf() {
+  async function handleDownloadPdf() {
     const now    = new Date()
     const dateStr = now.toLocaleDateString()
     const timeStr = now.toLocaleTimeString()
     const companyName = authStaff?.company_name ?? 'Company'
     const branchName  = authStaff?.branch_name  ?? ''
+
+    if (IS_ANDROID_POS) {
+      try {
+        await printAndroidStaffWiseReport(rows, {
+          companyName,
+          branchName,
+          counterNo,
+          reportAt: now,
+        })
+      } catch (err) {
+        setError(`Printing failed: ${err.message ?? err}`)
+      }
+      return
+    }
 
     const tableRows = rows.map((r, i) => `
       <tr style="background:${i % 2 === 0 ? '#fff' : '#f8f9fa'}">
@@ -205,7 +220,7 @@ export default function StaffWiseReportModal({ onClose }) {
                 display: 'flex', alignItems: 'center', gap: 6,
               }}
             >
-              <Download size={13} /> Download PDF
+              <Download size={13} /> {IS_ANDROID_POS ? 'Print' : 'Download PDF'}
             </button>
             <button
               onClick={onClose}

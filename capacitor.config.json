@@ -1,0 +1,11 @@
+{
+  "appId": "com.moiftech.counterpos",
+  "appName": "MOIF Counter POS",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

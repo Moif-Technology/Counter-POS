@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
-import { getEnrollment, clearEnrollment } from '../lib/device'
+import { getEnrollment, clearEnrollment, getOrCreateDeviceToken } from '../lib/device'
 import { posNotifyError, posNotifyWarning } from '../lib/posNotify'
 
 const NUMPAD = ['7','8','9','4','5','6','1','2','3','C','0','⌫']
@@ -41,7 +41,8 @@ export default function LoginPage() {
     try {
       const { accessToken, refreshToken, session } = await api.counterPos.pinLogin({
         pin,
-        companyId: enrollment.companyId,
+        companyId:   enrollment.companyId,
+        deviceToken: enrollment.deviceToken ?? getOrCreateDeviceToken(),
       })
 
       const cashier = {
@@ -58,6 +59,7 @@ export default function LoginPage() {
         refreshToken,
         enrollment.companyId,
         enrollment.branchId,
+        enrollment.stationId ?? enrollment.branchId,
       )
       if (session.company) {
         usePosStore.getState().setReceiptHeader({

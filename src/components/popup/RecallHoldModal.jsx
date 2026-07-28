@@ -125,7 +125,8 @@ export default function RecallHoldModal({ onClose, onRecall }) {
     setRecalling(true)
     setError(null)
     try {
-      const items = await fetchItems(hold)
+      const recalledItems = await api.counterPos.recallHeldBill(hold.sales_id, accessToken)
+      const items = Array.isArray(recalledItems) ? recalledItems : []
       recallHold(hold, items)
       onRecall?.(hold)
       onClose()

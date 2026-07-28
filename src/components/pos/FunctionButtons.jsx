@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import GroupModal from '../popup/GroupModal'
 import ProductLookupModal from '../popup/ProductLookupModal'
@@ -23,10 +23,22 @@ import {
   RefreshCw, Trash2, Minus, RotateCcw, LogOut,
   Search, Tag, Grid3x3, Percent, DollarSign,
   User, BarChart2, ArrowLeftRight, FileText, Package,
-  Lock, Layers, Save, Hash, Plus, Crown, SlidersHorizontal, Truck,
+  Lock, Layers, Save, Hash, Plus, Crown, SlidersHorizontal, Truck, Monitor,
 } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
+import { openDisplayWindow, isWindowOpen, closeDisplayWindow, setSunmiDisplayPlugin } from '../../lib/customerDisplay'
+import { IS_ANDROID } from '../../lib/sunmiCameraScanner'
+import { registerPlugin } from '@capacitor/core'
 import { api } from '../../lib/api'
+
+const SunmiCustomerDisplay = registerPlugin('SunmiCustomerDisplay', {
+  web: {
+    async isAvailable() { return { available: false, displayCount: 1 } },
+    async openDisplay() {},
+    async closeDisplay() {},
+    async sendState() {},
+  },
+})
 import { enrichCartItemsForSave } from '../../lib/cartLine'
 import { isGroupBrowseMode } from '../../lib/groupUtils'
 import { closeAndFocusBarcode } from '../../lib/posFocus'
@@ -36,16 +48,17 @@ import { deliveryDataFromPosState, printDeliveryReceipt } from '../../lib/printD
 
 /* ─── Side nav button data ───────────────────────────────────── */
 const SIDE_BUTTONS = [
-  { label: 'POS',        icon: ShoppingCart, isPOS: true },
-  { label: 'Hold Bill',  icon: PauseCircle },
-  { label: 'Recall',     icon: Archive },
-  { label: 'Print',      icon: Printer },
-  { label: 'Reprint',    icon: Printer },
-  { label: 'Sub Total',  icon: Receipt },
-  { label: 'Repeat',     icon: RefreshCw },
-  { label: 'Clear All',  icon: Trash2,    danger: true },
-  { label: 'Clear Line', icon: Minus,     danger: true },
-  { label: 'Return',     icon: RotateCcw, danger: true },
+  { label: 'POS',          icon: ShoppingCart, isPOS: true },
+  { label: 'Hold Bill',    icon: PauseCircle },
+  { label: 'Recall',       icon: Archive },
+  { label: 'Print',        icon: Printer },
+  { label: 'Reprint',      icon: Printer },
+  { label: 'Sub Total',    icon: Receipt },
+  { label: 'Repeat',       icon: RefreshCw },
+  { label: 'Clear All',    icon: Trash2,    danger: true },
+  { label: 'Clear Line',   icon: Minus,     danger: true },
+  { label: 'Return',       icon: RotateCcw, danger: true },
+  { label: 'Cust Display', icon: Monitor },
 ]
 
 /* ─── Bottom feature grid button data ───────────────────────── */
@@ -80,12 +93,29 @@ export function SideNav() {
   const clearAll              = usePosStore(s => s.clearAll)
   const repeatLastItem        = usePosStore(s => s.repeatLastItem)
   const pressSubTotal         = usePosStore(s => s.pressSubTotal)
-  const toggleReturn          = usePosStore(s => s.toggleReturn)
-  const returnMode            = usePosStore(s => s.returnMode)
+  const toggleReturn              = usePosStore(s => s.toggleReturn)
+  const returnMode                = usePosStore(s => s.returnMode)
+  const customerDisplayEnabled    = usePosStore(s => s.customerDisplayEnabled)
   const [recallOpen,  setRecallOpen]  = useState(false)
   const [reprintOpen, setReprintOpen] = useState(false)
   const [activeLabel, setActiveLabel] = useState('POS')
   const [holdLoading, setHoldLoading] = useState(false)
+  const [cdOpen,      setCdOpen]      = useState(false)
+
+  // Auto-open customer display on Android when feature is enabled
+  useEffect(() => {
+    if (!customerDisplayEnabled || !IS_ANDROID || cdOpen) return
+    SunmiCustomerDisplay.isAvailable().then(({ available }) => {
+      if (!available) return
+      const url = `${window.location.origin}/customer-display`
+      SunmiCustomerDisplay.openDisplay({ url })
+        .then(() => {
+          setSunmiDisplayPlugin(SunmiCustomerDisplay)
+          setCdOpen(true)
+        })
+        .catch(() => {})
+    }).catch(() => {})
+  }, [customerDisplayEnabled])
 
   async function doHoldBill() {
     const {
@@ -134,7 +164,7 @@ export function SideNav() {
           defaultValue: 1,
         })
         if (copies != null) {
-          printHoldReceipt(holdPrint, {
+          await printHoldReceipt(holdPrint, {
             companyName: state.shopName,
             branchName: state.shopSubName,
           }, copies)
@@ -162,11 +192,15 @@ export function SideNav() {
       height: '100%', overflowY: 'auto', overflowX: 'hidden',
       padding: '6px 0',
     }}>
-      {SIDE_BUTTONS.map((btn, i) => {
+      {SIDE_BUTTONS.filter(btn =>
+        btn.label !== 'Cust Display' || customerDisplayEnabled
+      ).map((btn, i) => {
         const Icon      = btn.icon
         const isActive  = btn.label === 'Return'
           ? returnMode
-          : activeLabel === btn.label
+          : btn.label === 'Cust Display'
+            ? cdOpen
+            : activeLabel === btn.label
         const isDanger  = btn.danger
 
         const handleClick = () => {
@@ -187,6 +221,40 @@ export function SideNav() {
           }
           if (btn.label === 'Recall')  { setRecallOpen(true);  setActiveLabel(btn.label); return }
           if (btn.label === 'Reprint') { setReprintOpen(true); setActiveLabel(btn.label); return }
+          if (btn.label === 'Cust Display') {
+            if (IS_ANDROID) {
+              // Open Sunmi dual-screen Presentation or close it if already open
+              if (cdOpen) {
+                SunmiCustomerDisplay.closeDisplay().catch(() => {})
+                setCdOpen(false)
+              } else {
+                SunmiCustomerDisplay.isAvailable().then(({ available }) => {
+                  if (!available) {
+                    posNotifyWarning('No secondary display detected on this device', { title: 'Customer Display' })
+                    return
+                  }
+                  const url = `${window.location.origin}/customer-display`
+                  SunmiCustomerDisplay.openDisplay({ url })
+                    .then(() => {
+                      setSunmiDisplayPlugin(SunmiCustomerDisplay)
+                      setCdOpen(true)
+                    })
+                    .catch(e => posNotifyError(e.message, { title: 'Customer Display' }))
+                })
+              }
+            } else {
+              // Web / desktop — toggle second browser window
+              if (cdOpen && isWindowOpen()) {
+                closeDisplayWindow()
+                setCdOpen(false)
+              } else {
+                openDisplayWindow()
+                setCdOpen(true)
+              }
+            }
+            setActiveLabel(btn.label)
+            return
+          }
           setActiveLabel(btn.label)
         }
 

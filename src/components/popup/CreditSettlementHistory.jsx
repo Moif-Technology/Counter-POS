@@ -392,11 +392,13 @@ export function CreditSettlementReceiptDetail({ accessToken, transactionId, onBa
       <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
         <button
           type="button"
-          onClick={() => printCreditReceiptVoucher(receipt, {
-            companyName: shopName,
-            cashierName: cashier?.staffName,
-            counterNo: receipt.counterNo ?? counterNo,
-          })}
+          onClick={() => {
+            printCreditReceiptVoucher(receipt, {
+              companyName: shopName,
+              cashierName: cashier?.staffName,
+              counterNo: receipt.counterNo ?? counterNo,
+            }).catch(err => alert(`Printing failed: ${err.message ?? err}`))
+          }}
           style={{
             flex: 1, height: 40, borderRadius: 8, border: 'none',
             background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
