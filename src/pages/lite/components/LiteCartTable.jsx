@@ -11,6 +11,7 @@ export default function LiteCartTable({
 }) {
   const [selectMode, setSelectMode] = useState(false)
   const [checkedKeys, setCheckedKeys] = useState(() => new Set())
+  const [removingRowKey, setRemovingRowKey] = useState(null)
   const pressTimerRef = useRef(null)
 
   const clearPressTimer = () => {
@@ -51,8 +52,17 @@ export default function LiteCartTable({
     cancelSelectMode()
   }
 
+  const handleRemoveRow = (rowKey) => {
+    if (removingRowKey === rowKey) return
+    setRemovingRowKey(rowKey)
+    window.setTimeout(() => {
+      onRemoveItem(rowKey)
+      setRemovingRowKey(null)
+    }, 140)
+  }
+
   return (
-    <div className="lite-panel-center lite-scroll" style={{ flex: 1, overflowY: 'auto', padding: 16, minWidth: 0 }}>
+    <div className="lite-panel-center lite-scroll" style={{ flex: 1, overflowY: 'auto', padding: 'clamp(10px, 1.6vw, 16px)', minWidth: 0, minHeight: 0 }}>
       {selectMode && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
@@ -89,7 +99,7 @@ export default function LiteCartTable({
         </div>
       )}
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'clamp(11.5px, 0.9vw, 13px)' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--border)' }}>
             <th style={thStyle}>#</th>
@@ -105,6 +115,7 @@ export default function LiteCartTable({
             const rowKey = getCartRowKey(i)
             const selected = rowKey === selectedRowKey
             const checked = checkedKeys.has(rowKey)
+            const isRemoving = removingRowKey === rowKey
             return (
               <tr
                 key={rowKey}
@@ -119,11 +130,13 @@ export default function LiteCartTable({
                   touchAction: 'manipulation',
                   userSelect: 'none',
                   WebkitUserSelect: 'none',
+                  opacity: isRemoving ? 0.2 : 1,
+                  transform: isRemoving ? 'translateX(8px)' : 'translateX(0)',
                   background: checked
                     ? 'var(--brand-bg)'
                     : selected ? 'rgba(107,0,0,0.06)' : idx % 2 === 0 ? 'transparent' : 'var(--surface-2)',
                   borderBottom: `1px solid ${selected || checked ? 'rgba(107,0,0,0.12)' : 'var(--border)'}`,
-                  transition: 'background 0.1s',
+                  transition: 'background 0.1s, opacity 0.14s ease, transform 0.14s ease',
                 }}
               >
                 <td style={tdStyle}>
@@ -165,7 +178,7 @@ export default function LiteCartTable({
                       {checked && <Check size={14} strokeWidth={3} />}
                     </button>
                   ) : (
-                    <button className="lite-btn" onClick={e => { e.stopPropagation(); onRemoveItem(rowKey) }} style={removeBtnStyle}>✕</button>
+                    <button className="lite-btn" onClick={e => { e.stopPropagation(); handleRemoveRow(rowKey) }} style={removeBtnStyle}>✕</button>
                   )}
                 </td>
               </tr>

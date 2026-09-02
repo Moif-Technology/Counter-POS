@@ -20,9 +20,10 @@ export default function LiteSearchPanel({
 
   return (
     <div className="lite-panel-left" style={{
-      display: 'flex', flexDirection: 'column', padding: 16, minHeight: 0,
+      display: 'flex', flexDirection: 'column', padding: 'clamp(10px, 1.6vw, 16px)',
+      minHeight: 0, overflow: 'hidden',
     }}>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 'clamp(6px, 1.2vh, 10px)' }}>
         <input
           ref={searchInputRef}
           autoFocus
@@ -30,9 +31,9 @@ export default function LiteSearchPanel({
           onChange={e => setQuery(e.target.value)}
           placeholder="Search item or scan barcode..."
           style={{
-            flex: 1, height: 44, boxSizing: 'border-box', padding: '0 14px', borderRadius: 'var(--r-md)',
+            flex: 1, height: 'clamp(38px, 6vh, 44px)', boxSizing: 'border-box', padding: '0 14px', borderRadius: 'var(--r-md)',
             border: '1.5px solid var(--border)', background: 'var(--surface)',
-            color: 'var(--text-1)', fontSize: 15, outline: 'none',
+            color: 'var(--text-1)', fontSize: 'clamp(13px, 1.1vw, 15px)', outline: 'none',
           }}
         />
         <button
@@ -40,7 +41,7 @@ export default function LiteSearchPanel({
           onClick={() => setShowKeyboard(o => !o)}
           title="On-screen keyboard"
           style={{
-            width: 44, height: 44, boxSizing: 'border-box', borderRadius: 'var(--r-md)', flexShrink: 0,
+            width: 'clamp(38px, 6vh, 44px)', height: 'clamp(38px, 6vh, 44px)', boxSizing: 'border-box', borderRadius: 'var(--r-md)', flexShrink: 0,
             border: `1.5px solid ${showKeyboard ? 'var(--brand)' : 'var(--border)'}`,
             background: showKeyboard ? 'var(--brand-bg)' : 'var(--surface)',
             color: showKeyboard ? 'var(--brand)' : 'var(--text-3)',
@@ -52,7 +53,7 @@ export default function LiteSearchPanel({
       </div>
 
       {/* Group chips */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'clamp(5px, 1vh, 8px)', marginBottom: 'clamp(7px, 1.4vh, 12px)' }}>
         <button
           className="lite-btn"
           onClick={() => setActiveGroup(null)}
@@ -72,7 +73,7 @@ export default function LiteSearchPanel({
         ))}
       </div>
 
-      <div className="lite-scroll" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="lite-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 'clamp(5px, 1vh, 8px)' }}>
         {results.map(p => (
           <button
             key={p.productId}
@@ -80,9 +81,9 @@ export default function LiteSearchPanel({
             onClick={() => onAddToCart(p)}
             style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '14px 14px', borderRadius: 'var(--r-md)',
+              padding: 'clamp(9px, 1.8vh, 14px) 14px', borderRadius: 'var(--r-md)',
               border: '1px solid var(--border)', background: 'var(--surface)',
-              cursor: 'pointer', textAlign: 'left', minHeight: 48,
+              cursor: 'pointer', textAlign: 'left', minHeight: 'clamp(38px, 6vh, 48px)', flexShrink: 0,
             }}
           >
             <span style={{ fontSize: 13.5, color: 'var(--text-1)', fontWeight: 600 }}>{p.description}</span>
@@ -98,19 +99,19 @@ export default function LiteSearchPanel({
         )}
       </div>
 
-      {/* More — reveals the full function grid, like the normal POS */}
+      {/* Actions — reveals the full function grid, like the normal POS */}
       <button
         className="lite-btn"
         onClick={onOpenMore}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          width: '100%', padding: '13px 0', marginTop: 12, borderRadius: 'var(--r-md)',
+          width: '100%', padding: 'clamp(8px, 1.6vh, 12px) 0', marginTop: 'clamp(7px, 1.4vh, 12px)', borderRadius: 'var(--r-md)',
           border: '1.5px solid var(--border)', background: 'var(--surface)',
-          color: 'var(--text-2)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-          flexShrink: 0, minHeight: 46,
+          color: 'var(--text-2)', fontSize: 'clamp(11.5px, 1vw, 13px)', fontWeight: 700, cursor: 'pointer',
+          flexShrink: 0, minHeight: 'clamp(36px, 5.5vh, 42px)',
         }}
       >
-        <MoreHorizontal size={16} /> More
+        <MoreHorizontal size={16} /> Actions
       </button>
 
       {showKeyboard && (

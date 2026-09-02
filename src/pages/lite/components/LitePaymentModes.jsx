@@ -13,11 +13,11 @@ const NEU_PRESSED = 'inset 2px 2px 5px rgba(0,0,0,0.12), inset -2px -2px 5px rgb
 
 export default function LitePaymentModes({ paymentMode, onSelect }) {
   return (
-    <div style={{ marginBottom: 8 }}>
-      <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 6 }}>
+    <div style={{ marginBottom: 'clamp(4px, 1vh, 8px)' }}>
+      <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 'clamp(3px, 0.8vh, 6px)' }}>
         Payment
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 'clamp(4px, 0.8vh, 6px)' }}>
         {PAYMENT_MODES.map(({ key, label, icon: Icon }) => {
           const active = paymentMode === key
           return (
@@ -27,7 +27,7 @@ export default function LitePaymentModes({ paymentMode, onSelect }) {
               onClick={() => onSelect(key)}
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-                padding: '9px 2px', minHeight: 46, borderRadius: 12,
+                padding: 'clamp(5px, 1.2vh, 9px) 2px', minHeight: 'clamp(38px, 5.5vh, 46px)', borderRadius: 12,
                 border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
                 background: active ? 'var(--brand-bg)' : 'var(--surface-2)',
                 boxShadow: active ? NEU_PRESSED : NEU_RAISED,

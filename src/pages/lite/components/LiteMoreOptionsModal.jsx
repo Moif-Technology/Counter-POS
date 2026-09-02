@@ -56,7 +56,7 @@ export default function LiteMoreOptionsModal({ onClose, onSelect }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>More Options</span>
+          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>Actions</span>
           <button
             className="lite-btn"
             onClick={onClose}

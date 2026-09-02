@@ -7,6 +7,7 @@ import { searchLiteProducts, LITE_GROUPS } from './liteProducts'
 import { LITE_CUSTOMERS } from './liteCustomers'
 import { PM, normalizePaymentMode } from '../../lib/paymentModes'
 import { printReceipt } from '../../lib/printReceipt'
+import { fmtMoney } from '../../lib/currencyFormat'
 import { posNotifyError, posNotifyInfo, posNotifySuccess, posNotifyWarning } from '../../lib/posNotify'
 
 import LitePacketScanModal from './LitePacketScanModal'
@@ -90,6 +91,7 @@ export default function LiteHomePage() {
   const clearCustomerStore  = usePosStore(s => s.clearCustomer)
 
   const [query, setQuery] = useState('')
+  const [mobileTab, setMobileTab] = useState('search') // 'search' | 'cart' | 'bill' — only used ≤720px
   const [activeGroup, setActiveGroup] = useState(null)
   const [qtyBuffer, setQtyBuffer] = useState('')
   const [saving, setSaving] = useState(false)
@@ -822,38 +824,65 @@ export default function LiteHomePage() {
 
   return (
     <div className="lite-page" style={{
-      width: '100vw', minHeight: '100vh', height: '100vh',
+      width: '100%',
       display: 'flex', flexDirection: 'column',
       background: 'var(--bg)', overflow: 'hidden',
       touchAction: 'manipulation',
     }}>
       <style>{`
-        .lite-body { display: flex; flex: 1; min-height: 0; }
-        .lite-panel-left, .lite-panel-right { width: 320px; flex-shrink: 0; }
+        /* Fixed-viewport shell — nothing scrolls the page, only inner zones
+           scroll (same model as the normal POS's .pos-root). */
+        .lite-page { height: 100vh; height: 100dvh; }
+        .lite-body {
+          display: flex; flex: 1; min-height: 0; overflow: hidden;
+        }
+        .lite-panel-left, .lite-panel-right {
+          width: clamp(244px, 23vw, 340px); flex-shrink: 0;
+          min-height: 0; overflow: hidden;
+        }
         .lite-panel-left { border-right: 1px solid var(--border); }
         .lite-panel-right { border-left: 1px solid var(--border); }
+        .lite-panel-center { flex: 1; min-width: 0; min-height: 0; }
         .lite-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         .lite-scroll { scrollbar-width: none; -ms-overflow-style: none; }
         .lite-scroll::-webkit-scrollbar { display: none; }
 
-        @media (max-width: 1180px) {
-          .lite-panel-left, .lite-panel-right { width: 280px; }
+        /* Laptop / small desktop — trim the side panels */
+        @media (max-width: 1240px) {
+          .lite-panel-left, .lite-panel-right { width: clamp(206px, 22vw, 288px); }
         }
 
-        @media (max-width: 860px) {
-          .lite-page { height: auto; min-height: 100vh; overflow: visible; }
-          .lite-body { flex-direction: column; overflow: visible; }
-          .lite-panel-left, .lite-panel-right {
-            width: 100%; border: none; border-top: 1px solid var(--border);
+        /* Landscape tablet — tighter still, keeps 3 columns */
+        @media (max-width: 960px) {
+          .lite-panel-left, .lite-panel-right { width: clamp(184px, 26vw, 236px); }
+        }
+
+        /* Portrait tablet / phone — three panels can't sit side-by-side and
+           stay usable, so switch to one-panel-at-a-time with a bottom tab
+           bar. The active panel fills the whole body; nothing overflows the
+           viewport and the product list gets the full height it needs. */
+        .lite-mobile-tabs { display: none; }
+
+        @media (max-width: 720px) {
+          .lite-body { flex-direction: column; }
+          .lite-panel-left, .lite-panel-center, .lite-panel-right {
+            width: 100% !important; flex: 1 1 auto !important;
+            border: none !important; min-height: 0;
           }
-          .lite-panel-center { flex: none !important; }
+          .lite-body[data-mtab="search"] .lite-panel-center,
+          .lite-body[data-mtab="search"] .lite-panel-right,
+          .lite-body[data-mtab="cart"]   .lite-panel-left,
+          .lite-body[data-mtab="cart"]   .lite-panel-right,
+          .lite-body[data-mtab="bill"]   .lite-panel-left,
+          .lite-body[data-mtab="bill"]   .lite-panel-center { display: none !important; }
+          .lite-mobile-tabs { display: flex; }
         }
       `}</style>
 
       <LiteHeader onExit={() => navigate('/')} />
 
       {/* ── BODY ───────────────────────────── */}
-      <div className="lite-body">
+      <div className="lite-body" data-mtab={mobileTab}>
 
         <LiteSearchPanel
           searchInputRef={searchInputRef}
@@ -879,7 +908,7 @@ export default function LiteHomePage() {
         <div className="lite-panel-right lite-scroll" style={{
           display: 'flex', flexDirection: 'column', position: 'relative',
           background: 'var(--surface)',
-          padding: 16, minHeight: 0, overflowY: 'auto',
+          padding: 'clamp(10px, 1.6vw, 16px)', minHeight: 0, overflowY: 'auto',
         }}>
 
           <LiteCustomerPicker
@@ -933,6 +962,36 @@ export default function LiteHomePage() {
             onBillAndPrint={() => handleSave(true)}
           />
         </div>
+      </div>
+
+      {/* ── Mobile tab bar — only visible ≤720px (see .lite-mobile-tabs CSS) ── */}
+      <div className="lite-mobile-tabs" style={{
+        flexShrink: 0, borderTop: '1px solid var(--border)', background: 'var(--surface)',
+      }}>
+        {[
+          { key: 'search', label: 'Items' },
+          { key: 'cart', label: `Cart${itemCount ? ` (${itemCount})` : ''}` },
+          { key: 'bill', label: `Pay · ${fmtMoney(total)}` },
+        ].map(t => {
+          const active = mobileTab === t.key
+          return (
+            <button
+              key={t.key}
+              className="lite-btn"
+              onClick={() => setMobileTab(t.key)}
+              style={{
+                flex: 1, padding: '11px 4px', border: 'none',
+                borderTop: `2px solid ${active ? 'var(--brand)' : 'transparent'}`,
+                background: active ? 'var(--brand-bg)' : 'transparent',
+                color: active ? 'var(--brand)' : 'var(--text-3)',
+                fontSize: 12, fontWeight: active ? 800 : 600, cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              {t.label}
+            </button>
+          )
+        })}
       </div>
 
       {showMore && (

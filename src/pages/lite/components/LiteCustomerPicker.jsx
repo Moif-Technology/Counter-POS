@@ -29,7 +29,7 @@ export default function LiteCustomerPicker({
         })}
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          width: '100%', padding: '6px 9px', marginBottom: 8, minHeight: 30,
+          width: '100%', padding: '6px 9px', marginBottom: 'clamp(4px, 1vh, 8px)', minHeight: 30,
           borderRadius: 'var(--r-md)',
           border: `1.5px solid ${customerName ? 'var(--blue-border)' : 'var(--border)'}`,
           background: customerName ? 'var(--blue-bg)' : 'var(--surface)',

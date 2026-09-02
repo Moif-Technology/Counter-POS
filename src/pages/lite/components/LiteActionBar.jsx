@@ -19,9 +19,9 @@ export default function LiteActionBar({ hasItems, saving, onClearAll, onSave, on
         onMouseUp={release(NEU_RED_RAISED)}
         onMouseLeave={release(NEU_RED_RAISED)}
         style={{
-          width: '100%', padding: '13px 0', marginBottom: 8, borderRadius: 14,
+          width: '100%', padding: 'clamp(8px, 1.7vh, 13px) 0', marginBottom: 'clamp(5px, 1vh, 8px)', borderRadius: 14,
           border: '1px solid var(--red-border)', background: 'var(--red-bg)',
-          color: 'var(--red)', fontSize: 13, fontWeight: 700, minHeight: 46,
+          color: 'var(--red)', fontSize: 13, fontWeight: 700, minHeight: 'clamp(38px, 5.5vh, 46px)',
           cursor: hasItems ? 'pointer' : 'not-allowed',
           opacity: hasItems ? 1 : 0.5,
           boxShadow: NEU_RED_RAISED,
@@ -39,7 +39,7 @@ export default function LiteActionBar({ hasItems, saving, onClearAll, onSave, on
           onMouseUp={release(NEU_NEUTRAL_RAISED)}
           onMouseLeave={release(NEU_NEUTRAL_RAISED)}
           style={{
-            flex: 1, padding: '14px 0', borderRadius: 14, minHeight: 50,
+            flex: 1, padding: 'clamp(9px, 1.9vh, 14px) 0', borderRadius: 14, minHeight: 'clamp(40px, 6vh, 50px)',
             border: '1px solid var(--border)',
             background: hasItems ? 'var(--surface-2)' : 'var(--surface-3)',
             color: hasItems ? 'var(--text-1)' : 'var(--text-3)',
@@ -59,7 +59,7 @@ export default function LiteActionBar({ hasItems, saving, onClearAll, onSave, on
           onMouseUp={release(NEU_BRAND_RAISED)}
           onMouseLeave={release(NEU_BRAND_RAISED)}
           style={{
-            flex: 1.4, padding: '14px 0', borderRadius: 14, minHeight: 50,
+            flex: 1.4, padding: 'clamp(9px, 1.9vh, 14px) 0', borderRadius: 14, minHeight: 'clamp(40px, 6vh, 50px)',
             border: 'none',
             background: hasItems
               ? 'linear-gradient(145deg, var(--brand) 0%, var(--brand-2) 100%)'
