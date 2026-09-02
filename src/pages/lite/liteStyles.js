@@ -3,7 +3,7 @@ export const thStyle = {
   color: 'var(--text-3)', textTransform: 'uppercase',
 }
 export const tdStyle = {
-  padding: 'clamp(8px, 1.7vh, 14px) 6px', textAlign: 'center', color: 'var(--text-1)', fontSize: 'clamp(11px, 0.9vw, 13px)',
+  padding: 'clamp(7px, 1.2vh, 11px) 6px', textAlign: 'center', color: 'var(--text-1)', fontSize: 'clamp(11px, 0.9vw, 13px)',
 }
 export const qtyBtnStyle = {
   width: 'clamp(28px, 2vw, 36px)', height: 'clamp(28px, 2vw, 36px)', borderRadius: 8, border: '1px solid var(--border)',
