@@ -17,7 +17,13 @@ export default function LiteQtyKeypad({ selectedRowKey, qtyBuffer, onPressKey, o
           {qtyBuffer || '—'}
         </span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'clamp(4px, 0.8vh, 7px)' }}>
+      {/* Square keys — grid capped so the squares stay a sensible size and
+          the whole pad still fits a short viewport (vh cap). */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 'clamp(4px, 0.8vh, 7px)',
+        width: '100%', maxWidth: 'clamp(180px, 34vh, 264px)', margin: '0 auto',
+      }}>
         {NUMPAD_KEYS.map(k => {
           const isAction = k === '⌫' || k === 'C'
           return (
@@ -26,11 +32,12 @@ export default function LiteQtyKeypad({ selectedRowKey, qtyBuffer, onPressKey, o
               className="lite-btn"
               onClick={() => onPressKey(k)}
               style={{
-                padding: 'clamp(7px, 1.5vh, 14px) 0', borderRadius: 12,
+                aspectRatio: '1 / 1', padding: 0, borderRadius: 12,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
                 border: `1px solid ${isAction ? 'var(--red-border)' : 'var(--border)'}`,
                 background: 'var(--surface-2)',
                 color: isAction ? 'var(--red)' : 'var(--text-1)',
-                fontSize: isAction ? 'clamp(11px, 1.7vh, 14px)' : 'clamp(15px, 2.1vh, 20px)', fontWeight: 700,
+                fontSize: isAction ? 'clamp(12px, 2vh, 16px)' : 'clamp(16px, 2.6vh, 22px)', fontWeight: 700,
                 fontFamily: k === '⌫' ? 'inherit' : "'JetBrains Mono', monospace",
                 cursor: 'pointer',
                 boxShadow: NEU_RAISED,
@@ -50,7 +57,9 @@ export default function LiteQtyKeypad({ selectedRowKey, qtyBuffer, onPressKey, o
         onClick={onApply}
         disabled={!selectedRowKey || !qtyBuffer}
         style={{
-          width: '100%', padding: 'clamp(7px, 1.4vh, 12px) 0', marginTop: 'clamp(4px, 0.9vh, 8px)', borderRadius: 'var(--r-md)',
+          display: 'block',
+          width: '100%', maxWidth: 'clamp(180px, 34vh, 264px)',
+          padding: 'clamp(7px, 1.4vh, 12px) 0', margin: 'clamp(4px, 0.9vh, 8px) auto 0', borderRadius: 'var(--r-md)',
           border: 'none', minHeight: 'clamp(34px, 5vh, 44px)',
           background: selectedRowKey && qtyBuffer ? 'linear-gradient(145deg, var(--brand) 0%, var(--brand-2) 100%)' : 'var(--surface-3)',
           color: selectedRowKey && qtyBuffer ? '#fff' : 'var(--text-3)',
