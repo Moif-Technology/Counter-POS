@@ -904,63 +904,72 @@ export default function LiteHomePage() {
           onDeleteMany={deleteManyFromCart}
         />
 
-        {/* Right: billing summary + keypad */}
-        <div className="lite-panel-right lite-scroll" style={{
+        {/* Right: billing. Three zones — the total (top) and the Save /
+            Bill & Print buttons (bottom) stay pinned and always visible;
+            only the keypad + payment area in the middle scrolls when the
+            viewport is too short to show everything at once. */}
+        <div className="lite-panel-right" style={{
           display: 'flex', flexDirection: 'column', position: 'relative',
-          background: 'var(--surface)',
-          padding: 'clamp(10px, 1.6vw, 16px)', minHeight: 0, overflowY: 'auto',
+          background: 'var(--surface)', minHeight: 0, overflow: 'hidden',
         }}>
 
-          <LiteCustomerPicker
-            customerName={customerName}
-            customersList={customersList}
-            showCustomers={showCustomers}
-            setShowCustomers={setShowCustomers}
-            customerQuery={customerQuery}
-            setCustomerQuery={setCustomerQuery}
-            showCustomerKeyboard={showCustomerKeyboard}
-            setShowCustomerKeyboard={setShowCustomerKeyboard}
-            onSelectCustomer={selectCustomer}
-            onCustomerKbKey={handleCustomerKbKey}
-          />
+          <div className="lite-scroll" style={{ flexShrink: 0, maxHeight: '52%', overflowY: 'auto', padding: 'clamp(10px, 1.6vw, 16px) clamp(10px, 1.6vw, 16px) 0' }}>
+            <LiteCustomerPicker
+              customerName={customerName}
+              customersList={customersList}
+              showCustomers={showCustomers}
+              setShowCustomers={setShowCustomers}
+              customerQuery={customerQuery}
+              setCustomerQuery={setCustomerQuery}
+              showCustomerKeyboard={showCustomerKeyboard}
+              setShowCustomerKeyboard={setShowCustomerKeyboard}
+              onSelectCustomer={selectCustomer}
+              onCustomerKbKey={handleCustomerKbKey}
+            />
 
-          <LiteBillSummary
-            expanded={summaryExpanded}
-            setExpanded={setSummaryExpanded}
-            itemCount={itemCount}
-            total={total}
-            subTotal={subTotal}
-            discountAmt={discountAmt}
-            taxableAmt={taxableAmt}
-            taxAmt={taxAmt}
-            roundOff={roundOff}
-            customerName={customerName}
-            paymentModeLabel={PAYMENT_MODES.find(m => m.key === paymentMode)?.label ?? paymentMode}
-            priceLevel={priceLevel}
-            salesMan={salesMan}
-            isDelivery={isDelivery}
-            deliveryAddress={deliveryAddress}
-            billComment={billComment}
-          />
+            <LiteBillSummary
+              expanded={summaryExpanded}
+              setExpanded={setSummaryExpanded}
+              itemCount={itemCount}
+              total={total}
+              subTotal={subTotal}
+              discountAmt={discountAmt}
+              taxableAmt={taxableAmt}
+              taxAmt={taxAmt}
+              roundOff={roundOff}
+              customerName={customerName}
+              paymentModeLabel={PAYMENT_MODES.find(m => m.key === paymentMode)?.label ?? paymentMode}
+              priceLevel={priceLevel}
+              salesMan={salesMan}
+              isDelivery={isDelivery}
+              deliveryAddress={deliveryAddress}
+              billComment={billComment}
+            />
+          </div>
 
-          <LiteQtyKeypad
-            selectedRowKey={selectedRowKey}
-            qtyBuffer={qtyBuffer}
-            onPressKey={pressKey}
-            onApply={applyQty}
-          />
+          <div className="lite-scroll" style={{
+            flex: 1, minHeight: 0, overflowY: 'auto',
+            padding: '0 clamp(10px, 1.6vw, 16px)',
+          }}>
+            <LiteQtyKeypad
+              selectedRowKey={selectedRowKey}
+              qtyBuffer={qtyBuffer}
+              onPressKey={pressKey}
+              onApply={applyQty}
+            />
 
-          <LitePaymentModes paymentMode={paymentMode} onSelect={setPaymentMode} />
+            <LitePaymentModes paymentMode={paymentMode} onSelect={setPaymentMode} />
+          </div>
 
-          <div style={{ flex: 1 }} />
-
-          <LiteActionBar
-            hasItems={cartItems.length > 0}
-            saving={saving}
-            onClearAll={clearAll}
-            onSave={() => handleSave(false)}
-            onBillAndPrint={() => handleSave(true)}
-          />
+          <div style={{ flexShrink: 0, padding: 'clamp(8px, 1.4vw, 14px) clamp(10px, 1.6vw, 16px) clamp(10px, 1.6vw, 16px)', borderTop: '1px solid var(--border)' }}>
+            <LiteActionBar
+              hasItems={cartItems.length > 0}
+              saving={saving}
+              onClearAll={clearAll}
+              onSave={() => handleSave(false)}
+              onBillAndPrint={() => handleSave(true)}
+            />
+          </div>
         </div>
       </div>
 
