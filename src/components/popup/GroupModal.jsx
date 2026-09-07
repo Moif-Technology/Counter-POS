@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Tag, Delete, Loader2 } from 'lucide-react'
+import { X, Grid3x3, Delete, Loader2 } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { moneyPlaceholder } from '../../lib/currencyFormat'
 import { isGroupBrowseMode } from '../../lib/groupUtils'
@@ -94,7 +94,7 @@ export default function GroupModal({ onClose, onSelect }) {
               background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Tag size={15} color="#fff" />
+              <Grid3x3 size={15} color="#fff" />
             </div>
             <div>
               <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>Select</p>

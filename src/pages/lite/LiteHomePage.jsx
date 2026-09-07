@@ -557,6 +557,7 @@ export default function LiteHomePage() {
       case 'Clear Line': {
         if (!selectedRowKey) { posNotifyWarning('Select a row first', { title: 'Clear Line' }); return }
         removeItemStore(selectedRowKey)
+        posNotifySuccess('Line cleared', { title: 'Clear Line', duration: 1000 })
         return
       }
       case 'Return': {
