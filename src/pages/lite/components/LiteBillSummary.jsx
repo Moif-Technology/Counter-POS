@@ -12,7 +12,7 @@ export default function LiteBillSummary({
   return (
     <div style={{
       position: 'sticky', top: 0, zIndex: 2,
-      marginBottom: 12, borderRadius: 'var(--r-md)',
+      marginBottom: 'clamp(6px, 1.4vh, 12px)', borderRadius: 'var(--r-md)',
       border: '1px solid var(--border)', overflow: 'hidden',
       background: 'var(--surface)', boxShadow: 'var(--shadow-xs)',
     }}>
@@ -22,9 +22,9 @@ export default function LiteBillSummary({
         title="Tap to expand"
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '9px 12px', gap: 10,
+          padding: 'clamp(6px, 1.3vh, 9px) 12px', gap: 10,
           cursor: 'pointer', userSelect: 'none',
-          minHeight: 36,
+          minHeight: 'clamp(30px, 4.5vh, 36px)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>

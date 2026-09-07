@@ -318,8 +318,37 @@ export const usePosStore = create((set, get) => ({
       : netToGross(unitPrice, vatPer)
 
     const items = get().cartItems
+    const rowKey = getCartRowKey({
+      productId: item.productId,
+      barcode: item.barcode,
+      groupId: item.groupId,
+      _key: item._key,
+    })
+
+    const existingIndex = items.findIndex(i => getCartRowKey(i) === rowKey)
+    if (existingIndex >= 0) {
+      const existing = items[existingIndex]
+      const nextQty = Number(existing.qty) + qty
+      const nextItem = normalizeCartLine({
+        ...existing,
+        qty: nextQty,
+        unitPrice,
+        vatPer,
+        unitPriceGross,
+      })
+      const newItems = items.map((i, idx) => idx === existingIndex ? nextItem : i)
+      set({
+        cartItems: newItems,
+        selectedRowKey: existing._key ?? getCartRowKey(existing),
+        returnMode: nextQty < 0 ? true : get().returnMode,
+      })
+      get().recalc(newItems)
+      if (isNewBill) get().resetPaymentForNewBill()
+      return
+    }
+
     const slNo = items.length + 1
-    const uniqueKey = `pid_${item.productId}_${Date.now()}`
+    const uniqueKey = `pid_${item.productId ?? item.barcode ?? Date.now()}_${Date.now()}`
     const lineBase = { ...item, qty, unitPrice, vatPer, unitPriceGross, slNo, _key: uniqueKey }
     const newItems = [...items, normalizeCartLine(lineBase)]
     set({

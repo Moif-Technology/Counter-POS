@@ -1,5 +1,5 @@
 import { ChevronDown, Keyboard, User } from 'lucide-react'
-import TouchKeyboard from '../../../components/ui/TouchKeyboard'
+import NeumorphicKeyboard from './common/NeumorphicKeyboard'
 import { fmtMoney } from '../../../lib/currencyFormat'
 import { PM, normalizePaymentMode } from '../../../lib/paymentModes'
 
@@ -29,7 +29,7 @@ export default function LiteCustomerPicker({
         })}
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          width: '100%', padding: '6px 9px', marginBottom: 8, minHeight: 30,
+          width: '100%', padding: '6px 9px', marginBottom: 'clamp(4px, 1vh, 8px)', minHeight: 30,
           borderRadius: 'var(--r-md)',
           border: `1.5px solid ${customerName ? 'var(--blue-border)' : 'var(--border)'}`,
           background: customerName ? 'var(--blue-bg)' : 'var(--surface)',
@@ -157,7 +157,7 @@ export default function LiteCustomerPicker({
             boxShadow: '0 -8px 28px rgba(0,0,0,0.18)',
           }}
         >
-          <TouchKeyboard
+          <NeumorphicKeyboard
             onKey={onCustomerKbKey}
             onClose={() => setShowCustomerKeyboard(false)}
           />

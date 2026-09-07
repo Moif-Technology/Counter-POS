@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Printer, FileText, Receipt, Package, Truck, CalendarDays } from 'lucide-react'
-import Numpad from '../../../components/ui/Numpad'
+import Numpad from './common/NeumorphicNumpad'
 import Calendar from '../../../components/ui/Calendar'
 
 const DOC_OPTIONS = [
