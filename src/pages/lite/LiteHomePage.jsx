@@ -27,6 +27,8 @@ import CreditSettlementModal from './components/LiteCreditSettlementModal'
 import DeliverySettlementModal from '../../components/popup/DeliverySettlementModal'
 import ReportsModal from '../../components/popup/ReportsModal'
 
+
+
 import LiteHeader from './components/LiteHeader'
 import LiteSearchPanel from './components/LiteSearchPanel'
 import LiteCartTable from './components/LiteCartTable'
@@ -367,6 +369,38 @@ export default function LiteHomePage() {
       totalCash: roundAmt(rows.filter(b => b.receipt.paymentMode === 'CASH').reduce((s, b) => s + b.receipt.netAmount, 0)),
       totalCard: roundAmt(rows.filter(b => b.receipt.paymentMode === 'CREDITCARD').reduce((s, b) => s + b.receipt.netAmount, 0)),
       totalCredit: roundAmt(rows.filter(b => b.receipt.paymentMode === 'CREDIT').reduce((s, b) => s + b.receipt.netAmount, 0)),
+    }))
+  }
+  
+  const liteGroupReportFn = async () => {
+    const bills = litePendingBills()
+    const byGroup = new Map()
+  
+    for (const b of bills) {
+      for (const item of b.receipt.items ?? []) {
+        const groupName = item.groupName ?? item.categoryName ?? 'Unassigned'
+        const key = item.groupId ?? groupName
+        const row = byGroup.get(key) ?? {
+          groupId: key,
+          groupName,
+          qtySold: 0,
+          grossAmount: 0,
+          totalDiscount: 0,
+          netAmount: 0,
+        }
+        row.qtySold += Number(item.qty) || 0
+        row.grossAmount += Number(item.subTotal ?? item.lineTotal) || 0
+        row.totalDiscount += Number(item.discount) || 0
+        row.netAmount += Number(item.lineTotal) || 0
+        byGroup.set(key, row)
+      }
+    }
+  
+    return Array.from(byGroup.values()).map(r => ({
+      ...r,
+      grossAmount: roundAmt(r.grossAmount),
+      totalDiscount: roundAmt(r.totalDiscount),
+      netAmount: roundAmt(r.netAmount),
     }))
   }
 
@@ -1018,6 +1052,7 @@ export default function LiteHomePage() {
           counterSummaryFn={liteCounterSummaryFn}
           counterCloseFn={liteCounterCloseFn}
           staffReportFn={liteStaffReportFn}
+          groupReportFn={liteGroupReportFn}
           salesListFn={liteSalesListFn}
           billDetailFn={liteBillDetailFn}
           billPrintFn={liteBillPrintFn}

@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import CounterReadingModal from './CounterReadingModal'
 import StaffWiseReportModal from './StaffWiseReportModal'
+import GroupWiseReportModal from './GroupWiseReportModal'
+import CashierChangeModal from './CashierChangeModal'
+import ClearHoldBillModal from './ClearHoldBillModal'
+import PasswordChangeModal from './PasswordChangeModal'
+import PrivilegeSettingsModal from './PrivilegeSettingsModal'
 import SalesViewerModal from './SalesViewerModal'
 import CounterCloseViewerModal from './CounterCloseViewerModal'
 import CashInOutViewerModal from './CashInOutViewerModal'
@@ -86,12 +91,17 @@ const SHORTCUT_MAP = {
 
 export default function ReportsModal({
   onClose, onSelect,
-  counterSummaryFn, counterCloseFn, staffReportFn,
+  counterSummaryFn, counterCloseFn, staffReportFn,groupReportFn, 
   salesListFn, billDetailFn, billPrintFn, customerSearchFn,
-  closeHistoryFn, closeDetailFn, cashInOutReportFn,
+  closeHistoryFn, closeDetailFn, cashInOutReportFn,changePasswordFn, loadPrivilegesFn, savePrivilegesFn,
 }) {
   const [counterReadingOpen, setCounterReadingOpen] = useState(false)
   const [staffWiseOpen,     setStaffWiseOpen]     = useState(false)
+  const [groupWiseOpen,     setGroupWiseOpen]     = useState(false)
+  const [cashierChangeOpen, setCashierChangeOpen] = useState(false)
+  const [clearHoldBillOpen, setClearHoldBillOpen] = useState(false)
+  const [passwordChangeOpen, setPasswordChangeOpen] = useState(false)
+const [privilegeSettingsOpen, setPrivilegeSettingsOpen] = useState(false)
   const [salesViewerOpen,       setSalesViewerOpen]       = useState(false)
   const [counterCloseViewerOpen, setCounterCloseViewerOpen] = useState(false)
   const [cashInOutViewerOpen,    setCashInOutViewerOpen]    = useState(false)
@@ -114,6 +124,11 @@ export default function ReportsModal({
   function handleSelect(itemKey) {
     if (itemKey === 0) { setCounterReadingOpen(true); return }
     if (itemKey === 1) { setStaffWiseOpen(true); return }
+    if (itemKey === 8) { setGroupWiseOpen(true); return }
+    if (itemKey === 4) { setCashierChangeOpen(true); return }
+    if (itemKey === 5) { setClearHoldBillOpen(true); return }
+    if (itemKey === 3) { setPasswordChangeOpen(true); return }
+if (itemKey === 12) { setPrivilegeSettingsOpen(true); return }
     if (itemKey === 14) { setSalesViewerOpen(true); return }
     if (itemKey === 15) { setCounterCloseViewerOpen(true); return }
     if (itemKey === 16) { setCashInOutViewerOpen(true); return }
@@ -373,6 +388,7 @@ export default function ReportsModal({
     {staffWiseOpen && (
       <StaffWiseReportModal onClose={() => setStaffWiseOpen(false)} reportFn={staffReportFn} />
     )}
+   
     {salesViewerOpen && (
       <SalesViewerModal
         onClose={() => setSalesViewerOpen(false)}
@@ -382,6 +398,29 @@ export default function ReportsModal({
         printFn={billPrintFn}
       />
     )}
+     {groupWiseOpen && (
+      <GroupWiseReportModal onClose={() => setGroupWiseOpen(false)} reportFn={groupReportFn} />
+    )}
+    {cashierChangeOpen && (
+  <CashierChangeModal onClose={() => setCashierChangeOpen(false)} />
+)}
+{clearHoldBillOpen && (
+  <ClearHoldBillModal onClose={() => setClearHoldBillOpen(false)} />
+)}
+{passwordChangeOpen && (
+  <PasswordChangeModal
+    onClose={() => setPasswordChangeOpen(false)}
+    changeFn={changePasswordFn}
+  />
+)}
+{privilegeSettingsOpen && (
+  <PrivilegeSettingsModal
+    onClose={() => setPrivilegeSettingsOpen(false)}
+    loadFn={loadPrivilegesFn}
+    saveFn={savePrivilegesFn}
+  />
+)}
+
     {counterCloseViewerOpen && (
       <CounterCloseViewerModal
         onClose={() => setCounterCloseViewerOpen(false)}
