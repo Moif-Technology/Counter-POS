@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { X, Save, Loader2, AlertCircle } from 'lucide-react'
+import { X, Truck, Loader2, AlertCircle } from 'lucide-react'
 import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
 
@@ -135,7 +135,7 @@ export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Del
     background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   }}>
-    <Save size={15} color="#fff" />
+    <Truck size={15} color="#fff" />
   </div>
   <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>{title}</span>
 </div>

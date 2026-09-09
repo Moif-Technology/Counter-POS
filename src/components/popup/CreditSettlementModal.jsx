@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   X, Delete, Loader2, AlertCircle, CheckCircle2,
   Banknote, CreditCard, ArrowLeft, Receipt, History,
+  FileText,
 } from 'lucide-react'
 import { CreditSettlementHistoryList, CreditSettlementReceiptDetail } from './CreditSettlementHistory'
 import { api } from '../../lib/api'
@@ -203,7 +204,7 @@ export default function CreditSettlementModal({
               }}
             ><ArrowLeft size={16} /></button>
           )}
-          <Receipt size={18} color="#fff" />
+          <FileText size={18} color="#fff" />
           <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1 }}>
             {step === 'list' && 'Credit Settlement'}
             {step === 'settle' && 'Credit Settlement'}
