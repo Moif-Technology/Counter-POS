@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Keyboard, MoreHorizontal } from 'lucide-react'
+import { Keyboard, Grid3X3 } from 'lucide-react'
 import NeumorphicKeyboard from './common/NeumorphicKeyboard'
 import { fmtMoney } from '../../../lib/currencyFormat'
 import { LITE_GROUPS } from '../liteProducts'
@@ -124,21 +124,7 @@ export default function LiteSearchPanel({
         )}
       </div>
 
-      {/* Actions — reveals the full function grid, like the normal POS */}
-      <button
-        className="lite-btn"
-        onClick={onOpenMore}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          width: '100%', padding: 'clamp(8px, 1.6vh, 12px) 0', marginTop: 'clamp(7px, 1.4vh, 12px)', borderRadius: 'var(--r-md)',
-          border: '1.5px solid var(--border)', background: 'var(--surface)',
-          color: 'var(--text-2)', fontSize: 'clamp(11.5px, 1vw, 13px)', fontWeight: 700, cursor: 'pointer',
-          flexShrink: 0, minHeight: 'clamp(36px, 5.5vh, 42px)',
-        }}
-      >
-        <MoreHorizontal size={16} /> Actions
-      </button>
-
+   
       {showKeyboard && (
         <>
           {/* Backdrop — tap outside the keyboard to close it */}
