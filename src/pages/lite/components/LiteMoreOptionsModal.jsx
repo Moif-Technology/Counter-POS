@@ -26,17 +26,10 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 
-/* -------------------------------------------------------------------------- */
-/* Action Groups configured with custom transparent variant backgrounds       */
-/* -------------------------------------------------------------------------- */
-
 const ACTION_GROUPS = [
   {
     title: 'TRANSACTION',
     icon: ShoppingCart,
-    headerColor: 'var(--brand)',
-    cardBg: 'var(--brand-bg)',
-    cardBorder: 'var(--brand-border)',
     actions: [
       { label: 'Clear Line', icon: Minus, tone: 'danger', danger: true },
       { label: 'Reprint', icon: Printer, tone: 'brand' },
@@ -45,9 +38,6 @@ const ACTION_GROUPS = [
   {
     title: 'PRICING',
     icon: Tag,
-    headerColor: 'var(--amber)',
-    cardBg: 'var(--amber-bg)',
-    cardBorder: 'var(--amber-border)',
     actions: [
       { label: 'Price Enquiry', icon: ScanBarcode, tone: 'amber' },
       { label: 'Currency', icon: DollarSign, tone: 'amber' },
@@ -57,9 +47,6 @@ const ACTION_GROUPS = [
   {
     title: 'PRODUCTS & SALES',
     icon: Box,
-    headerColor: 'var(--text-1)',
-    cardBg: 'var(--surface-2)',
-    cardBorder: 'var(--border)',
     actions: [
       { label: 'Look Up', icon: Search, tone: 'slate' },
       { label: 'Group', icon: Grid3x3, tone: 'slate' },
@@ -72,9 +59,6 @@ const ACTION_GROUPS = [
   {
     title: 'DELIVERY & ADMIN',
     icon: ShieldCheck,
-    headerColor: 'var(--text-1)',
-    cardBg: 'var(--surface-2)',
-    cardBorder: 'var(--border)',
     actions: [
       { label: 'Delivery', icon: Truck, tone: 'brand' },
       { label: 'Save Delivery', icon: Save, tone: 'brand' },
@@ -172,14 +156,12 @@ export default function LiteMoreOptionsModal({ onClose, onSelect }) {
               cursor: 'pointer',
               borderRadius: 'var(--r-sm)',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-1)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-2)')}
           >
             <X size={18} strokeWidth={2} />
           </button>
         </div>
 
-        {/* Grid Container */}
+        {/* Grid Container - Rows perfectly balanced */}
         <div
           style={{
             padding: '18px',
@@ -190,137 +172,155 @@ export default function LiteMoreOptionsModal({ onClose, onSelect }) {
             boxSizing: 'border-box',
           }}
         >
-          {ACTION_GROUPS.map((group) => (
-            <div
-              key={group.title}
-              style={{
-                background: group.cardBg,
-                border: `1px solid ${group.cardBorder}`,
-                borderRadius: 'var(--r-md)',
-                padding: '14px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                boxSizing: 'border-box',
-                boxShadow: 'var(--shadow-xs)',
-              }}
-            >
-              {/* Category Title Header */}
-              <div
+          {/* Left Column (Transaction & Products) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {renderActionGroup(ACTION_GROUPS[0], handleActionSelect, '125px')} {/* Transaction */}
+            {renderActionGroup(ACTION_GROUPS[2], handleActionSelect, '235px')} {/* Products & Sales */}
+          </div>
+
+          {/* Right Column (Pricing & Admin) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {renderActionGroup(ACTION_GROUPS[1], handleActionSelect, '125px')} {/* Pricing - matched height with Transaction */}
+            {renderActionGroup(ACTION_GROUPS[3], handleActionSelect, '235px')} {/* Admin - matched height with Products */}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function renderActionGroup(group, handleActionSelect, minCardHeight) {
+  return (
+    <div
+      key={group.title}
+      style={{
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--r-md)',
+        padding: '14px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        minHeight: minCardHeight, // Forces respective rows to match exact heights side-by-side
+        boxSizing: 'border-box',
+        boxShadow: 'var(--shadow-xs)',
+      }}
+    >
+      <div>
+        {/* Category Title Header */}
+        <div
+          style={{
+            fontSize: '11px',
+            fontWeight: 700,
+            color: 'var(--text-1)',
+            letterSpacing: '0.5px',
+            paddingBottom: '8px',
+            marginBottom: '12px',
+            borderBottom: '1px solid var(--border)',
+          }}
+        >
+          {group.title}
+        </div>
+
+        {/* Action Buttons Grid */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: '8px',
+          }}
+        >
+          {group.actions.map((action) => {
+            const Icon = action.icon
+
+            let activeBg = 'var(--brand-bg)'
+            let activeColor = 'var(--brand)'
+            let activeBorder = 'var(--brand-border)'
+
+            if (action.tone === 'amber') {
+              activeBg = 'var(--amber-bg)'
+              activeColor = 'var(--amber)'
+              activeBorder = 'var(--amber-border)'
+            }
+
+            if (action.tone === 'danger') {
+              activeBg = 'var(--red-bg)'
+              activeColor = 'var(--red)'
+              activeBorder = 'var(--red-border)'
+            }
+
+            return (
+              <button
+                key={action.label}
+                type="button"
+                onClick={() => handleActionSelect(action.label)}
+                aria-label={action.label}
                 style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  color: group.headerColor,
-                  letterSpacing: '0.5px',
-                  paddingBottom: '8px',
-                  borderBottom: `1px solid ${group.cardBorder}`,
+                  width: '100%',
+                  maxWidth: '100%',
+                  height: '46px',
+                  boxSizing: 'border-box',
+                  padding: '0 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  gap: '9px',
+                  borderRadius: 'var(--r-sm)',
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface)',
+                  color: 'var(--text-2)',
+                  cursor: 'pointer',
+                  transition: 'all 120ms ease',
+                  textAlign: 'left',
+                  boxShadow: 'var(--shadow-xs)',
+                }}
+                onMouseEnter={(e) => {
+                  const btn = e.currentTarget
+                  btn.style.background = activeBg
+                  btn.style.borderColor = activeBorder
+                  btn.style.color = activeColor
+                  btn.style.boxShadow = 'var(--shadow-sm)'
+                }}
+                onMouseLeave={(e) => {
+                  const btn = e.currentTarget
+                  btn.style.background = 'var(--surface)'
+                  btn.style.borderColor = 'var(--border)'
+                  btn.style.color = 'var(--text-2)'
+                  btn.style.boxShadow = 'var(--shadow-xs)'
                 }}
               >
-                {group.title}
-              </div>
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    color: action.danger
+                      ? 'var(--red)'
+                      : action.tone === 'amber'
+                      ? 'var(--amber)'
+                      : 'var(--brand)',
+                  }}
+                >
+                  <Icon size={16} strokeWidth={2.1} aria-hidden="true" />
+                </span>
 
-              {/* Action Buttons Grid */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                  gap: '8px',
-                }}
-              >
-                {group.actions.map((action) => {
-                  const Icon = action.icon
-
-                  let activeBg = 'var(--brand-bg)'
-                  let activeColor = 'var(--brand)'
-                  let activeBorder = 'var(--brand-border)'
-
-                  if (action.tone === 'amber') {
-                    activeBg = 'var(--amber-bg)'
-                    activeColor = 'var(--amber)'
-                    activeBorder = 'var(--amber-border)'
-                  }
-
-                  if (action.tone === 'danger') {
-                    activeBg = 'var(--red-bg)'
-                    activeColor = 'var(--red)'
-                    activeBorder = 'var(--red-border)'
-                  }
-
-                  return (
-                    <button
-                      key={action.label}
-                      type="button"
-                      onClick={() => handleActionSelect(action.label)}
-                      aria-label={action.label}
-                      style={{
-                        width: '100%',
-                        maxWidth: '100%',
-                        height: '50px', // Increased button height
-                        boxSizing: 'border-box',
-                        padding: '0 10px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'flex-start',
-                        gap: '9px',
-                        borderRadius: 'var(--r-sm)',
-                        border: '1px solid var(--border)',
-                        background: 'var(--surface)',
-                        color: 'var(--text-2)',
-                        cursor: 'pointer',
-                        transition: 'all 120ms ease',
-                        textAlign: 'left',
-                        boxShadow: 'var(--shadow-xs)',
-                      }}
-                      onMouseEnter={(e) => {
-                        const btn = e.currentTarget
-                        btn.style.background = activeBg
-                        btn.style.borderColor = activeBorder
-                        btn.style.color = activeColor
-                        btn.style.boxShadow = 'var(--shadow-sm)'
-                      }}
-                      onMouseLeave={(e) => {
-                        const btn = e.currentTarget
-                        btn.style.background = 'var(--surface)'
-                        btn.style.borderColor = 'var(--border)'
-                        btn.style.color = 'var(--text-2)'
-                        btn.style.boxShadow = 'var(--shadow-xs)'
-                      }}
-                    >
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          color: action.danger
-                            ? 'var(--red)'
-                            : action.tone === 'amber'
-                            ? 'var(--amber)'
-                            : 'var(--brand)',
-                        }}
-                      >
-                        <Icon size={16} strokeWidth={2.1} aria-hidden="true" />
-                      </span>
-
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          color: 'inherit',
-                          lineHeight: '1.25',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {action.label}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: 'inherit',
+                    lineHeight: '1.25',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {action.label}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
     </div>
