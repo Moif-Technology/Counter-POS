@@ -8,7 +8,7 @@ import { LITE_CUSTOMERS } from './liteCustomers'
 import { PM, normalizePaymentMode } from '../../lib/paymentModes'
 import { printReceipt } from '../../lib/printReceipt'
 import { fmtMoney } from '../../lib/currencyFormat'
-import { posNotifyError, posNotifyInfo, posNotifySuccess, posNotifyWarning } from '../../lib/posNotify'
+import { posConfirm, posNotifyError, posNotifyInfo, posNotifySuccess, posNotifyWarning } from '../../lib/posNotify'
 
 import LitePacketScanModal from './LitePacketScanModal'
 import BillDiscountModal from '../../components/popup/BillDiscountModal'
@@ -140,6 +140,24 @@ export default function LiteHomePage() {
   useEffect(() => {
     usePosStore.setState({ productGroups: LITE_GROUP_OBJECTS })
   }, [])
+
+  // Opened from the normal POS (a cashier is signed in) → return there with an
+  // empty cart, since Lite's demo items don't exist in the real catalogue.
+  // Opened via the Lite PIN → back to the login screen as before.
+  const handleExitLite = async () => {
+    if (!usePosStore.getState().cashier) { navigate('/'); return }
+    if (cartItems.length) {
+      const ok = await posConfirm({
+        title: 'Exit Lite',
+        message: 'Cart has items. Clear the current bill and return to the normal POS?',
+        confirmLabel: 'Exit Lite',
+        cancelLabel: 'Cancel',
+      })
+      if (!ok) return
+    }
+    clearAllStore()
+    navigate('/pos')
+  }
 
   const results = useMemo(() => searchLiteProducts(query, activeGroup), [query, activeGroup])
 
@@ -879,7 +897,7 @@ export default function LiteHomePage() {
         }
       `}</style>
 
-      <LiteHeader onExit={() => navigate('/')} />
+      <LiteHeader onExit={handleExitLite} />
 
       {/* ── BODY ───────────────────────────── */}
       <div className="lite-body" data-mtab={mobileTab}>

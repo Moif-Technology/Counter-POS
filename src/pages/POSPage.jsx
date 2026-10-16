@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Monitor, Calendar, Clock, ShoppingCart, ChevronRight, ChevronDown,
-  Search, Maximize2, Bell, User, Save, Printer, ScanLine,
+  Search, Maximize2, Bell, User, Save, Printer, ScanLine, Zap,
 } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
+import { LITE_VERSION_ENABLED } from '../config/appConfig'
 import { api } from '../lib/api'
 import { isMultiPaymentMode } from '../lib/paymentModes'
 import ItemsGrid from '../components/pos/ItemsGrid'
@@ -297,6 +298,22 @@ export default function POSPage() {
   // Keep ref current so the Sunmi scanner-app callback invokes the latest handleEnter.
   handleEnterRef.current = handleEnter
 
+  // Lite runs on its own demo catalogue but shares this cart store, so the
+  // cart is cleared on the way in to keep real and demo items from mixing.
+  const handleOpenLite = useCallback(async () => {
+    if (usePosStore.getState().cartItems.length) {
+      const ok = await posConfirm({
+        title: 'Switch to Lite',
+        message: 'Cart has items. Clear the current bill and open Lite mode?',
+        confirmLabel: 'Open Lite',
+        cancelLabel: 'Cancel',
+      })
+      if (!ok) return
+    }
+    clearAll()
+    navigate('/lite')
+  }, [clearAll, navigate])
+
   const handleSunmiScan = useCallback(async () => {
     if (sunmiScanOpen || scanning) return
     if (!IS_ANDROID) {
@@ -460,6 +477,25 @@ export default function POSPage() {
               {billNo}
             </span>
           </div>
+
+          {LITE_VERSION_ENABLED && (
+            <button
+              data-pos-skip-refocus
+              onClick={handleOpenLite}
+              title="Switch to Lite mode"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
+                background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.28)',
+                borderRadius: 7, padding: '5px 10px',
+                color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                transition: 'background 0.13s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.26)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)' }}
+            >
+              <Zap size={11} /> Lite
+            </button>
+          )}
 
           <div className="header-hide-md" style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.18)' }} />
           <span className="header-hide-md"><HeaderIconBtn icon={Search} /></span>
