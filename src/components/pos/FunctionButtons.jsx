@@ -478,10 +478,11 @@ export function FeatureGrid() {
 
   return (
     <>
-    <div style={{
-      display: 'flex', alignItems: 'center',
-      height: '100%', padding: '5px 8px', gap: 6,
-      overflowX: 'auto',
+    <div className="pos-fn-strip" style={{
+      display: 'flex', alignItems: 'stretch',
+      height: '100%', padding: '6px 8px', gap: 6,
+      boxSizing: 'border-box',
+      overflowX: 'auto', overflowY: 'hidden',
     }}>
       {FEATURE_BUTTONS.map((btn, i) => {
         const Icon = btn.icon
@@ -528,12 +529,13 @@ export function FeatureGrid() {
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               justifyContent: 'center', gap: 5,
-              flexShrink: 0, width: 72, height: 72,
+              flexShrink: 0, height: '100%', aspectRatio: '1 / 1', minWidth: 60,
+              boxSizing: 'border-box', padding: 2,
               borderRadius: 12,
               border: '1.5px solid var(--border)',
               background: 'var(--surface)',
               color: 'var(--text-2)',
-              fontSize: 10, fontWeight: 600,
+              fontSize: 11, fontWeight: 600,
               cursor: 'pointer',
               transition: 'all 0.15s ease',
               userSelect: 'none',
@@ -557,8 +559,8 @@ export function FeatureGrid() {
             onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.93) translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
             onMouseUp={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.10)' }}
           >
-            <Icon size={18} style={{ flexShrink: 0 }} />
-            <span style={{ textAlign: 'center', lineHeight: 1.2, maxWidth: 66, wordBreak: 'break-word' }}>{btn.label}</span>
+            <Icon size={22} style={{ flexShrink: 0 }} />
+            <span style={{ textAlign: 'center', lineHeight: 1.2, maxWidth: '92%', wordBreak: 'break-word' }}>{btn.label}</span>
           </button>
         )
       })}
@@ -567,7 +569,8 @@ export function FeatureGrid() {
       <button style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center',
-        flexShrink: 0, width: 72, height: 72,
+        flexShrink: 0, height: '100%', aspectRatio: '1 / 1', minWidth: 60,
+        boxSizing: 'border-box',
         borderRadius: 12,
         border: '1.5px dashed var(--border)',
         background: 'transparent', color: 'var(--text-4)',
@@ -576,7 +579,7 @@ export function FeatureGrid() {
         onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-2)'; e.currentTarget.style.color = 'var(--text-2)'; e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-4)'; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'translateY(0)' }}
       >
-        <Plus size={18} />
+        <Plus size={22} />
       </button>
     </div>
 

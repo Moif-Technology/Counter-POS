@@ -10,7 +10,7 @@
   --right-w:    clamp(240px, 26vw, 360px);
   --topbar-h:   clamp(46px, 6vh, 58px);
   --preview-h:  clamp(32px, 4vh, 40px);
-  --fn-h:       clamp(76px, 10vh, 96px);
+  --fn-h:       clamp(96px, 12vh, 116px);
 
   /* Surfaces */
   --bg:        #f4f3ef;
@@ -187,8 +187,13 @@ button { cursor: pointer; border: none; background: none; }
   flex-shrink: 0;
   border-top: 1px solid var(--border);
   background: var(--bg);
-  overflow-x: auto;
+  overflow: hidden;
 }
+
+/* Inner strip scrolls; thin scrollbar so it doesn't eat into the buttons */
+.pos-fn-strip { scrollbar-width: thin; }
+.pos-fn-strip::-webkit-scrollbar { height: 5px; }
+.pos-fn-strip::-webkit-scrollbar-thumb { background: var(--border-2, #c4c4c4); border-radius: 3px; }
 
 /* ─── Right Panel ────────────────────────────────────────────── */
 .pos-right {
@@ -220,7 +225,7 @@ button { cursor: pointer; border: none; background: none; }
   :root {
     --right-w:  clamp(220px, 24vw, 310px);
     --sidebar-w: 62px;
-    --fn-h: 82px;
+    --fn-h: 100px;
   }
   .pos-header { padding: 0 10px; gap: 7px; }
   .header-hide-md { display: none !important; }
@@ -232,7 +237,7 @@ button { cursor: pointer; border: none; background: none; }
     --right-w:   220px;
     --sidebar-w: 56px;
     --header-h:  46px;
-    --fn-h:      78px;
+    --fn-h:      92px;
     --topbar-h:  46px;
     --preview-h: 30px;
   }
@@ -246,7 +251,7 @@ button { cursor: pointer; border: none; background: none; }
   :root {
     --right-w:   200px;
     --sidebar-w: 48px;
-    --fn-h:      72px;
+    --fn-h:      84px;
   }
   .pos-topbar { gap: 5px; padding: 0 6px; }
   .header-hide-xs { display: none !important; }
@@ -288,7 +293,7 @@ button { cursor: pointer; border: none; background: none; }
 /* ─── Touch: larger tap targets on small screens ────────────── */
 @media (max-width: 768px) and (pointer: coarse) {
   button { min-height: 36px; }
-  .pos-fn-grid button { width: 64px !important; height: 64px !important; }
+  .pos-fn-grid button { min-width: 64px !important; }
 }
 
 /* ─── Sunmi scanner status strip (Android only) ─────────────── */
@@ -331,7 +336,7 @@ button { cursor: pointer; border: none; background: none; }
     --right-w:   380px;
     --sidebar-w: 80px;
     --header-h:  58px;
-    --fn-h:      100px;
+    --fn-h:      120px;
     --topbar-h:  60px;
   }
   body { font-size: 14px; }
