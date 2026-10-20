@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { X, Delete, Loader2 } from 'lucide-react'
+import { X, Delete, Loader2, Crown } from 'lucide-react'
 import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
 
@@ -135,7 +135,16 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
           padding: '12px 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
         }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Privilege Customer Selection</span>
+<div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+  <div style={{
+    width: 32, height: 32, borderRadius: 9,
+    background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  }}>
+    <Crown size={15} color="#fff" />
+  </div>
+  <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>Privilege Customer Selection</span>
+</div>
           <button
             onClick={onClose}
             style={{

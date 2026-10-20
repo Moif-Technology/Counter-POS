@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Hash } from 'lucide-react'
+import { X, SlidersHorizontal } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { findCartItemByKey } from '../../lib/cartLine'
 import Numpad from '../ui/Numpad'
@@ -85,7 +85,7 @@ export default function QtyChangeModal({ onClose }) {
               background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Hash size={15} color="#fff" />
+              <SlidersHorizontal size={15} color="#fff" />
             </div>
             <div>
               <p style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: 1, textTransform: 'uppercase' }}>Quantity Change</p>

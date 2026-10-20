@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { X, Truck, AlertCircle, Loader2, CheckCircle2, Layers, ScanLine, RotateCcw } from 'lucide-react'
+import { X, Receipt, AlertCircle, Loader2, CheckCircle2, Layers, ScanLine, RotateCcw } from 'lucide-react'
 import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
 import { fmtMoney, roundMoney } from '../../lib/currencyFormat'
@@ -249,7 +249,7 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
           padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Truck size={18} color="#fff" />
+            <Receipt size={18} color="#fff" />
             <div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>
                 Post invoice after payment

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   X, Loader2, AlertCircle, CheckCircle2,
-  Banknote, CreditCard, ArrowLeft, Receipt, History,
+  Banknote, CreditCard, ArrowLeft, FileText, History,
 } from 'lucide-react'
 import { CreditSettlementHistoryList, CreditSettlementReceiptDetail } from '../../../components/popup/CreditSettlementHistory'
 import { api } from '../../../lib/api'
@@ -190,7 +190,7 @@ export default function LiteCreditSettlementModal({
               }}
             ><ArrowLeft size={16} /></button>
           )}
-          <Receipt size={18} color="#fff" />
+          <FileText size={18} color="#fff" />
           <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1 }}>
             {step === 'list' && 'Credit Settlement'}
             {step === 'settle' && 'Credit Settlement'}
@@ -207,7 +207,7 @@ export default function LiteCreditSettlementModal({
         {step === 'list' && (
           <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
             {[
-              { key: 'settle', label: 'Settle', icon: Receipt },
+              { key: 'settle', label: 'Settle', icon: FileText },
               { key: 'history', label: 'History', icon: History },
             ].map(tab => {
               const Icon = tab.icon

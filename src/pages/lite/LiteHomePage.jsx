@@ -27,9 +27,12 @@ import CreditSettlementModal from './components/LiteCreditSettlementModal'
 import DeliverySettlementModal from '../../components/popup/DeliverySettlementModal'
 import ReportsModal from '../../components/popup/ReportsModal'
 
+
+
 import LiteHeader from './components/LiteHeader'
 import LiteSearchPanel from './components/LiteSearchPanel'
 import LiteCartTable from './components/LiteCartTable'
+import LiteQuickActionToolbar from './components/LiteQuickActionToolbar'
 import LiteCustomerPicker from './components/LiteCustomerPicker'
 import LiteBillSummary from './components/LiteBillSummary'
 import LiteQtyKeypad from './components/LiteQtyKeypad'
@@ -98,6 +101,9 @@ export default function LiteHomePage() {
   const [summaryExpanded, setSummaryExpanded] = useState(false)
   const [showMore, setShowMore] = useState(false)
   const [showRecall, setShowRecall] = useState(false)
+  const handleQuickRecall = () => {
+    setShowRecall(true)
+  }
   const [showReprint, setShowReprint] = useState(false)
   const [heldBills, setHeldBills] = useState([]) // { id, holdNo, heldAt, customerName, customerId, customerCode, comment, paymentMode, salesMan, priceLevel, isDelivery, deliveryAddress, cartItems, amount }
   const [showCustomers, setShowCustomers] = useState(false)
@@ -114,8 +120,34 @@ export default function LiteHomePage() {
   const [savedBills, setSavedBills] = useState([]) // { billNo, billDate, receipt }
   const [showPacketScan, setShowPacketScan] = useState(false)
   const [showBillDiscount, setShowBillDiscount] = useState(false)
+  const handleQuickHold = () => {
+    handleMoreOption('Hold Bill')
+  }
+  const handleQuickReturn = () => {
+    handleMoreOption('Return')
+  }
   const [showPriceChange, setShowPriceChange] = useState(false)
+  const handleQuickPriceChange = () => {
+    if (!selectedRowKey) {
+      posNotifyWarning('Select a row first', {
+        title: 'Price Change',
+      })
+      return
+    }
+  
+    setShowPriceChange(true)
+  }
   const [showQtyChange, setShowQtyChange] = useState(false)
+  const handleQuickQtyChange = () => {
+    if (!selectedRowKey) {
+      posNotifyWarning('Select a row first', {
+        title: 'Qty Change',
+      })
+      return
+    }
+  
+    setShowQtyChange(true)
+  }
   const [showCurrencyModal, setShowCurrencyModal] = useState(false)
   const [showCommentsModal, setShowCommentsModal] = useState(false)
   const [showSalesManModal, setShowSalesManModal] = useState(false)
@@ -237,7 +269,16 @@ export default function LiteHomePage() {
       billsCleared: clearedBills,
     }
   }
-
+  const handleQuickDiscount = () => {
+    if (!cartItems.length) {
+      posNotifyWarning('Cart is empty', {
+        title: 'Discount',
+      })
+      return
+    }
+  
+    setShowBillDiscount(true)
+  }
   const liteHistoryFn = async ({ customerId, dateFrom, dateTo, limit }) => {
     const from = dateFrom ? new Date(dateFrom) : null
     const to = dateTo ? new Date(dateTo) : null
@@ -385,6 +426,38 @@ export default function LiteHomePage() {
       totalCash: roundAmt(rows.filter(b => b.receipt.paymentMode === 'CASH').reduce((s, b) => s + b.receipt.netAmount, 0)),
       totalCard: roundAmt(rows.filter(b => b.receipt.paymentMode === 'CREDITCARD').reduce((s, b) => s + b.receipt.netAmount, 0)),
       totalCredit: roundAmt(rows.filter(b => b.receipt.paymentMode === 'CREDIT').reduce((s, b) => s + b.receipt.netAmount, 0)),
+    }))
+  }
+  
+  const liteGroupReportFn = async () => {
+    const bills = litePendingBills()
+    const byGroup = new Map()
+  
+    for (const b of bills) {
+      for (const item of b.receipt.items ?? []) {
+        const groupName = item.groupName ?? item.categoryName ?? 'Unassigned'
+        const key = item.groupId ?? groupName
+        const row = byGroup.get(key) ?? {
+          groupId: key,
+          groupName,
+          qtySold: 0,
+          grossAmount: 0,
+          totalDiscount: 0,
+          netAmount: 0,
+        }
+        row.qtySold += Number(item.qty) || 0
+        row.grossAmount += Number(item.subTotal ?? item.lineTotal) || 0
+        row.totalDiscount += Number(item.discount) || 0
+        row.netAmount += Number(item.lineTotal) || 0
+        byGroup.set(key, row)
+      }
+    }
+  
+    return Array.from(byGroup.values()).map(r => ({
+      ...r,
+      grossAmount: roundAmt(r.grossAmount),
+      totalDiscount: roundAmt(r.totalDiscount),
+      netAmount: roundAmt(r.netAmount),
     }))
   }
 
@@ -575,6 +648,7 @@ export default function LiteHomePage() {
       case 'Clear Line': {
         if (!selectedRowKey) { posNotifyWarning('Select a row first', { title: 'Clear Line' }); return }
         removeItemStore(selectedRowKey)
+        posNotifySuccess('Line cleared', { title: 'Clear Line', duration: 1000 })
         return
       }
       case 'Return': {
@@ -895,6 +969,331 @@ export default function LiteHomePage() {
           .lite-body[data-mtab="bill"]   .lite-panel-center { display: none !important; }
           .lite-mobile-tabs { display: flex; }
         }
+
+/* =========================================================
+   QUICK ACTION TOOLBAR
+   Bottom-docked, full-width cashier action area
+   ========================================================= */
+
+.lite-quick-toolbar {
+  flex: 0 0 auto;
+
+  width: 100%;
+  max-width: none;
+
+  margin: 10px 0 10px;
+  padding: 10px 12px;
+
+  box-sizing: border-box;
+
+  background: var(--surface);
+  border: 1px solid color-mix(
+    in srgb,
+    var(--border) 65%,
+    transparent
+  );
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.06);
+
+  position: relative;
+  z-index: 2;
+}
+
+
+
+/* =========================================================
+   ACTION ROW
+   Six equal cashier-friendly buttons
+   ========================================================= */
+
+.lite-quick-actions {
+  display: grid;
+
+grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+
+  width: 100%;
+}
+
+
+/* =========================================================
+   INDIVIDUAL ACTION BUTTON
+   ========================================================= */
+
+.lite-quick-action {
+  appearance: none;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 76px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  padding: 10px 8px;
+
+  box-sizing: border-box;
+
+  border: 1px solid color-mix(
+    in srgb,
+    var(--border) 60%,
+    transparent
+  );
+
+  border-radius: 12px;
+
+  background: var(--surface-2);
+
+  color: var(--text-1);
+
+  cursor: pointer;
+
+  font-family: inherit;
+
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 100ms ease;
+}
+
+
+/* =========================================================
+   ICON
+   ========================================================= */
+
+.lite-quick-action-icon {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 auto;
+
+  border-radius: 9px;
+
+  color: var(--brand);
+
+  background: var(--brand-bg);
+}
+
+
+/* =========================================================
+   LABEL
+   ========================================================= */
+
+.lite-quick-action-label {
+  display: block;
+
+  width: 100%;
+  min-width: 0;
+
+  font-size: 11px;
+  line-height: 1.2;
+
+  font-weight: 750;
+
+  text-align: center;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  color: var(--text-1);
+}
+
+
+/* =========================================================
+   HOVER
+   ========================================================= */
+
+.lite-quick-action:hover {
+  background: var(--brand-bg);
+
+  border-color: color-mix(
+    in srgb,
+    var(--brand) 35%,
+    var(--border)
+  );
+
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.08);
+
+  transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   PRESS / TOUCH FEEDBACK
+   ========================================================= */
+
+.lite-quick-action:active {
+  transform: translateY(1px);
+
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+
+/* =========================================================
+   KEYBOARD ACCESSIBILITY
+   ========================================================= */
+
+.lite-quick-action:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   DISABLED STATE
+   ========================================================= */
+
+.lite-quick-action:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+
+  transform: none;
+
+  box-shadow: none;
+}
+
+
+/* =========================================================
+   TABLET / SMALL DESKTOP
+   ========================================================= */
+
+@media (max-width: 1050px) {
+
+  .lite-quick-toolbar {
+    margin: 8px 0;
+    padding: 10px;
+  }
+
+  .lite-quick-actions {
+    gap: 8px;
+  }
+
+  .lite-quick-action {
+    min-height: 70px;
+
+    padding: 9px 6px;
+
+    gap: 6px;
+  }
+
+  .lite-quick-action-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .lite-quick-action-label {
+    font-size: 10.5px;
+  }
+}
+
+
+/* =========================================================
+   NARROW POS LAYOUT
+   ========================================================= */
+
+@media (max-width: 760px) {
+
+  .lite-quick-toolbar {
+    margin: 7px 0;
+
+    padding: 8px;
+
+    border-radius: 12px;
+  }
+
+  .lite-quick-toolbar-header {
+    margin-bottom: 7px;
+  }
+
+  .lite-quick-toolbar-title {
+    font-size: 11px;
+  }
+
+  .lite-quick-toolbar-hint {
+    display: none;
+  }
+
+  .lite-quick-actions {
+    gap: 6px;
+  }
+
+  .lite-quick-action {
+    min-height: 64px;
+
+    padding: 8px 4px;
+
+    gap: 5px;
+
+    border-radius: 10px;
+  }
+
+  .lite-quick-action-icon {
+    width: 29px;
+    height: 29px;
+
+    border-radius: 7px;
+  }
+
+  .lite-quick-action-label {
+    font-size: 9px;
+  }
+}
+
+
+/* =========================================================
+   VERY NARROW SCREEN
+   ========================================================= */
+
+@media (max-width: 560px) {
+
+  .lite-quick-toolbar {
+    padding: 6px;
+  }
+
+  .lite-quick-actions {
+    gap: 4px;
+  }
+
+  .lite-quick-action {
+    min-height: 58px;
+
+    padding: 6px 2px;
+
+    gap: 4px;
+
+    border-radius: 8px;
+  }
+
+  .lite-quick-action-icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .lite-quick-action-label {
+    font-size: 8px;
+  }
+}
+
+
+
       `}</style>
 
       <LiteHeader onExit={handleExitLite} />
@@ -913,14 +1312,48 @@ export default function LiteHomePage() {
           onOpenMore={() => setShowMore(true)}
         />
 
-        <LiteCartTable
-          cartItems={cartItems}
-          selectedRowKey={selectedRowKey}
-          onSelectRow={selectRow}
-          onAdjustQty={adjustLineQty}
-          onRemoveItem={removeItemStore}
-          onDeleteMany={deleteManyFromCart}
-        />
+
+<div
+  className="lite-panel-center"
+  style={{
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 0,
+    minHeight: 0,
+    overflow: 'hidden',
+  }}
+>
+  {/* Cart / Items scroll area */}
+  <div
+    className="lite-scroll"
+    style={{
+      flex: 1,
+      minHeight: 0,
+      overflowY: 'auto',
+    }}
+  >
+    <LiteCartTable
+      cartItems={cartItems}
+      selectedRowKey={selectedRowKey}
+      onSelectRow={selectRow}
+      onAdjustQty={adjustLineQty}
+      onRemoveItem={removeItemStore}
+      onDeleteMany={deleteManyFromCart}
+    />
+  </div>
+
+  {/* Bottom-center Quick Actions */}
+  <LiteQuickActionToolbar
+    onDiscount={handleQuickDiscount}
+    onHold={handleQuickHold}
+    onRecall={handleQuickRecall}
+    onReturn={handleQuickReturn}
+    onPriceChange={handleQuickPriceChange}
+    onQtyChange={handleQuickQtyChange}
+    onMore={() => setShowMore(true)}
+  />
+</div>
+    
 
         {/* Right: billing. Three zones — the total (top) and the Save /
             Bill & Print buttons (bottom) stay pinned and always visible;
@@ -1035,6 +1468,7 @@ export default function LiteHomePage() {
           counterSummaryFn={liteCounterSummaryFn}
           counterCloseFn={liteCounterCloseFn}
           staffReportFn={liteStaffReportFn}
+          groupReportFn={liteGroupReportFn}
           salesListFn={liteSalesListFn}
           billDetailFn={liteBillDetailFn}
           billPrintFn={liteBillPrintFn}

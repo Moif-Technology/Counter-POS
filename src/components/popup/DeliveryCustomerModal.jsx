@@ -129,10 +129,16 @@ export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Del
           background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
           padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Truck size={18} color="#fff" />
-            <span style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{title}</span>
-          </div>
+         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+  <div style={{
+    width: 32, height: 32, borderRadius: 9,
+    background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  }}>
+    <Truck size={15} color="#fff" />
+  </div>
+  <span style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>{title}</span>
+</div>
           <button onClick={onClose} style={{
             width: 30, height: 30, borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)',
             background: 'rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer',

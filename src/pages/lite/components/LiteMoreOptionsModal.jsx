@@ -1,104 +1,326 @@
+import React from 'react'
 import {
-  X, PauseCircle, Archive, Printer, Minus, RotateCcw, Percent, Search, Tag,
-  SlidersHorizontal, Grid3x3, Package, DollarSign, User, Crown,
-  BarChart2, ArrowLeftRight, FileText, Hash, Lock, Layers, Truck, Save, Receipt,
+  X,
+  Printer,
+  Minus,
+  Search,
+  Grid3x3,
+  Package,
+  DollarSign,
+  User,
+  Crown,
+  BarChart2,
+  Wallet,
+  FileText,
+  MessageSquare,
+  Hash,
+  Lock,
+  Layers,
+  Truck,
+  Save,
+  ScanBarcode,
+  Receipt,
+  ShoppingCart,
+  Tag,
+  Box,
+  ShieldCheck,
 } from 'lucide-react'
 
-/* Mirrors the main POS's feature grid: tiles sit flat/neutral by default and
- * only reveal their color on hover (background + border + lift + shadow),
- * exactly like FunctionButtons.jsx's FEATURE_BUTTONS in the normal POS. */
-export const MORE_OPTIONS = [
-  { label: 'Hold Bill',    icon: PauseCircle,      color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
-  { label: 'Recall',       icon: Archive,          color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Reprint',      icon: Printer,          color: 'var(--brand)',  bg: 'var(--brand-tint)', border: 'var(--brand-border)' },
-  { label: 'Clear Line',   icon: Minus,            color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)', danger: true },
-  { label: 'Return',       icon: RotateCcw,        color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)', danger: true },
-  { label: 'Look Up',      icon: Search,           color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Price Change', icon: Tag,              color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
-  { label: 'Qty Change',   icon: SlidersHorizontal,color: 'var(--brand)',  bg: 'var(--brand-tint)', border: 'var(--brand-border)' },
-  { label: 'Group',        icon: Grid3x3,          color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Packet Scan',  icon: Package,          color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
-  { label: 'Discount',     icon: Percent,          color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Price Enquiry',icon: Search,           color: 'var(--brand)',  bg: 'var(--brand-tint)', border: 'var(--brand-border)' },
-  { label: 'Currency',     icon: DollarSign,       color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
-  { label: 'Sales Man',    icon: User,             color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Privilege',    icon: Crown,            color: 'var(--brand)',  bg: 'var(--brand-tint)', border: 'var(--brand-border)' },
-  { label: 'Report',       icon: BarChart2,        color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
-  { label: 'Cash In/Out',  icon: ArrowLeftRight,   color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Receipt',      icon: FileText,         color: 'var(--brand)',  bg: 'var(--brand-tint)', border: 'var(--brand-border)' },
-  { label: 'Comments',     icon: FileText,         color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'NP Scale',     icon: Hash,             color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
-  { label: 'Lock',         icon: Lock,             color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)', danger: true },
-  { label: 'Price Level',  icon: Layers,           color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Delivery',     icon: Truck,            color: 'var(--brand)',  bg: 'var(--brand-tint)', border: 'var(--brand-border)' },
-  { label: 'Save Delivery',icon: Save,             color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
-  { label: 'Settlement',   icon: Receipt,          color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+const ACTION_GROUPS = [
+  {
+    title: 'TRANSACTION',
+    icon: ShoppingCart,
+    actions: [
+      { label: 'Clear Line', icon: Minus, tone: 'danger', danger: true },
+      { label: 'Reprint', icon: Printer, tone: 'brand' },
+    ],
+  },
+  {
+    title: 'PRICING',
+    icon: Tag,
+    actions: [
+      { label: 'Price Enquiry', icon: ScanBarcode, tone: 'amber' },
+      { label: 'Currency', icon: DollarSign, tone: 'amber' },
+      { label: 'NP Scale', icon: Hash, tone: 'amber' },
+    ],
+  },
+  {
+    title: 'PRODUCTS & SALES',
+    icon: Box,
+    actions: [
+      { label: 'Look Up', icon: Search, tone: 'slate' },
+      { label: 'Group', icon: Grid3x3, tone: 'slate' },
+      { label: 'Packet Scan', icon: Package, tone: 'slate' },
+      { label: 'Price Level', icon: Layers, tone: 'slate' },
+      { label: 'Sales Man', icon: User, tone: 'slate' },
+      { label: 'Comments', icon: MessageSquare, tone: 'slate' },
+    ],
+  },
+  {
+    title: 'DELIVERY & ADMIN',
+    icon: ShieldCheck,
+    actions: [
+      { label: 'Delivery', icon: Truck, tone: 'brand' },
+      { label: 'Save Delivery', icon: Save, tone: 'brand' },
+      { label: 'Receipt', icon: FileText, tone: 'brand' },
+      { label: 'Settlement', icon: Receipt, tone: 'brand' },
+      { label: 'Report', icon: BarChart2, tone: 'amber' },
+      { label: 'Cash In/Out', icon: Wallet, tone: 'amber' },
+      { label: 'Privilege', icon: Crown, tone: 'amber' },
+      { label: 'Lock', icon: Lock, tone: 'danger', danger: true },
+    ],
+  },
 ]
 
 export default function LiteMoreOptionsModal({ onClose, onSelect }) {
+  const handleActionSelect = (label) => {
+    if (typeof onSelect === 'function') {
+      onSelect(label)
+    }
+  }
+
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="lite-actions-title"
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(15,13,10,0.35)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        position: 'fixed',
+        inset: 0,
         zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '12px',
+        background: 'rgba(23, 21, 15, 0.45)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        boxSizing: 'border-box',
       }}
     >
       <div
-        onClick={e => e.stopPropagation()}
-        className="lite-scroll"
+        onClick={(event) => event.stopPropagation()}
         style={{
-          width: 640, maxWidth: '92vw', maxHeight: '82vh', overflowY: 'auto',
-          background: 'var(--surface)', borderRadius: 'var(--r-lg)',
-          border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg, 0 20px 60px rgba(0,0,0,0.12))',
-          padding: 18,
+          width: 'min(920px, 95vw)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          background: 'var(--surface)',
+          border: '1px solid var(--border-2)',
+          borderRadius: 'var(--r-lg)',
+          boxShadow: 'var(--shadow-lg)',
+          fontFamily: "'Sora', system-ui, sans-serif",
+          boxSizing: 'border-box',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-1)' }}>Actions</span>
-          <button
-            className="lite-btn"
-            onClick={onClose}
-            style={{ border: 'none', background: 'none', color: 'var(--text-3)', cursor: 'pointer', padding: 10, minWidth: 40, minHeight: 40 }}
+        {/* Header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '16px 20px',
+            borderBottom: '1px solid var(--border)',
+            background: 'var(--surface)',
+            flexShrink: 0,
+            boxSizing: 'border-box',
+          }}
+        >
+          <div
+            id="lite-actions-title"
+            style={{
+              fontSize: '16px',
+              fontWeight: 700,
+              lineHeight: 1.2,
+              color: 'var(--text-1)',
+              letterSpacing: '-0.2px',
+            }}
           >
-            <X size={18} />
+            Actions
+          </div>
+
+          <button
+            type="button"
+            aria-label="Close actions"
+            onClick={onClose}
+            style={{
+              width: '30px',
+              height: '30px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--text-2)',
+              cursor: 'pointer',
+              borderRadius: 'var(--r-sm)',
+            }}
+          >
+            <X size={18} strokeWidth={2} />
           </button>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 10 }}>
-          {MORE_OPTIONS.map(({ label, icon: Icon, color, bg, border }) => (
-            <button
-              key={label}
-              className="lite-btn"
-              onClick={() => onSelect(label)}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                padding: '16px 6px', borderRadius: 'var(--r-md)', minHeight: 76,
-                border: '1px solid var(--border)',
-                background: 'var(--surface-2)', color: 'var(--text-2)',
-                cursor: 'pointer', fontSize: 11.5, fontWeight: 700,
-                transition: 'all 0.15s ease',
-                boxShadow: 'var(--shadow-xs)',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background  = bg
-                e.currentTarget.style.color       = color
-                e.currentTarget.style.borderColor = border
-                e.currentTarget.style.transform   = 'translateY(-2px)'
-                e.currentTarget.style.boxShadow   = '0 6px 16px rgba(0,0,0,0.10)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background  = 'var(--surface-2)'
-                e.currentTarget.style.color       = 'var(--text-2)'
-                e.currentTarget.style.borderColor = 'var(--border)'
-                e.currentTarget.style.transform   = 'translateY(0)'
-                e.currentTarget.style.boxShadow   = 'var(--shadow-xs)'
-              }}
-            >
-              <Icon size={18} />
-              <span style={{ textAlign: 'center', lineHeight: 1.2 }}>{label}</span>
-            </button>
-          ))}
+
+        {/* Grid Container - Rows perfectly balanced */}
+        <div
+          style={{
+            padding: '18px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: '14px',
+            background: 'var(--surface)',
+            boxSizing: 'border-box',
+          }}
+        >
+          {/* Left Column (Transaction & Products) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {renderActionGroup(ACTION_GROUPS[0], handleActionSelect, '125px')} {/* Transaction */}
+            {renderActionGroup(ACTION_GROUPS[2], handleActionSelect, '235px')} {/* Products & Sales */}
+          </div>
+
+          {/* Right Column (Pricing & Admin) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {renderActionGroup(ACTION_GROUPS[1], handleActionSelect, '125px')} {/* Pricing - matched height with Transaction */}
+            {renderActionGroup(ACTION_GROUPS[3], handleActionSelect, '235px')} {/* Admin - matched height with Products */}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function renderActionGroup(group, handleActionSelect, minCardHeight) {
+  return (
+    <div
+      key={group.title}
+      style={{
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--r-md)',
+        padding: '14px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        minHeight: minCardHeight, // Forces respective rows to match exact heights side-by-side
+        boxSizing: 'border-box',
+        boxShadow: 'var(--shadow-xs)',
+      }}
+    >
+      <div>
+        {/* Category Title Header */}
+        <div
+          style={{
+            fontSize: '11px',
+            fontWeight: 700,
+            color: 'var(--text-1)',
+            letterSpacing: '0.5px',
+            paddingBottom: '8px',
+            marginBottom: '12px',
+            borderBottom: '1px solid var(--border)',
+          }}
+        >
+          {group.title}
+        </div>
+
+        {/* Action Buttons Grid */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: '8px',
+          }}
+        >
+          {group.actions.map((action) => {
+            const Icon = action.icon
+
+            let activeBg = 'var(--brand-bg)'
+            let activeColor = 'var(--brand)'
+            let activeBorder = 'var(--brand-border)'
+
+            if (action.tone === 'amber') {
+              activeBg = 'var(--amber-bg)'
+              activeColor = 'var(--amber)'
+              activeBorder = 'var(--amber-border)'
+            }
+
+            if (action.tone === 'danger') {
+              activeBg = 'var(--red-bg)'
+              activeColor = 'var(--red)'
+              activeBorder = 'var(--red-border)'
+            }
+
+            return (
+              <button
+                key={action.label}
+                type="button"
+                onClick={() => handleActionSelect(action.label)}
+                aria-label={action.label}
+                style={{
+                  width: '100%',
+                  maxWidth: '100%',
+                  height: '46px',
+                  boxSizing: 'border-box',
+                  padding: '0 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  gap: '9px',
+                  borderRadius: 'var(--r-sm)',
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface)',
+                  color: 'var(--text-2)',
+                  cursor: 'pointer',
+                  transition: 'all 120ms ease',
+                  textAlign: 'left',
+                  boxShadow: 'var(--shadow-xs)',
+                }}
+                onMouseEnter={(e) => {
+                  const btn = e.currentTarget
+                  btn.style.background = activeBg
+                  btn.style.borderColor = activeBorder
+                  btn.style.color = activeColor
+                  btn.style.boxShadow = 'var(--shadow-sm)'
+                }}
+                onMouseLeave={(e) => {
+                  const btn = e.currentTarget
+                  btn.style.background = 'var(--surface)'
+                  btn.style.borderColor = 'var(--border)'
+                  btn.style.color = 'var(--text-2)'
+                  btn.style.boxShadow = 'var(--shadow-xs)'
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    color: action.danger
+                      ? 'var(--red)'
+                      : action.tone === 'amber'
+                      ? 'var(--amber)'
+                      : 'var(--brand)',
+                  }}
+                >
+                  <Icon size={16} strokeWidth={2.1} aria-hidden="true" />
+                </span>
+
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: 'inherit',
+                    lineHeight: '1.25',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {action.label}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
     </div>

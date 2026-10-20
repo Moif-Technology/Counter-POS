@@ -22,8 +22,9 @@ import {
   ShoppingCart, PauseCircle, Archive, Printer, Receipt,
   RefreshCw, Trash2, Minus, RotateCcw, LogOut,
   Search, Tag, Grid3x3, Percent, DollarSign,
-  User, BarChart2, ArrowLeftRight, FileText, Package,
+  User, BarChart2, ArrowLeftRight, FileText, Package, ScanBarcode,
   Lock, Layers, Save, Hash, Plus, Crown, SlidersHorizontal, Truck, Monitor,
+  Wallet, MessageSquare,
 } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { openDisplayWindow, isWindowOpen, closeDisplayWindow, setSunmiDisplayPlugin } from '../../lib/customerDisplay'
@@ -42,7 +43,7 @@ const SunmiCustomerDisplay = registerPlugin('SunmiCustomerDisplay', {
 import { enrichCartItemsForSave } from '../../lib/cartLine'
 import { isGroupBrowseMode } from '../../lib/groupUtils'
 import { closeAndFocusBarcode } from '../../lib/posFocus'
-import { posAskPrintCopies, posNotifyError, posNotifySuccess, posNotifyWarning } from '../../lib/posNotify'
+import { posAskPrintCopies, posNotifyError, posNotifyInfo, posNotifySuccess, posNotifyWarning } from '../../lib/posNotify'
 import { holdDataFromPosState, printHoldReceipt } from '../../lib/printHoldReceipt'
 import { deliveryDataFromPosState, printDeliveryReceipt } from '../../lib/printDeliveryReceipt'
 
@@ -69,14 +70,14 @@ const FEATURE_BUTTONS = [
   { label: 'Group',        icon: Grid3x3,          color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
   { label: 'Packet Scan',  icon: Package,       color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
   { label: 'Discount',     icon: Percent,       color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
-  { label: 'Price Enquiry',icon: Search,        color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
+  { label: 'Price Enquiry',icon: ScanBarcode,        color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
   { label: 'Currency',     icon: DollarSign,    color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
   { label: 'Sales Man',    icon: User,          color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
   { label: 'Privilege',   icon: Crown,         color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
   { label: 'Report',       icon: BarChart2,     color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
-  { label: 'Cash In/Out',  icon: ArrowLeftRight,color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
+  { label: 'Cash In/Out',  icon: Wallet,color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
   { label: 'Receipt',      icon: FileText,      color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
-  { label: 'Comments',     icon: FileText,      color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
+  { label: 'Comments',     icon: MessageSquare,      color: 'var(--purple)', bg: 'var(--purple-bg)', border: 'var(--purple-border)' },
   { label: 'NP Scale',     icon: Hash,          color: 'var(--green)',  bg: 'var(--green-bg)',  border: 'var(--green-border)' },
   { label: 'Lock',         icon: Lock,          color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)' },
   { label: 'Price Level',  icon: Layers,        color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
@@ -503,13 +504,27 @@ export function FeatureGrid() {
         const isDelSettle   = btn.label === 'Settlement'
         const isSalesMan    = btn.label === 'Sales Man'
         const isDiscount    = btn.label === 'Discount' || btn.label === 'Disc'
+        const isNPScale = btn.label === 'NP Scale'
         const handleClick =
           isGroup       ? () => setGroupOpen(true) :
           isLookup      ? () => setLookupOpen(true) :
           isPrivilege   ? () => setPrivilegeOpen(true) :
           isPriceEnq    ? () => setPriceEnqOpen(true) :
-          isPriceChange ? () => { if (selectedRowKey) setPriceChangeOpen(true) } :
-          isQtyChange   ? () => { if (selectedRowKey) setQtyChangeOpen(true) } :
+          isPriceChange ? () => {
+            if (!selectedRowKey) {
+              posNotifyWarning('Select a row first', { title: 'Price Change' })
+              return
+            }
+            setPriceChangeOpen(true)
+          } :
+          isQtyChange ? () => {
+            if (!selectedRowKey) {
+              posNotifyWarning('Select a row first', { title: 'Qty Change' })
+              return
+            }
+            setQtyChangeOpen(true)
+          } :
+        
           isPacketScan  ? () => setPacketScanOpen(true) :
           isCashInOut   ? () => setCashInOutOpen(true) :
           isReport      ? () => setReportsOpen(true) :
@@ -520,7 +535,19 @@ export function FeatureGrid() {
           isSaveDelivery ? () => openDeliveryDetails(true) :
           isDelSettle   ? () => setDeliverySettleOpen(true) :
           isSalesMan    ? () => setSalesManOpen(true) :
-          isDiscount    ? () => { if (cartItems.length) setBillDiscountOpen(true) } :
+          isDiscount ? () => {
+            if (!cartItems.length) {
+              posNotifyWarning('Cart is empty', { title: 'Discount' })
+              return
+            }
+            setBillDiscountOpen(true)
+          } :
+          isNPScale ? () => {
+            posNotifyInfo('Weighing scale requires the Android/Sunmi hardware build', {
+              title: 'NP Scale',
+              duration: 1800,
+            })
+          } :
           undefined
         return (
           <button

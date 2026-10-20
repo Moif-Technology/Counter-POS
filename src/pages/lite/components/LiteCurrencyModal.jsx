@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Coins } from 'lucide-react'
+import { X, DollarSign } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
 import Numpad from './common/NeumorphicNumpad'
 import { fmtMoney } from '../../../lib/currencyFormat'
@@ -86,7 +86,7 @@ export default function LiteCurrencyModal({ onClose }) {
               background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Coins size={16} color="#fff" />
+              <DollarSign size={16} color="#fff" />
             </div>
             <div>
               <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>Exchange</p>
