@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Keyboard, Grid3X3 } from 'lucide-react'
-import NeumorphicKeyboard from './common/NeumorphicKeyboard'
+import NeumorphicKeyboard from '../../../components/common/NeumorphicKeyboard'
 import { fmtMoney } from '../../../lib/currencyFormat'
-import { LITE_GROUPS } from '../liteProducts'
+import { LITE_GROUPS } from '../data/liteProducts'
 import { groupChipStyle } from '../liteStyles'
 
 export default function LiteSearchPanel({

@@ -1,5 +1,5 @@
 import { ChevronDown, Keyboard, User } from 'lucide-react'
-import NeumorphicKeyboard from './common/NeumorphicKeyboard'
+import NeumorphicKeyboard from '../../../components/common/NeumorphicKeyboard'
 import { fmtMoney } from '../../../lib/currencyFormat'
 import { PM, normalizePaymentMode } from '../../../lib/paymentModes'
 
