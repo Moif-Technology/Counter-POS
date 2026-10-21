@@ -128,13 +128,8 @@ export default function LoginPage() {
           pointerEvents: 'none',
         }} />
 
-        {/* Brand — the wordmark is dark, so it sits on a white card */}
-        <div style={{
-          background: '#fff', borderRadius: 20, padding: '22px 26px',
-          position: 'relative', boxShadow: '0 12px 36px rgba(0,0,0,0.28)',
-        }}>
-          <BrandLogo variant="stacked" height={150} />
-        </div>
+        {/* Brand — reversed (white) logo straight on the brand panel */}
+        <BrandLogo variant="stacked" tone="white" height={190} style={{ position: 'relative' }} />
 
         <div style={{ width: 40, height: 1, background: 'rgba(255,255,255,0.2)', margin: '28px 0', position: 'relative' }} />
 
