@@ -16,7 +16,7 @@ export default function LiteQtyKeypad({ selectedRowKey, qtyBuffer, onPressKey, o
           {qtyBuffer || '—'}
         </span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'clamp(4px, 1vh, 8px)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'clamp(4px, 1vh, 8px)' }}>
         {NUMPAD_KEYS.map(k => {
           const isAction = k === '⌫' || k === 'C'
           return (
@@ -25,7 +25,7 @@ export default function LiteQtyKeypad({ selectedRowKey, qtyBuffer, onPressKey, o
               className="lite-btn"
               onClick={() => onPressKey(k)}
               style={{
-                padding: 'clamp(9px, 2.3vh, 22px) 0', borderRadius: 12,
+                padding: 'clamp(8px, 1.5vh, 20px) 0', borderRadius: 12,
                 border: `1px solid ${isAction ? 'var(--red-border)' : 'var(--border)'}`,
                 background: 'var(--surface-2)',
                 color: isAction ? 'var(--red)' : 'var(--text-1)',

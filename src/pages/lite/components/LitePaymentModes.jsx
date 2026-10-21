@@ -16,7 +16,7 @@ export default function LitePaymentModes({ paymentMode, onSelect }) {
       <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 'clamp(3px, 0.8vh, 6px)' }}>
         Payment
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 'clamp(4px, 0.8vh, 6px)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 'clamp(4px, 0.8vh, 6px)' }}>
         {PAYMENT_MODES.map(({ key, label, icon: Icon }) => {
           const active = paymentMode === key
           return (

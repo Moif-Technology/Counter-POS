@@ -12,6 +12,9 @@
   --topbar-h:   clamp(46px, 6vh, 58px);
   --preview-h:  clamp(32px, 4vh, 40px);
   --fn-h:       clamp(96px, 12vh, 116px);
+  --numpad-row-h:   58px;   /* POS numpad key height */
+  --numpad-qty-h:   38px;
+  --numpad-enter-h: 52px;
 
   /* Colours live in styles/colors.css */
 
@@ -192,10 +195,34 @@ button { cursor: pointer; border: none; background: none; }
   .header-hide-md { display: none !important; }
 }
 
+/* ─── Items grid — drop secondary columns as the centre narrows ─ */
+@media (max-width: 1180px) {
+  .pg-col-barcode, .pg-col-_sub, .pg-col-vatPer { display: none !important; }
+}
+
+/* ─── Short POS screens (1366×768, 1280×800, 1280×720…) ─────────
+   Shorter numpad keys keep Paid / Balance / Total visible above. */
+@media (max-height: 820px) {
+  :root {
+    --numpad-row-h:   40px;
+    --numpad-qty-h:   32px;
+    --numpad-enter-h: 40px;
+  }
+}
+@media (max-height: 740px) {
+  :root {
+    --numpad-row-h:   34px;
+    --numpad-qty-h:   30px;
+    --numpad-enter-h: 38px;
+    --fn-h:           88px;
+  }
+  .pos-footer { display: none; }
+}
+
 /* ─── Responsive — 1024px (tablet/small touch) ──────────────── */
 @media (max-width: 1024px) {
   :root {
-    --right-w:   220px;
+    --right-w:   260px;
     --sidebar-w: 56px;
     --header-h:  46px;
     --fn-h:      92px;

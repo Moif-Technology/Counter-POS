@@ -31,7 +31,7 @@ export default function LiteSearchPanel({
           onChange={e => setQuery(e.target.value)}
           placeholder="Search item or scan barcode..."
           style={{
-            flex: 1, height: 'clamp(38px, 6vh, 44px)', boxSizing: 'border-box', padding: '0 14px', borderRadius: 'var(--r-md)',
+            flex: 1, minWidth: 0, height: 'clamp(38px, 6vh, 44px)', boxSizing: 'border-box', padding: '0 14px', borderRadius: 'var(--r-md)',
             border: '1.5px solid var(--border)', background: 'var(--surface)',
             color: 'var(--text-1)', fontSize: 'clamp(13px, 1.1vw, 15px)', outline: 'none',
           }}

@@ -7,7 +7,7 @@ import ItemDetailModal from '../../../modals/ItemDetailModal'
 import { closeAndFocusBarcode } from '../../../lib/posFocus'
 
 const COLS = [
-  { key: 'slNo',        label: '#',         w: 36,  align: 'center' },
+  { key: 'slNo',        label: '#',         w: 44,  align: 'center' },
   { key: 'barcode',     label: 'Barcode',   w: 110 },
   { key: 'description', label: 'Item',      flex: true },
   { key: 'qty',         label: 'Qty',       w: 88,  align: 'center' },
@@ -43,7 +43,7 @@ export default function ItemsGrid() {
         flexShrink: 0,
       }}>
         {COLS.map(col => (
-          <div key={col.key} style={{
+          <div key={col.key} className={`pg-col-${col.key}`} style={{
             padding: '8px 10px',
             textAlign: col.align || 'left',
             fontSize: 10, fontWeight: 700, letterSpacing: 0.6,
@@ -179,7 +179,7 @@ export default function ItemsGrid() {
                 const isDesc  = col.key === 'description'
 
                 return (
-                  <div key={col.key} style={{
+                  <div key={col.key} className={`pg-col-${col.key}`} style={{
                     padding: '6px 10px',
                     textAlign: col.align || 'left',
                     fontSize: 12,

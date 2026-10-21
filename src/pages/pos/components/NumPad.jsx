@@ -14,6 +14,8 @@ import { BILL_PAYMENT_MODES, PM, isCashTenderMode } from '../../../lib/paymentMo
 import { NEU_RAISED, NEU_PRESSED, neuPress, neuRelease } from '../../../components/common/neumorphic'
 
 const ICONS = { [PM.CASH]: Banknote, [PM.CREDITCARD]: CreditCard, [PM.CREDIT]: UserCheck, [PM.MULTIPAYMENT]: Layers }
+// Short button labels (same as Lite); the mode keys stay as-is.
+const LABELS = { [PM.CASH]: 'Cash', [PM.CREDITCARD]: 'Card', [PM.CREDIT]: 'Credit', [PM.MULTIPAYMENT]: 'Multi' }
 const STYLES = {
   [PM.CASH]:        { color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
   [PM.CREDITCARD]:  { color: 'var(--blue)',   bg: 'var(--blue-bg)',   border: 'var(--blue-border)' },
@@ -33,7 +35,7 @@ function enterPress(e) { e.currentTarget.style.boxShadow = 'inset 2px 2px 6px rg
 
 const NUM_BTN = {
   height: '100%', width: '100%', borderRadius: 12,
-  border: '1px solid var(--border)', background: 'var(--surface)',
+  border: '1px solid var(--border)', background: 'var(--surface-2)',
   color: 'var(--text-1)', fontSize: 24, fontWeight: 700, cursor: 'pointer',
   fontFamily: 'inherit',
   boxShadow: NEU_RAISED, transition: 'box-shadow 0.1s, transform 0.07s',
@@ -71,7 +73,7 @@ export default function NumPad({ onEnter }) {
   }
 
   /* Shared row height so 4 rows fill evenly */
-  const rowH = 58
+  const rowH = 'var(--numpad-row-h)'  // shrinks on short screens (index.css)
 
   return (
   <>
@@ -90,10 +92,10 @@ export default function NumPad({ onEnter }) {
         onClose={closeAndFocusBarcode(() => setMultiPayModalOpen(false))}
       />
     )}
-    <div style={{ padding: '10px 10px 12px', background: 'var(--surface)' }}>
+    <div style={{ padding: '10px 10px 12px', background: 'var(--surface-2)' }}>
 
       {/* 4-column grid: 3 number cols + 1 payment col */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8 }}>
         {NUMBER_ROWS.map((row, ri) => {
           const mode = BILL_PAYMENT_MODES[ri]
           const active = paymentMode === mode.key
@@ -124,7 +126,7 @@ export default function NumPad({ onEnter }) {
               style={{
                 height: rowH, borderRadius: 12,
                 border: `1px solid ${active ? style.border : 'var(--border)'}`,
-                background: active ? style.bg : 'var(--surface)',
+                background: active ? style.bg : 'var(--surface-2)',
                 color: active ? style.color : 'var(--text-3)',
                 cursor: 'pointer',
                 display: 'flex', flexDirection: 'column',
@@ -133,7 +135,7 @@ export default function NumPad({ onEnter }) {
                 /* Selected mode stays "pressed in" */
                 boxShadow: active ? NEU_PRESSED : NEU_RAISED,
                 transition: 'box-shadow 0.1s, transform 0.07s, color 0.12s',
-                lineHeight: 1,
+                lineHeight: 1, minWidth: 0,
                 userSelect: 'none', WebkitTapHighlightColor: 'transparent',
               }}
               onMouseEnter={e => { if (!active) e.currentTarget.style.color = style.color }}
@@ -142,7 +144,7 @@ export default function NumPad({ onEnter }) {
               onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
             >
               <Icon size={13} />
-              <span>{mode.label}</span>
+              <span style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 2px' }}>{LABELS[mode.key] ?? mode.label}</span>
             </button>,
           ]
         })}
@@ -152,10 +154,10 @@ export default function NumPad({ onEnter }) {
       <button
         onClick={togglePosQtyMode}
         style={{
-          width: '100%', height: 38, marginTop: 8,
+          width: '100%', height: 'var(--numpad-qty-h)', marginTop: 8,
           borderRadius: 12,
           border: '1px solid var(--brand-border)',
-          background: 'var(--surface)',
+          background: 'var(--surface-2)',
           color: 'var(--brand)',
           fontSize: 12, fontWeight: 800, letterSpacing: 2,
           cursor: 'pointer',
@@ -177,7 +179,7 @@ export default function NumPad({ onEnter }) {
       <button
         onClick={onEnter}
         style={{
-          width: '100%', height: 52, marginTop: 8,
+          width: '100%', height: 'var(--numpad-enter-h)', marginTop: 8,
           borderRadius: 12,
           background: 'linear-gradient(145deg, var(--brand) 0%, var(--brand-2) 100%)',
           border: 'none',
