@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { MonitorX } from 'lucide-react'
 
 const LOCK = 'moif-counter-pos'
+let lockRequested = false
 
 /**
  * One Counter-POS per browser. Tabs of the same browser share the device token
@@ -25,7 +26,11 @@ export default function SingleTabGuard({ children }) {
   }
 
   useEffect(() => {
-    if (supported) hold({ ifAvailable: true })
+    // StrictMode runs effects twice in dev; a second request would find this
+    // tab's own lock held and block itself, so ask only once per tab.
+    if (!supported || lockRequested) return
+    lockRequested = true
+    hold({ ifAvailable: true })
   }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   if (state === 'owner') return children

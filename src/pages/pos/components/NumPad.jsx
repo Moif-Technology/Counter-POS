@@ -33,7 +33,7 @@ function enterPress(e) { e.currentTarget.style.boxShadow = 'inset 2px 2px 6px rg
 
 const NUM_BTN = {
   height: '100%', width: '100%', borderRadius: 12,
-  border: '1px solid var(--border)', background: 'var(--surface-2)',
+  border: '1px solid var(--border)', background: 'var(--surface)',
   color: 'var(--text-1)', fontSize: 24, fontWeight: 700, cursor: 'pointer',
   fontFamily: 'inherit',
   boxShadow: NEU_RAISED, transition: 'box-shadow 0.1s, transform 0.07s',
@@ -90,7 +90,7 @@ export default function NumPad({ onEnter }) {
         onClose={closeAndFocusBarcode(() => setMultiPayModalOpen(false))}
       />
     )}
-    <div style={{ padding: '10px 10px 12px', background: 'var(--surface-2)' }}>
+    <div style={{ padding: '10px 10px 12px', background: 'var(--surface)' }}>
 
       {/* 4-column grid: 3 number cols + 1 payment col */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
@@ -124,7 +124,7 @@ export default function NumPad({ onEnter }) {
               style={{
                 height: rowH, borderRadius: 12,
                 border: `1px solid ${active ? style.border : 'var(--border)'}`,
-                background: active ? style.bg : 'var(--surface-2)',
+                background: active ? style.bg : 'var(--surface)',
                 color: active ? style.color : 'var(--text-3)',
                 cursor: 'pointer',
                 display: 'flex', flexDirection: 'column',
@@ -155,7 +155,7 @@ export default function NumPad({ onEnter }) {
           width: '100%', height: 38, marginTop: 8,
           borderRadius: 12,
           border: '1px solid var(--brand-border)',
-          background: 'var(--surface-2)',
+          background: 'var(--surface)',
           color: 'var(--brand)',
           fontSize: 12, fontWeight: 800, letterSpacing: 2,
           cursor: 'pointer',
