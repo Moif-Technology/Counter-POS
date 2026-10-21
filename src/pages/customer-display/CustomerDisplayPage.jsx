@@ -34,7 +34,7 @@ const BRAND_2     = 'var(--brand-2)'
 const BRAND_LIGHT = 'var(--brand-light)'
 
 // ── Light theme tokens ────────────────────────────────────────────
-const BG       = 'var(--palette-10)'
+const BG       = 'var(--palette-11)'
 const SURFACE  = '#ffffff'
 const BORDER   = 'var(--border)'
 const TEXT_1   = 'var(--palette-1)'
@@ -117,7 +117,7 @@ function IdleScreen({ data }) {
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      background: `linear-gradient(160deg, var(--palette-10) 0%, var(--palette-11) 50%, var(--palette-10) 100%)`,
+      background: BG,
     }}>
       <div style={{
         width: 96, height: 96, borderRadius: 22,
@@ -217,7 +217,7 @@ function ScanScreen({ data }) {
                 display: 'grid', gridTemplateColumns: '1fr 60px 110px 110px',
                 padding: '11px 24px',
                 borderBottom: `1px solid ${BORDER}`,
-                background: isLast ? 'var(--palette-10)' : (idx % 2 === 0 ? SURFACE : BG),
+                background: isLast ? 'var(--palette-10)' : (idx % 2 === 0 ? SURFACE : 'var(--palette-10)'),
                 borderLeft: isLast ? `3px solid ${BRAND}` : '3px solid transparent',
                 transition: 'background 0.2s',
               }}>
@@ -278,7 +278,7 @@ function SavedScreen({ data }) {
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(160deg, var(--palette-10) 0%, var(--palette-11) 50%, var(--palette-10) 100%)',
+      background: BG,
       gap: 20,
     }}>
       <div style={{

@@ -24,7 +24,7 @@
   /* ── Theme tokens (used across all components) ── */
 
   /* Surfaces */
-  --bg:        var(--palette-10);
+  --bg:        var(--palette-11);  /* page background: white */
   --surface:   var(--palette-11);
   --surface-2: var(--palette-10);
   --surface-3: var(--palette-9);
