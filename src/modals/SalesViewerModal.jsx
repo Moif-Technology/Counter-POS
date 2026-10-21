@@ -284,7 +284,7 @@ function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, p
             <div style={{ border: '1.5px solid var(--border)', borderRadius: 10, overflow: 'hidden', marginBottom: 14 }}>
               <div style={{
                 display: 'grid', gridTemplateColumns: gridCols,
-                background: 'var(--surface-2)', padding: '8px 10px', borderBottom: '1.5px solid var(--border)',
+                background: 'var(--table-head-bg)', padding: '8px 10px', borderBottom: '1.5px solid var(--border)',
               }}>
                 {['Code', 'Description', 'Qty', 'Price', 'VAT', 'Disc', 'Total'].map(h => (
                   <span key={h} style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</span>
@@ -543,7 +543,7 @@ export default function SalesViewerModal({
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '0 16px 12px' }}>
         <div style={{
           display: 'grid', gridTemplateColumns: GRID_COLS,
-          background: 'var(--surface-2)', padding: '9px 10px', borderRadius: '10px 10px 0 0',
+          background: 'var(--table-head-bg)', padding: '9px 10px', borderRadius: '10px 10px 0 0',
           border: '1.5px solid var(--border)', borderBottom: 'none', marginTop: 12,
         }}>
           {['Bill Date', 'Bill No', 'Bill Time', 'Payment', 'Customer', 'Amount', 'Close No'].map(h => (

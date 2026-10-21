@@ -149,7 +149,7 @@ export default function PriceEnquiryModal({ onClose, searchFn = null }) {
             {/* Heading */}
             <div style={{
               display: 'grid', gridTemplateColumns: COLS,
-              background: 'var(--brand-bg)', borderBottom: '1px solid rgba(0,0,0,0.18)',
+              background: 'var(--table-head-bg)', borderBottom: '1px solid rgba(0,0,0,0.18)',
               padding: '8px 10px', flexShrink: 0, borderRadius: '8px 8px 0 0',
             }}>
               {HEADS.map(h => (

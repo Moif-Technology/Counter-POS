@@ -38,7 +38,7 @@ export default function ItemsGrid() {
       {/* ── Column headers ──────────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center',
-        background: 'var(--brand-bg)',
+        background: 'var(--table-head-bg)',
         borderBottom: '1.5px solid var(--brand-border)',
         flexShrink: 0,
       }}>

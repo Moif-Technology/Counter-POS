@@ -238,7 +238,7 @@ export default function StaffWiseReportModal({ onClose, reportFn = null }) {
               <div style={{ border: '1.5px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
-                    <tr style={{ background: 'var(--surface-2)' }}>
+                    <tr style={{ background: 'var(--table-head-bg)' }}>
                       {['#', 'Staff Name', 'Bills', 'Gross Amt', 'Discount', 'Round Off', 'Net Amount', 'Cash', 'Card', 'Credit'].map((h, i) => (
                         <th key={h} style={{
                           padding: '9px 10px', fontWeight: 700, fontSize: 10.5,

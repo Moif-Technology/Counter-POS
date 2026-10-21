@@ -36,6 +36,7 @@
   --surface:   var(--palette-11);
   --surface-2: var(--palette-10);
   --surface-3: var(--palette-9);
+  --table-head-bg: var(--palette-11);  /* table column-header rows: white */
 
   /* Borders */
   --border:    var(--palette-9);

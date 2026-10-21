@@ -227,7 +227,7 @@ export default function CreditSettlementModal({
               <div style={{ flex: 1, overflow: 'hidden', border: '1.5px solid var(--brand-border)', borderRadius: 10 }}>
                 <div style={{
                   display: 'grid', gridTemplateColumns: '100px 1fr 100px',
-                  background: 'var(--brand-bg)', padding: '8px 12px', borderBottom: '1px solid var(--brand-border)',
+                  background: 'var(--table-head-bg)', padding: '8px 12px', borderBottom: '1px solid var(--brand-border)',
                 }}>
                   {['Code', 'Customer Name', 'O/S Balance'].map(h => (
                     <span key={h} style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase' }}>{h}</span>

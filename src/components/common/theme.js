@@ -298,7 +298,7 @@ export const table = {
     borderRadius: 10,
   },
   heading: {
-    background: colors.brandBg,
+    background: 'var(--table-head-bg)',
     borderBottom: `1.5px solid ${colors.brandBorder}`,
     padding: '8px 12px', flexShrink: 0,
     borderRadius: '8px 8px 0 0',

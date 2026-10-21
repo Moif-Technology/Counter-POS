@@ -91,7 +91,7 @@ export default function Table({
       <div style={{
         display: 'grid',
         gridTemplateColumns: columns.map(c => c.width ? `${c.width}px` : '1fr').join(' '),
-        background: 'var(--brand-bg)',
+        background: 'var(--table-head-bg)',
         borderBottom: '1px solid rgba(0,0,0,0.18)',
         padding: '8px 12px',
         flexShrink: 0,

@@ -116,7 +116,7 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
             {/* Heading */}
             <div style={{
               display: 'grid', gridTemplateColumns: '1fr 1fr 2fr',
-              background: 'var(--brand-bg)', borderBottom: '1.5px solid var(--brand-border)',
+              background: 'var(--table-head-bg)', borderBottom: '1.5px solid var(--brand-border)',
               padding: '8px 12px', flexShrink: 0,
               borderRadius: '8px 8px 0 0',
             }}>

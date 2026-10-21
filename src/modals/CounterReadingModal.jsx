@@ -395,7 +395,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
           }}>
             <div style={{
               display: 'grid', gridTemplateColumns: '58px 56px 82px', columnGap: 8,
-              padding: '8px 12px', background: 'var(--brand-bg)',
+              padding: '8px 12px', background: 'var(--table-head-bg)',
               borderBottom: '1px solid rgba(0,0,0,0.1)', flexShrink: 0,
             }}>
               {['Denom', 'Count', 'Amount'].map((h, i) => (

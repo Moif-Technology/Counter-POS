@@ -268,7 +268,7 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
                 <div style={{
                   display: 'grid', gridTemplateColumns: '1fr 120px 36px',
                   padding: '8px 12px',
-                  background: 'var(--brand-bg)', borderBottom: '1px solid rgba(0,0,0,0.12)',
+                  background: 'var(--table-head-bg)', borderBottom: '1px solid rgba(0,0,0,0.12)',
                   borderRadius: '9px 9px 0 0', flexShrink: 0,
                 }}>
                   <span style={headCell}>Account Name</span>

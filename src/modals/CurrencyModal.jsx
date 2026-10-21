@@ -64,7 +64,7 @@ export default function CurrencyModal({ onClose }) {
           <div style={{
             display: 'grid', gridTemplateColumns: '48px 1fr 80px',
             padding: '10px 16px',
-            background: 'var(--brand-bg)', borderBottom: '1px solid rgba(0,0,0,0.12)',
+            background: 'var(--table-head-bg)', borderBottom: '1px solid rgba(0,0,0,0.12)',
             flexShrink: 0,
           }}>
             {['SL #', 'Currency Name', 'Rate'].map((h, i) => (

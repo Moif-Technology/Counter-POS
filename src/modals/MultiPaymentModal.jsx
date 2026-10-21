@@ -478,7 +478,7 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
           }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border)' }}>
+                <tr style={{ background: 'var(--table-head-bg)', borderBottom: '1px solid var(--border)' }}>
                   {['#', 'Ref', 'Mode', 'Amount', 'Tip'].map(h => (
                     <th
                       key={h}

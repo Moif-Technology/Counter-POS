@@ -101,7 +101,7 @@ export default function LiteRecallModal({ heldBills, onClose, onRecall, onCancel
           <div style={{
             display: 'flex', alignItems: 'center',
             padding: '0 12px', height: 34, flexShrink: 0,
-            background: 'var(--brand-bg)', borderBottom: '1.5px solid var(--brand-border)',
+            background: 'var(--table-head-bg)', borderBottom: '1.5px solid var(--brand-border)',
           }}>
             {[
               { label: 'Hold No', w: 52 },
@@ -175,7 +175,7 @@ export default function LiteRecallModal({ heldBills, onClose, onRecall, onCancel
           <div style={{
             display: 'flex', alignItems: 'center',
             padding: '0 12px', height: 34, flexShrink: 0,
-            background: 'var(--brand-bg)', borderBottom: '1.5px solid var(--brand-border)',
+            background: 'var(--table-head-bg)', borderBottom: '1.5px solid var(--brand-border)',
           }}>
             {ITEM_COLS.map(col => (<div key={col.key} style={thStyle(col)}>{col.label}</div>))}
           </div>

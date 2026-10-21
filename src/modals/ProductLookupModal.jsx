@@ -212,7 +212,7 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
         display: 'flex', alignItems: 'center',
         padding: '0 14px', height: 34, flexShrink: 0,
         borderBottom: '1.5px solid var(--brand-border)',
-        background: 'var(--brand-bg)',
+        background: 'var(--table-head-bg)',
       }}>
         {COLUMNS.map(col => (
           <div

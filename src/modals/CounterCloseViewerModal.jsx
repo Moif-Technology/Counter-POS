@@ -257,7 +257,7 @@ export default function CounterCloseViewerModal({ onClose, historyFn = null, clo
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '0 16px 12px' }}>
         <div style={{
           display: 'grid', gridTemplateColumns: GRID_COLS,
-          background: 'var(--surface-2)', padding: '9px 10px', borderRadius: '10px 10px 0 0',
+          background: 'var(--table-head-bg)', padding: '9px 10px', borderRadius: '10px 10px 0 0',
           border: '1.5px solid var(--border)', borderBottom: 'none', marginTop: 12,
         }}>
           {['Close Date', 'Close No', 'Type', 'Bills', 'Gross', 'To Collect', 'Collected', 'Diff'].map(h => (

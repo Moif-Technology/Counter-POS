@@ -125,7 +125,7 @@ export default function ClearHoldBillModal({ onClose }) {
             <div style={{ border: '1.5px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
-                  <tr style={{ background: 'var(--surface-2)' }}>
+                  <tr style={{ background: 'var(--table-head-bg)' }}>
                     {['#', 'Hold Ref / No', 'Customer', 'Time', 'Items', 'Amount', 'Action'].map((h, i) => (
                       <th key={h} style={{
                         padding: '9px 10px', fontWeight: 700, fontSize: 10.5,
