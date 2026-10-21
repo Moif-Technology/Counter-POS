@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { CalendarDays } from 'lucide-react'
 import Calendar from './Calendar'
 
@@ -18,11 +19,18 @@ import Calendar from './Calendar'
  */
 export default function DatePicker({ value, onChange, label, placement = 'top', fieldStyle }) {
   const [open, setOpen] = useState(false)
-  const wrapRef = useRef(null)
+  const [rect, setRect] = useState(null)
+  const fieldRef = useRef(null)
+  const popRef = useRef(null)
 
   useEffect(() => {
     if (!open) return undefined
-    const onDown = e => { if (!wrapRef.current?.contains(e.target)) setOpen(false) }
+    // The calendar is portalled to <body>, so it isn't clipped by a modal's
+    // overflow; keep it anchored to the field.
+    const place = () => setRect(fieldRef.current?.getBoundingClientRect() ?? null)
+    const onDown = e => {
+      if (!fieldRef.current?.contains(e.target) && !popRef.current?.contains(e.target)) setOpen(false)
+    }
     // Capture phase so this runs before (and stops) a modal's own Escape handler.
     const onKey = e => {
       if (e.key !== 'Escape') return
@@ -31,26 +39,34 @@ export default function DatePicker({ value, onChange, label, placement = 'top', 
     }
     document.addEventListener('mousedown', onDown)
     window.addEventListener('keydown', onKey, true)
+    window.addEventListener('resize', place)
+    window.addEventListener('scroll', place, true)
     return () => {
       document.removeEventListener('mousedown', onDown)
       window.removeEventListener('keydown', onKey, true)
+      window.removeEventListener('resize', place)
+      window.removeEventListener('scroll', place, true)
     }
   }, [open])
 
-  const popover = placement === 'top'
-    ? { bottom: 'calc(100% + 6px)', boxShadow: '0 -8px 40px rgba(0,0,0,0.14)' }
-    : { top: 'calc(100% + 6px)', boxShadow: '0 8px 40px rgba(0,0,0,0.14)' }
+  const popover = rect && (placement === 'top'
+    ? { bottom: window.innerHeight - rect.top + 6, boxShadow: '0 -8px 40px rgba(0,0,0,0.14)' }
+    : { top: rect.bottom + 6, boxShadow: '0 8px 40px rgba(0,0,0,0.14)' })
 
   return (
-    <div ref={wrapRef} style={{ display: 'flex', flexDirection: 'column', gap: 4, position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {label && (
         <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>
           {label}
         </label>
       )}
       <button
+        ref={fieldRef}
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => {
+          setRect(fieldRef.current.getBoundingClientRect())
+          setOpen(o => !o)
+        }}
         style={{
           height: 36, borderRadius: 8, width: '100%', boxSizing: 'border-box',
           border: `1.5px solid ${open ? 'var(--brand)' : 'var(--border)'}`,
@@ -67,10 +83,19 @@ export default function DatePicker({ value, onChange, label, placement = 'top', 
         </span>
         <CalendarDays size={15} color={open ? 'var(--brand)' : 'var(--text-4)'} />
       </button>
-      {open && (
-        <div style={{ position: 'absolute', left: 0, right: 0, zIndex: 200, borderRadius: 12, overflow: 'hidden', ...popover }}>
+      {open && popover && createPortal(
+        // data-pos-overlay: POS screens treat clicks here as modal clicks (no barcode refocus).
+        <div
+          ref={popRef}
+          data-pos-overlay
+          style={{
+            position: 'fixed', left: rect.left, width: rect.width, zIndex: 5000,
+            borderRadius: 12, overflow: 'hidden', ...popover,
+          }}
+        >
           <Calendar value={value} onChange={d => { onChange?.(d); setOpen(false) }} />
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )
