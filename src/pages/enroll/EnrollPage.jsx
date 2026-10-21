@@ -4,6 +4,7 @@ import { Monitor, History, Check, AlertTriangle } from 'lucide-react'
 import { api } from '../../lib/api'
 import { getOrCreateDeviceToken, saveEnrollment, getPreviousEnrollment } from '../../lib/device'
 import { posNotifyError, posNotifyWarning } from '../../lib/posNotify'
+import BrandLogo from '../../components/common/BrandLogo'
 
 const inputStyle = {
   width: '100%', padding: '10px 13px', borderRadius: 8,
@@ -137,6 +138,8 @@ export default function EnrollPage() {
         padding: '40px 36px',
         boxShadow: 'var(--shadow-md)',
       }}>
+        <BrandLogo variant="horizontal" height={46} style={{ margin: '0 auto 28px' }} />
+
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
           <div style={{

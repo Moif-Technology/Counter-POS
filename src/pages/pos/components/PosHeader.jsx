@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import {
-  Monitor, Calendar, Clock, ShoppingCart, ChevronRight, ChevronDown,
+  Monitor, Calendar, Clock, ChevronRight, ChevronDown,
   Search, Maximize2, Bell, User, Zap,
 } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
 import { LITE_VERSION_ENABLED } from '../../../config/appConfig'
+import BrandLogo from '../../../components/common/BrandLogo'
 
 /* ── Tiny header chip ─────────────────────────────────────────── */
 function HeaderChip({ icon: Icon, label, dropdown }) {
@@ -81,12 +82,13 @@ export default function PosHeader({ onOpenLite }) {
 
       {/* Brand */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        {/* Vendo mark on a white tile so it stands out on the brand-coloured bar */}
         <div style={{
-          width: 32, height: 32, borderRadius: 9, flexShrink: 0,
-          background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
+          width: 34, height: 34, borderRadius: 9, flexShrink: 0, background: '#fff',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.18)',
         }}>
-          <ShoppingCart size={16} color="#fff" />
+          <BrandLogo variant="icon" height={26} />
         </div>
         <span style={{ fontSize: 14, fontWeight: 800, color: '#fff', letterSpacing: 0.3, whiteSpace: 'nowrap' }}>
           {shopName || 'Counter POS'}

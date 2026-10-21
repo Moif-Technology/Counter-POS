@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { getEnrollment, clearEnrollment, getOrCreateDeviceToken } from '../../lib/device'
 import { posNotifyError, posNotifyWarning } from '../../lib/posNotify'
 import { LITE_VERSION_ENABLED, LITE_VERSION_PIN } from '../../config/appConfig'
+import BrandLogo from '../../components/common/BrandLogo'
 
 const NUMPAD = ['7','8','9','4','5','6','1','2','3','C','0','⌫']
 
@@ -127,26 +128,12 @@ export default function LoginPage() {
           pointerEvents: 'none',
         }} />
 
+        {/* Brand — the wordmark is dark, so it sits on a white card */}
         <div style={{
-          width: 72, height: 72, borderRadius: 20,
-          background: 'rgba(255,255,255,0.14)',
-          border: '1.5px solid rgba(255,255,255,0.25)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginBottom: 28, position: 'relative',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+          background: '#fff', borderRadius: 20, padding: '22px 26px',
+          position: 'relative', boxShadow: '0 12px 36px rgba(0,0,0,0.28)',
         }}>
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-            <line x1="3" x2="21" y1="6" y2="6"/>
-            <path d="M16 10a4 4 0 0 1-8 0"/>
-          </svg>
-        </div>
-
-        <div style={{ color: '#fff', fontSize: 30, fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1, position: 'relative' }}>
-          MOIF POS
-        </div>
-        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 500, letterSpacing: 2, marginTop: 8, textTransform: 'uppercase', position: 'relative' }}>
-          Counter Sales System
+          <BrandLogo variant="stacked" height={150} />
         </div>
 
         <div style={{ width: 40, height: 1, background: 'rgba(255,255,255,0.2)', margin: '28px 0', position: 'relative' }} />
