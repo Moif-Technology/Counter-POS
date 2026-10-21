@@ -67,6 +67,7 @@ function useNow() {
 /** POS top bar: shop, counter / date / time, bill no, Lite switch, cashier. */
 export default function PosHeader({ onOpenLite }) {
   const cashier   = usePosStore(s => s.cashier)
+  const cashierName = cashier?.staffName ?? cashier?.name ?? cashier?.staffCode ?? ''
   const counterNo = usePosStore(s => s.counterNo)
   const billNo    = usePosStore(s => s.billNo)
   const shopName  = usePosStore(s => s.shopName)
@@ -150,17 +151,24 @@ export default function PosHeader({ onOpenLite }) {
 
         <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.18)' }} />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span className="header-hide-sm" style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: 90, textOverflow: 'ellipsis' }}>
-            {cashier?.name}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }} title={`Logged in: ${cashierName}${cashier?.roleName ? ` (${cashier.roleName})` : ''}`}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.15, maxWidth: 140, minWidth: 0 }}>
+            <span style={{ fontSize: 12, color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: '100%', textOverflow: 'ellipsis' }}>
+              {cashierName}
+            </span>
+            {cashier?.roleName && (
+              <span className="header-hide-sm" style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.6)', fontWeight: 600, letterSpacing: 0.3, whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: '100%', textOverflow: 'ellipsis' }}>
+                {cashier.roleName}
+              </span>
+            )}
+          </div>
           <div style={{
             width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
             background: 'rgba(255,255,255,0.22)', border: '1.5px solid rgba(255,255,255,0.38)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 12, fontWeight: 800, color: '#fff',
           }}>
-            {cashier?.name?.[0]?.toUpperCase()}
+            {cashierName[0]?.toUpperCase()}
           </div>
         </div>
       </div>

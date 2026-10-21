@@ -16,7 +16,21 @@ export function saveEnrollment(data) {
 }
 
 export function clearEnrollment() {
+  // Remember the last station so the enroll screen can suggest it again.
+  const raw = localStorage.getItem(KEY);
+  if (raw) localStorage.setItem(PREV_KEY, raw);
   localStorage.removeItem(KEY);
+}
+
+const PREV_KEY = 'moif_pos_device_prev';
+
+export function getPreviousEnrollment() {
+  try {
+    const raw = localStorage.getItem(KEY) ?? localStorage.getItem(PREV_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
 export function getAccessToken() {

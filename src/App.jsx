@@ -9,6 +9,9 @@ import PosNotifyHost from './components/common/PosNotifyHost'
 import ToastHost from './components/common/Toast'
 import { usePosStore } from './store/posStore'
 import { getEnrollment } from './lib/device'
+import { posNotifyWarning } from './lib/posNotify'
+import SingleTabGuard from './components/common/SingleTabGuard'
+import { useEffect } from 'react'
 
 const qc = new QueryClient()
 
@@ -16,6 +19,26 @@ function RequireEnrollment({ children }) {
   const enrollment = getEnrollment()
   if (!enrollment) return <Navigate to="/enroll" replace />
   return children
+}
+
+/** API rejected our token (expired, or this staff logged in on another terminal). */
+function SessionEndedListener() {
+  useEffect(() => {
+    const onEnded = (e) => {
+      const { cashier, logout } = usePosStore.getState()
+      if (!cashier) return
+      logout()
+      posNotifyWarning(
+        /expired/i.test(e.detail || '')
+          ? 'You were signed out — this staff logged in on another terminal, or the session expired.'
+          : (e.detail || 'You were signed out.'),
+        { title: 'Signed out' },
+      )
+    }
+    window.addEventListener('pos-session-ended', onEnded)
+    return () => window.removeEventListener('pos-session-ended', onEnded)
+  }, [])
+  return null
 }
 
 function RequireAuth({ children }) {
@@ -29,6 +52,8 @@ export default function App() {
     <QueryClientProvider client={qc}>
       <PosNotifyHost />
       <ToastHost />
+      <SessionEndedListener />
+      <SingleTabGuard>
       <BrowserRouter>
         <Routes>
           <Route path="/enroll" element={<EnrollPage />} />
@@ -49,6 +74,7 @@ export default function App() {
 <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
+      </SingleTabGuard>
     </QueryClientProvider>
   )
 }
