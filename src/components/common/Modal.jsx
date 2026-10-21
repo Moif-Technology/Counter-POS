@@ -22,6 +22,7 @@ import { gradient } from './theme'
  *   icon             — lucide icon component shown in the header
  *   kicker           — small uppercase line above the title
  *   title            — header title (string or node)
+ *   leading          — node rendered before the icon (e.g. a back button)
  *   headerRight      — node rendered before the close button
  *   header           — node replacing the default header entirely (false = no header)
  *   footer           — node rendered in a footer bar
@@ -31,6 +32,7 @@ import { gradient } from './theme'
  *   closeOnBackdrop  — default true
  *   closeOnEsc       — default true; pass false when the modal handles Escape itself
  *   cardStyle        — extra card styles
+ *   cardClassName    — class on the card (e.g. scrollbar styling)
  *   bodyStyle        — extra body styles
  */
 export default function Modal({
@@ -38,6 +40,7 @@ export default function Modal({
   icon,
   kicker,
   title,
+  leading,
   headerRight,
   header,
   footer,
@@ -47,6 +50,7 @@ export default function Modal({
   closeOnBackdrop = true,
   closeOnEsc = true,
   cardStyle,
+  cardClassName,
   bodyStyle,
   children,
 }) {
@@ -65,7 +69,7 @@ export default function Modal({
         animation: 'pos-modal-fade 0.15s ease',
       }}
     >
-      <div style={{
+      <div className={cardClassName} style={{
         width, maxWidth: '96vw', maxHeight,
         background: '#fff', borderRadius: 24, overflow: 'hidden',
         boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
@@ -74,7 +78,7 @@ export default function Modal({
         ...cardStyle,
       }}>
         {header === undefined
-          ? <ModalHeader icon={icon} kicker={kicker} title={title} right={headerRight} onClose={onClose} />
+          ? <ModalHeader leading={leading} icon={icon} kicker={kicker} title={title} right={headerRight} onClose={onClose} />
           : header}
 
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'auto', ...bodyStyle }}>
@@ -87,7 +91,7 @@ export default function Modal({
   )
 }
 
-export function ModalHeader({ icon: Icon, kicker, title, right, onClose, style }) {
+export function ModalHeader({ leading, icon: Icon, kicker, title, right, onClose, style }) {
   return (
     <div style={{
       background: gradient.brand,
@@ -97,6 +101,7 @@ export function ModalHeader({ icon: Icon, kicker, title, right, onClose, style }
       ...style,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+        {leading}
         {Icon && (
           <div style={{
             width: 32, height: 32, borderRadius: 9, flexShrink: 0,

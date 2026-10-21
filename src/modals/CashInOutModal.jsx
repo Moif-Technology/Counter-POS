@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Wallet, Banknote, Save, Trash2, Keyboard, Loader2, AlertCircle } from 'lucide-react'
+import { Wallet, Banknote, Save, Trash2, Keyboard, Loader2, AlertCircle } from 'lucide-react'
+import Modal from '../components/common/Modal'
 import Numpad from '../components/common/Numpad'
+import { useEscapeKey } from '../hooks/useEscapeKey'
 import TouchKeyboard from '../components/common/Keyboard'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
@@ -20,7 +22,6 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
   const [saving,       setSaving]       = useState(false)
   const [error,        setError]        = useState(null)
   const descRef    = useRef()
-  const overlayRef = useRef()
   const accessToken = usePosStore(s => s.accessToken)
   const counterNo   = usePosStore(s => s.counterNo)
 
@@ -36,16 +37,10 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
     if (step === 'entry') { setCategory(categories[0]); setTimeout(() => descRef.current?.focus(), 50) }
   }, [step])
 
-  useEffect(() => {
-    const onKey = e => {
-      if (e.key === 'Escape') {
-        if (step === 'entry') { setStep('choose'); setTypeDesc(''); setCategory(''); setAmount(''); setEntries([]) }
-        else onClose()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose, step])
+  const backToChoose = () => { setStep('choose'); setTypeDesc(''); setCategory(''); setAmount(''); setEntries([]) }
+
+  // Escape steps back from the entry form before closing.
+  useEscapeKey(() => (step === 'entry' ? backToChoose() : onClose()))
 
   const choose = t => { setType(t); setStep('entry') }
 
@@ -102,20 +97,30 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
   }
 
   return (
-    <div
-      ref={overlayRef} data-pos-overlay
-      onClick={e => e.target === overlayRef.current && onClose()}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(10,8,6,0.45)',
-        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: 'cio-fade 0.15s ease',
-      }}
+    <Modal
+      closeOnEsc={false}
+      onClose={onClose}
+      icon={step === 'entry' && !isIn ? Banknote : Wallet}
+      kicker={step === 'choose' ? 'Transaction' : isIn ? 'Cash In Entry' : 'Cash Out Entry'}
+      title={step === 'choose' ? 'Cash In / Cash Out' : isIn ? 'Cash IN Entry' : 'Cash Out Entry'}
+      headerRight={step === 'entry' && (
+        <button
+          onClick={backToChoose}
+          style={{
+            height: 28, paddingInline: 12, borderRadius: 7, fontSize: 11, fontWeight: 700,
+            background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
+            color: '#fff', cursor: 'pointer', transition: 'background 0.12s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.28)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
+        >
+          ← Back
+        </button>
+      )}
+      width={step === 'choose' ? 460 : 820}
+      maxHeight="92vh"
     >
       <style>{`
-        @keyframes cio-fade  { from{opacity:0} to{opacity:1} }
-        @keyframes cio-slide { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
         @keyframes cio-spin  { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         .cio-card { transition: transform 0.18s ease, box-shadow 0.18s ease !important; }
         .cio-card:hover { transform: translateY(-5px) scale(1.03) !important; box-shadow: 0 20px 48px rgba(0,0,0,0.16) !important; }
@@ -132,38 +137,7 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
 
       {/* ════════════════════ STEP 1 : CHOOSE ════════════════════ */}
       {step === 'choose' && (
-        <div style={{
-          width: 460, maxWidth: '96vw',
-          background: '#fff', borderRadius: 24,
-          boxShadow: '0 28px 72px rgba(0,0,0,0.18)',
-          display: 'flex', flexDirection: 'column',
-          animation: 'cio-slide 0.18s cubic-bezier(.22,.68,0,1.2)',
-          overflow: 'hidden',
-        }}>
-          {/* Header */}
-          <div style={{
-            background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
-            padding: '14px 18px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: 10,
-                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Wallet size={16} color="#fff" />
-              </div>
-              <div>
-                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>Transaction</p>
-                <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1 }}>Cash In / Cash Out</p>
-              </div>
-            </div>
-            <button onClick={onClose} style={closeBtn}>
-              <X size={14} />
-            </button>
-          </div>
-
+        <>
           {/* Cards */}
           <div style={{ padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div style={{ display: 'flex', gap: 16 }}>
@@ -221,59 +195,12 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
               Cancel
             </button>
           </div>
-        </div>
+        </>
       )}
 
       {/* ════════════════════ STEP 2 : ENTRY FORM ════════════════════ */}
       {step === 'entry' && (
-        <div style={{
-          width: 820, maxWidth: '97vw', maxHeight: '92vh',
-          background: '#fff', borderRadius: 24,
-          boxShadow: '0 28px 72px rgba(0,0,0,0.18)',
-          display: 'flex', flexDirection: 'column',
-          animation: 'cio-slide 0.18s cubic-bezier(.22,.68,0,1.2)',
-          overflow: 'hidden',
-        }}>
-
-          {/* ── Header ── */}
-          <div style={{
-            background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
-            padding: '14px 18px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: 10,
-                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {isIn ? <Wallet size={16} color="#fff" /> : <Banknote size={16} color="#fff" />}
-              </div>
-              <div>
-                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>
-                  {isIn ? 'Cash In Entry' : 'Cash Out Entry'}
-                </p>
-                <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1 }}>
-                  {isIn ? 'Cash IN Entry' : 'Cash Out Entry'}
-                </p>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button
-                onClick={() => { setStep('choose'); setTypeDesc(''); setCategory(''); setAmount(''); setEntries([]) }}
-                style={{
-                  height: 28, paddingInline: 12, borderRadius: 7, fontSize: 11, fontWeight: 700,
-                  background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
-                  color: '#fff', cursor: 'pointer', transition: 'background 0.12s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.28)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
-              >
-                ← Back
-              </button>
-              <button onClick={onClose} style={closeBtn}><X size={14} /></button>
-            </div>
-          </div>
+        <>
 
           {/* ── Body ── */}
           <div className="cio-body" style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
@@ -542,17 +469,10 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
             </button>
           </div>
 
-        </div>
+        </>
       )}
-    </div>
+    </Modal>
   )
-}
-
-const closeBtn = {
-  width: 32, height: 32, borderRadius: 9,
-  background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  color: '#fff', cursor: 'pointer', transition: 'background 0.12s',
 }
 
 const headCell = {

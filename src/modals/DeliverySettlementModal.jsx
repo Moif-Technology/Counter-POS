@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { X, Receipt, AlertCircle, Loader2, CheckCircle2, Layers, ScanLine, RotateCcw } from 'lucide-react'
+import { Receipt, AlertCircle, Loader2, CheckCircle2, Layers, ScanLine, RotateCcw } from 'lucide-react'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import { fmtMoney, roundMoney } from '../lib/currencyFormat'
 import { parseDeliveryBarcode } from '../lib/deliveryBarcode'
+import Modal from '../components/common/Modal'
 import MultiPaymentModal from './MultiPaymentModal'
 
 import { DELIVERY_SETTLEMENT_PAY_MODES, PM, isMultiPaymentMode } from '../lib/paymentModes'
@@ -37,7 +38,6 @@ function mapDeliveryRow(d) {
 export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = null, settleFn = null, recallFn = null }) {
   const accessToken = usePosStore(s => s.accessToken)
   const counterNo = usePosStore(s => s.counterNo)
-  const overlayRef = useRef()
 
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
@@ -68,12 +68,6 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
     color: 'var(--text-2)',
     touchAction: 'manipulation',
   }
-
-  useEffect(() => {
-    const onKey = e => { if (e.key === 'Escape' && !multiRow) onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose, multiRow])
 
   useEffect(() => {
     if (!success) return undefined
@@ -228,41 +222,16 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
 
   return (
     <>
-    <div
-      ref={overlayRef}
-      data-pos-overlay
-      onClick={e => e.target === overlayRef.current && !multiRow && onClose()}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(15,13,10,0.42)', backdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}
+    <Modal
+      onClose={onClose}
+      icon={Receipt}
+      kicker="Post invoice after payment"
+      title="Delivery Settlement"
+      width={920}
+      // The split-payment popup on top handles its own backdrop/Escape.
+      closeOnBackdrop={!multiRow}
+      closeOnEsc={!multiRow}
     >
-      <div style={{
-        width: 920, maxWidth: '97vw', maxHeight: '90vh',
-        background: '#fff', borderRadius: 20, overflow: 'hidden',
-        boxShadow: '0 32px 80px rgba(0,0,0,0.18)',
-        display: 'flex', flexDirection: 'column',
-      }}>
-        <div style={{
-          background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
-          padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Receipt size={18} color="#fff" />
-            <div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>
-                Post invoice after payment
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>Delivery Settlement</div>
-            </div>
-          </div>
-          <button onClick={onClose} style={{
-            width: 30, height: 30, borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)',
-            background: 'rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}><X size={14} /></button>
-        </div>
 
         {error && (
           <div style={{
@@ -487,7 +456,6 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
             {settling ? 'Posting…' : `Settle (${selectedRows.length})`}
           </button>
         </div>
-      </div>
       {success && (
         <div style={{
           position: 'absolute',
@@ -528,7 +496,7 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
         </div>
       )}
       <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
-    </div>
+    </Modal>
 
     {multiRow && (
       <MultiPaymentModal

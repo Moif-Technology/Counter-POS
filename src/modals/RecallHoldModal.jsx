@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Archive, RotateCcw, Trash2, AlertCircle, MessageSquare } from 'lucide-react'
+import { Archive, RotateCcw, Trash2, AlertCircle, MessageSquare } from 'lucide-react'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import { fmtMoney, moneyPlaceholder } from '../lib/currencyFormat'
 import { posConfirm } from '../lib/posNotify'
 import { parseHoldBarcode } from '../lib/holdBarcode'
+import Modal from '../components/common/Modal'
 
 const ITEM_COLS = [
   { key: 'sl', label: 'SL', w: 36, align: 'center' },
@@ -51,7 +52,6 @@ export default function RecallHoldModal({ onClose, onRecall }) {
   const [recalling, setRecalling] = useState(false)
   const [cancelling, setCancelling] = useState(null)
   const [error, setError] = useState(null)
-  const overlayRef = useRef()
   const holdInputRef = useRef()
   const accessToken = usePosStore(s => s.accessToken)
   const recallHold = usePosStore(s => s.recallHold)
@@ -197,355 +197,307 @@ export default function RecallHoldModal({ onClose, onRecall }) {
   })
 
   return (
-    <div
-      ref={overlayRef} data-pos-overlay
-      onClick={e => e.target === overlayRef.current && onClose()}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(15,13,10,0.42)',
-        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: 'rh-fade 0.15s ease',
-      }}
+    <Modal
+      closeOnEsc={false}
+      onClose={onClose}
+      icon={Archive}
+      kicker="Bills"
+      title="Recall Hold"
+      width={900}
+      maxHeight="88vh"
+      cardStyle={{ height: 620 }}
     >
       <style>{`
-        @keyframes rh-fade  { from { opacity:0 } to { opacity:1 } }
-        @keyframes rh-slide { from { opacity:0; transform:scale(0.96) translateY(10px) } to { opacity:1; transform:scale(1) translateY(0) } }
         .rh-hold-row:hover { background: var(--surface-2) !important; }
       `}</style>
 
-      <div style={{
-        width: 900,
-        maxWidth: '96vw',
-        height: 620,
-        maxHeight: '88vh',
-        background: '#fff', borderRadius: 24, overflow: 'hidden',
-        boxShadow: '0 32px 80px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.06)',
-        display: 'flex', flexDirection: 'column',
-        animation: 'rh-slide 0.18s cubic-bezier(.22,.68,0,1.2)',
-      }}>
+      {error && (
         <div style={{
-          background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
-          padding: '14px 18px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
+          margin: '10px 16px 0',
+          padding: '8px 12px',
+          borderRadius: 9,
+          border: '1px solid var(--red-border)',
+          background: 'var(--red-bg)',
+          color: 'var(--red)',
+          fontSize: 12,
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 7,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 9,
-              background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Archive size={15} color="#fff" />
-            </div>
-            <div>
-              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>Bills</p>
-              <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1 }}>Recall Hold</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              width: 32, height: 32, borderRadius: 9,
-              background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', cursor: 'pointer', transition: 'background 0.12s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.28)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
-          >
-            <X size={14} />
-          </button>
+          <AlertCircle size={13} />
+          {error}
         </div>
+      )}
 
-        {error && (
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+        <div style={{ width: 440, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)' }}>
           <div style={{
-            margin: '10px 16px 0',
-            padding: '8px 12px',
-            borderRadius: 9,
-            border: '1px solid var(--red-border)',
-            background: 'var(--red-bg)',
-            color: 'var(--red)',
-            fontSize: 12,
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 7,
+            display: 'flex', alignItems: 'center',
+            padding: '0 12px', height: 34, flexShrink: 0,
+            background: 'var(--brand-bg)', borderBottom: '1.5px solid var(--brand-border)',
           }}>
-            <AlertCircle size={13} />
-            {error}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          <div style={{ width: 440, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center',
-              padding: '0 12px', height: 34, flexShrink: 0,
-              background: 'var(--brand-bg)', borderBottom: '1.5px solid var(--brand-border)',
-            }}>
-              {[
-                { label: 'Hold No',   w: 52 },
-                { label: 'Bill Time', w: 100 },
-                { label: 'Sales Man', w: 72 },
-                { label: 'Customer',  w: 88 },
-                { label: 'Comments',  flex: true },
-              ].map(col => (
-                <div key={col.label} style={{
-                  width: col.w, flex: col.flex ? 1 : undefined, flexShrink: 0,
-                  fontSize: 10, fontWeight: 700, color: 'var(--brand)',
-                  textTransform: 'uppercase', letterSpacing: 0.5, paddingRight: 6,
-                }}>{col.label}</div>
-              ))}
-            </div>
-
-            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-              {loading ? (
-                <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-4)', fontSize: 12, fontWeight: 600 }}>
-                  Loading held bills...
-                </div>
-              ) : holds.length === 0 ? (
-                <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-4)', fontSize: 12, fontWeight: 600 }}>
-                  No held bills
-                </div>
-              ) : holds.map((h, i) => {
-                const active = i === selectedIdx
-                const comment = getHoldComment(h)
-                return (
-                  <div
-                    key={h.sales_id}
-                    className="rh-hold-row"
-                    onClick={() => setSelectedIdx(i)}
-                    title={comment || undefined}
-                    style={{
-                      display: 'flex', alignItems: 'center',
-                      padding: '0 12px', height: 34,
-                      borderBottom: '1px solid var(--border)',
-                      background: active ? 'var(--brand-bg)' : i % 2 === 0 ? '#fff' : 'var(--surface-2)',
-                      cursor: 'pointer', transition: 'background 0.1s',
-                      borderLeft: active ? '3px solid var(--brand)' : '3px solid transparent',
-                    }}
-                  >
-                    <div style={{ width: 52, flexShrink: 0, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--brand)' : 'var(--text-1)' }}>
-                      {h.hold_no}
-                    </div>
-                    <div style={{ width: 100, flexShrink: 0, fontSize: 11, color: active ? 'var(--brand)' : 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 6 }}>
-                      {fmtDateTime(h.bill_date)}
-                    </div>
-                    <div style={{ width: 72, flexShrink: 0, fontSize: 10.5, color: active ? 'var(--brand)' : 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 6 }}>
-                      {getSalesMan(h)}
-                    </div>
-                    <div
-                      title={getCustomerLabel(h)}
-                      style={{
-                        width: 88, flexShrink: 0,
-                        fontSize: 11, fontWeight: h.customer_name ? 600 : 400,
-                        color: active
-                          ? 'var(--brand)'
-                          : h.customer_name ? 'var(--text-2)' : 'var(--text-4)',
-                        fontStyle: h.customer_name ? 'normal' : 'italic',
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        paddingRight: 6,
-                      }}
-                    >
-                      {getCustomerLabel(h)}
-                    </div>
-                    <div style={{
-                      flex: 1, minWidth: 0,
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      fontSize: 10.5,
-                      color: comment ? (active ? 'var(--brand)' : 'var(--text-2)') : 'var(--text-4)',
-                      fontStyle: comment ? 'normal' : 'italic',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>
-                      {comment ? (
-                        <>
-                          <MessageSquare size={11} style={{ flexShrink: 0, opacity: 0.7 }} />
-                          <span>{comment}</span>
-                        </>
-                      ) : '—'}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+            {[
+              { label: 'Hold No',   w: 52 },
+              { label: 'Bill Time', w: 100 },
+              { label: 'Sales Man', w: 72 },
+              { label: 'Customer',  w: 88 },
+              { label: 'Comments',  flex: true },
+            ].map(col => (
+              <div key={col.label} style={{
+                width: col.w, flex: col.flex ? 1 : undefined, flexShrink: 0,
+                fontSize: 10, fontWeight: 700, color: 'var(--brand)',
+                textTransform: 'uppercase', letterSpacing: 0.5, paddingRight: 6,
+              }}>{col.label}</div>
+            ))}
           </div>
 
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
-            <div style={{
-              display: 'flex', alignItems: 'center',
-              padding: '0 12px', height: 34, flexShrink: 0,
-              background: 'var(--brand-bg)', borderBottom: '1.5px solid var(--brand-border)',
-            }}>
-              {ITEM_COLS.map(col => (
-                <div key={col.key} style={thStyle(col)}>{col.label}</div>
-              ))}
-            </div>
-
-            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-              {itemsLoading ? (
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  height: '100%', minHeight: 120,
-                  color: 'var(--text-4)', fontSize: 12, fontWeight: 600,
-                }}>
-                  Loading items...
-                </div>
-              ) : selectedItems.length > 0 ? selectedItems.map((item, i) => (
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            {loading ? (
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-4)', fontSize: 12, fontWeight: 600 }}>
+                Loading held bills...
+              </div>
+            ) : holds.length === 0 ? (
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-4)', fontSize: 12, fontWeight: 600 }}>
+                No held bills
+              </div>
+            ) : holds.map((h, i) => {
+              const active = i === selectedIdx
+              const comment = getHoldComment(h)
+              return (
                 <div
-                  key={item.sales_child_id ?? i}
+                  key={h.sales_id}
+                  className="rh-hold-row"
+                  onClick={() => setSelectedIdx(i)}
+                  title={comment || undefined}
                   style={{
                     display: 'flex', alignItems: 'center',
                     padding: '0 12px', height: 34,
                     borderBottom: '1px solid var(--border)',
-                    background: i % 2 === 0 ? '#fff' : 'var(--surface-2)',
+                    background: active ? 'var(--brand-bg)' : i % 2 === 0 ? '#fff' : 'var(--surface-2)',
+                    cursor: 'pointer', transition: 'background 0.1s',
+                    borderLeft: active ? '3px solid var(--brand)' : '3px solid transparent',
                   }}
                 >
-                  {ITEM_COLS.map(col => (
-                    <div key={col.key} style={tdStyle(col)}>
-                      {col.key === 'sl' ? i + 1 : col.money ? fmtMoney(item[col.key]) : item[col.key] ?? '-'}
-                    </div>
-                  ))}
+                  <div style={{ width: 52, flexShrink: 0, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--brand)' : 'var(--text-1)' }}>
+                    {h.hold_no}
+                  </div>
+                  <div style={{ width: 100, flexShrink: 0, fontSize: 11, color: active ? 'var(--brand)' : 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 6 }}>
+                    {fmtDateTime(h.bill_date)}
+                  </div>
+                  <div style={{ width: 72, flexShrink: 0, fontSize: 10.5, color: active ? 'var(--brand)' : 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 6 }}>
+                    {getSalesMan(h)}
+                  </div>
+                  <div
+                    title={getCustomerLabel(h)}
+                    style={{
+                      width: 88, flexShrink: 0,
+                      fontSize: 11, fontWeight: h.customer_name ? 600 : 400,
+                      color: active
+                        ? 'var(--brand)'
+                        : h.customer_name ? 'var(--text-2)' : 'var(--text-4)',
+                      fontStyle: h.customer_name ? 'normal' : 'italic',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      paddingRight: 6,
+                    }}
+                  >
+                    {getCustomerLabel(h)}
+                  </div>
+                  <div style={{
+                    flex: 1, minWidth: 0,
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    fontSize: 10.5,
+                    color: comment ? (active ? 'var(--brand)' : 'var(--text-2)') : 'var(--text-4)',
+                    fontStyle: comment ? 'normal' : 'italic',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {comment ? (
+                      <>
+                        <MessageSquare size={11} style={{ flexShrink: 0, opacity: 0.7 }} />
+                        <span>{comment}</span>
+                      </>
+                    ) : '—'}
+                  </div>
                 </div>
-              )) : (
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  height: '100%', minHeight: 120,
-                  color: 'var(--text-4)', fontSize: 12, fontWeight: 500,
-                }}>
-                  {selected ? 'No items on this bill' : 'Select a hold bill'}
-                </div>
-              )}
-            </div>
+              )
+            })}
           </div>
         </div>
 
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '10px 16px', borderTop: '1.5px solid var(--border)',
-          background: 'var(--surface-2)', flexShrink: 0, flexWrap: 'wrap',
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 180 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Comments</span>
-            <input
-              readOnly
-              value={selectedComment}
-              placeholder={selected ? 'No comment on this hold' : 'Select a hold bill'}
-              title={selectedComment || undefined}
-              style={{
-                height: 32, borderRadius: 8,
-                border: '1.5px solid var(--border)', background: 'var(--surface)',
-                padding: '0 10px', fontSize: 12, color: selectedComment ? 'var(--text-1)' : 'var(--text-4)',
-                fontFamily: 'inherit', outline: 'none',
-                fontStyle: selectedComment ? 'normal' : 'italic',
-              }}
-            />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+          <div style={{
+            display: 'flex', alignItems: 'center',
+            padding: '0 12px', height: 34, flexShrink: 0,
+            background: 'var(--brand-bg)', borderBottom: '1.5px solid var(--brand-border)',
+          }}>
+            {ITEM_COLS.map(col => (
+              <div key={col.key} style={thStyle(col)}>{col.label}</div>
+            ))}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: 'transparent', letterSpacing: 0.7 }}>_</span>
-            <button
-              type="button"
-              onClick={() => handleRecall()}
-              disabled={!selected || recalling}
-              style={{
-                height: 32, padding: '0 20px', borderRadius: 8, border: 'none',
-                background: selected
-                  ? 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)'
-                  : 'var(--surface-3)',
-                color: selected ? '#fff' : 'var(--text-4)',
-                fontSize: 12, fontWeight: 800,
-                cursor: selected && !recalling ? 'pointer' : 'default',
-                display: 'flex', alignItems: 'center', gap: 6,
-                boxShadow: selected ? '0 4px 14px rgba(120,8,41,0.22)' : 'none',
-                transition: 'all 0.12s',
-                opacity: recalling ? 0.7 : 1,
-              }}
-            >
-              <RotateCcw size={13} /> {recalling ? 'Recalling' : 'Recall'}
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: 100 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Hold No</span>
-            <input
-              ref={holdInputRef}
-              value={holdNoInput}
-              onChange={e => {
-                const raw = e.target.value
-                setHoldNoInput(raw)
-                const holdNo = parseHoldBarcode(raw)
-                const idx = holdNo != null
-                  ? holds.findIndex(h => String(h.hold_no) === String(holdNo))
-                  : holds.findIndex(h => String(h.hold_no) === raw)
-                if (idx >= 0) setSelectedIdx(idx)
-              }}
-              onKeyDown={e => e.key === 'Enter' && handleRecall()}
-              placeholder={selected?.hold_no ?? '-'}
-              style={{
-                height: 32, borderRadius: 8,
-                border: '1.5px solid var(--border)', background: 'var(--surface)',
-                padding: '0 10px', fontSize: 13, fontWeight: 700,
-                color: 'var(--text-1)', fontFamily: 'inherit',
-                outline: 'none', textAlign: 'center',
-              }}
-              onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
-              onBlur={e => { e.target.style.borderColor = 'var(--border)' }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Bill Total</span>
-            <div style={{
-              height: 32, minWidth: 110, borderRadius: 8,
-              border: '1.5px solid var(--brand-border)', background: 'var(--brand-bg)',
-              padding: '0 14px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-            }}>
-              <span style={{
-                fontSize: 15, fontWeight: 800, color: 'var(--brand)',
-                fontFamily: 'inherit', fontVariantNumeric: 'tabular-nums',
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            {itemsLoading ? (
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                height: '100%', minHeight: 120,
+                color: 'var(--text-4)', fontSize: 12, fontWeight: 600,
               }}>
-                {selected ? fmtMoney(selected.amount) : moneyPlaceholder()}
-              </span>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: 'transparent', letterSpacing: 0.7 }}>_</span>
-            <button
-              type="button"
-              onClick={() => selected && handleCancel(selected)}
-              disabled={!selected || cancelling === selected?.sales_id}
-              style={{
-                height: 32, padding: '0 16px', borderRadius: 8,
-                border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
-                color: 'var(--red)', fontSize: 12, fontWeight: 700,
-                cursor: selected ? 'pointer' : 'default', transition: 'background 0.1s, color 0.1s',
-                opacity: cancelling === selected?.sales_id ? 0.6 : 1,
-                display: 'flex', alignItems: 'center', gap: 6,
-              }}
-            >
-              <Trash2 size={12} /> Cancel Hold
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginLeft: 'auto' }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: 'transparent', letterSpacing: 0.7 }}>_</span>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                height: 32, padding: '0 16px', borderRadius: 8,
-                border: '1.5px solid var(--border)', background: 'var(--surface)',
-                color: 'var(--text-2)', fontSize: 12, fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              Close
-            </button>
+                Loading items...
+              </div>
+            ) : selectedItems.length > 0 ? selectedItems.map((item, i) => (
+              <div
+                key={item.sales_child_id ?? i}
+                style={{
+                  display: 'flex', alignItems: 'center',
+                  padding: '0 12px', height: 34,
+                  borderBottom: '1px solid var(--border)',
+                  background: i % 2 === 0 ? '#fff' : 'var(--surface-2)',
+                }}
+              >
+                {ITEM_COLS.map(col => (
+                  <div key={col.key} style={tdStyle(col)}>
+                    {col.key === 'sl' ? i + 1 : col.money ? fmtMoney(item[col.key]) : item[col.key] ?? '-'}
+                  </div>
+                ))}
+              </div>
+            )) : (
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                height: '100%', minHeight: 120,
+                color: 'var(--text-4)', fontSize: 12, fontWeight: 500,
+              }}>
+                {selected ? 'No items on this bill' : 'Select a hold bill'}
+              </div>
+            )}
           </div>
         </div>
       </div>
-    </div>
+
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 16px', borderTop: '1.5px solid var(--border)',
+        background: 'var(--surface-2)', flexShrink: 0, flexWrap: 'wrap',
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 180 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Comments</span>
+          <input
+            readOnly
+            value={selectedComment}
+            placeholder={selected ? 'No comment on this hold' : 'Select a hold bill'}
+            title={selectedComment || undefined}
+            style={{
+              height: 32, borderRadius: 8,
+              border: '1.5px solid var(--border)', background: 'var(--surface)',
+              padding: '0 10px', fontSize: 12, color: selectedComment ? 'var(--text-1)' : 'var(--text-4)',
+              fontFamily: 'inherit', outline: 'none',
+              fontStyle: selectedComment ? 'normal' : 'italic',
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: 'transparent', letterSpacing: 0.7 }}>_</span>
+          <button
+            type="button"
+            onClick={() => handleRecall()}
+            disabled={!selected || recalling}
+            style={{
+              height: 32, padding: '0 20px', borderRadius: 8, border: 'none',
+              background: selected
+                ? 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)'
+                : 'var(--surface-3)',
+              color: selected ? '#fff' : 'var(--text-4)',
+              fontSize: 12, fontWeight: 800,
+              cursor: selected && !recalling ? 'pointer' : 'default',
+              display: 'flex', alignItems: 'center', gap: 6,
+              boxShadow: selected ? '0 4px 14px rgba(120,8,41,0.22)' : 'none',
+              transition: 'all 0.12s',
+              opacity: recalling ? 0.7 : 1,
+            }}
+          >
+            <RotateCcw size={13} /> {recalling ? 'Recalling' : 'Recall'}
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: 100 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Hold No</span>
+          <input
+            ref={holdInputRef}
+            value={holdNoInput}
+            onChange={e => {
+              const raw = e.target.value
+              setHoldNoInput(raw)
+              const holdNo = parseHoldBarcode(raw)
+              const idx = holdNo != null
+                ? holds.findIndex(h => String(h.hold_no) === String(holdNo))
+                : holds.findIndex(h => String(h.hold_no) === raw)
+              if (idx >= 0) setSelectedIdx(idx)
+            }}
+            onKeyDown={e => e.key === 'Enter' && handleRecall()}
+            placeholder={selected?.hold_no ?? '-'}
+            style={{
+              height: 32, borderRadius: 8,
+              border: '1.5px solid var(--border)', background: 'var(--surface)',
+              padding: '0 10px', fontSize: 13, fontWeight: 700,
+              color: 'var(--text-1)', fontFamily: 'inherit',
+              outline: 'none', textAlign: 'center',
+            }}
+            onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
+            onBlur={e => { e.target.style.borderColor = 'var(--border)' }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Bill Total</span>
+          <div style={{
+            height: 32, minWidth: 110, borderRadius: 8,
+            border: '1.5px solid var(--brand-border)', background: 'var(--brand-bg)',
+            padding: '0 14px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+          }}>
+            <span style={{
+              fontSize: 15, fontWeight: 800, color: 'var(--brand)',
+              fontFamily: 'inherit', fontVariantNumeric: 'tabular-nums',
+            }}>
+              {selected ? fmtMoney(selected.amount) : moneyPlaceholder()}
+            </span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: 'transparent', letterSpacing: 0.7 }}>_</span>
+          <button
+            type="button"
+            onClick={() => selected && handleCancel(selected)}
+            disabled={!selected || cancelling === selected?.sales_id}
+            style={{
+              height: 32, padding: '0 16px', borderRadius: 8,
+              border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
+              color: 'var(--red)', fontSize: 12, fontWeight: 700,
+              cursor: selected ? 'pointer' : 'default', transition: 'background 0.1s, color 0.1s',
+              opacity: cancelling === selected?.sales_id ? 0.6 : 1,
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            <Trash2 size={12} /> Cancel Hold
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginLeft: 'auto' }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: 'transparent', letterSpacing: 0.7 }}>_</span>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              height: 32, padding: '0 16px', borderRadius: 8,
+              border: '1.5px solid var(--border)', background: 'var(--surface)',
+              color: 'var(--text-2)', fontSize: 12, fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </Modal>
   )
 }

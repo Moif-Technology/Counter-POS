@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { X, ClipboardList, Printer, XCircle, RefreshCw } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
@@ -7,6 +7,7 @@ import { fmtMoney, moneyPlaceholder } from '../lib/currencyFormat'
 import { printCounterReport } from '../lib/printCounterReport'
 import { getReceiptPrintMetaFromStore } from '../lib/receiptPrintTheme'
 import { posNotifyWarning } from '../lib/posNotify'
+import Modal from '../components/common/Modal'
 
 const DENOMS = [
   { label: '1000', value: 1000  },
@@ -37,7 +38,6 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
   const [counts,       setCounts]      = useState(initCounts)
   const [activeDenom,  setActiveDenom] = useState('1000')
   const [manualInput,  setManualInput] = useState('')
-  const overlayRef = useRef()
 
   const fetchSummary = useCallback(async () => {
     setLoading(true)
@@ -186,20 +186,32 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
   ] : []
 
   return (
-    <div
-      ref={overlayRef} data-pos-overlay
-      onClick={e => e.target === overlayRef.current && onClose()}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1100,
-        background: 'rgba(10,8,6,0.5)',
-        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: 'cr-fade 0.15s ease',
-      }}
+    <Modal
+      closeOnEsc={false}
+      onClose={onClose}
+      icon={ClipboardList}
+      kicker="Reports"
+      title="Counter Reading"
+      headerRight={<>
+        <button
+          onClick={fetchSummary}
+          disabled={loading}
+          title="Refresh"
+          style={{
+            width: 32, height: 32, borderRadius: 9,
+            background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1,
+          }}
+        >
+          <RefreshCw size={13} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+        </button>
+      </>}
+      zIndex={1100}
+      width={1080}
+      maxHeight="95vh"
     >
       <style>{`
-        @keyframes cr-fade  { from{opacity:0} to{opacity:1} }
-        @keyframes cr-slide { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         .denom-row:hover { background: var(--brand-bg) !important; }
         @media (max-width: 900px) {
@@ -217,52 +229,6 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
           .cr-footer button { flex: 1 1 40% !important; }
         }
       `}</style>
-
-      <div style={{
-        width: 1080, maxWidth: '99vw', maxHeight: '95vh',
-        background: '#fff', borderRadius: 24,
-        boxShadow: '0 32px 80px rgba(0,0,0,0.22)',
-        display: 'flex', flexDirection: 'column',
-        animation: 'cr-slide 0.18s cubic-bezier(.22,.68,0,1.2)',
-        overflow: 'hidden',
-      }}>
-
-        {/* ── Header ── */}
-        <div style={{
-          background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
-          padding: '14px 20px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <ClipboardList size={17} color="#fff" />
-            </div>
-            <div>
-              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>Reports</p>
-              <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1 }}>Counter Reading</p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button
-              onClick={fetchSummary}
-              disabled={loading}
-              title="Refresh"
-              style={{
-                width: 32, height: 32, borderRadius: 9,
-                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1,
-              }}
-            >
-              <RefreshCw size={13} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-            </button>
-            <button onClick={onClose} style={closeBtn}><X size={14} /></button>
-          </div>
-        </div>
 
         {/* ── Error banner ── */}
         {error && (
@@ -667,9 +633,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
             Close
           </button>
         </div>
-
-      </div>
-    </div>
+    </Modal>
   )
 }
 

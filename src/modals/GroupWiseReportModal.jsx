@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { X, Grid, RefreshCw, Download } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
 import { fmt3 } from '../lib/utils'
 import { buildReportPrintFontCss, escReceipt, openReceiptPrintWindow } from '../lib/receiptPrintTheme'
 import { IS_ANDROID_POS } from '../lib/androidPosPrinter'
+import Modal from '../components/common/Modal'
 
 export default function GroupWiseReportModal({ onClose, reportFn = null }) {
   const accessToken = usePosStore(s => s.accessToken)
@@ -14,7 +15,6 @@ export default function GroupWiseReportModal({ onClose, reportFn = null }) {
   const [rows,    setRows]    = useState([])
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
-  const overlayRef = useRef()
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -31,12 +31,6 @@ export default function GroupWiseReportModal({ onClose, reportFn = null }) {
   }, [counterNo, accessToken, reportFn])
 
   useEffect(() => { fetchData() }, [fetchData])
-
-  useEffect(() => {
-    const onKey = e => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
 
   const grandTotal = rows.reduce((s, r) => s + (r.netAmount ?? r.totalAmount ?? 0), 0)
   const grandQty   = rows.reduce((s, r) => s + (r.qtySold ?? r.quantity ?? 0), 0)
@@ -126,90 +120,45 @@ export default function GroupWiseReportModal({ onClose, reportFn = null }) {
   }
 
   return (
-    <div
-      ref={overlayRef} data-pos-overlay
-      onClick={e => e.target === overlayRef.current && onClose()}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1100,
-        background: 'rgba(15,13,10,0.50)',
-        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: 'swfade 0.15s ease',
-      }}
+    <Modal
+      onClose={onClose}
+      icon={Grid}
+      kicker="Reports"
+      title="Group Wise Sales Report"
+      headerRight={<>
+        <button
+          onClick={fetchData}
+          disabled={loading}
+          style={{
+            height: 32, padding: '0 14px', borderRadius: 8,
+            background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
+            color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6,
+          }}
+        >
+          <RefreshCw size={13} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+          Refresh
+        </button>
+        <button
+          onClick={handleDownloadPdf}
+          disabled={loading || rows.length === 0}
+          style={{
+            height: 32, padding: '0 14px', borderRadius: 8,
+            background: rows.length === 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.20)',
+            border: '1px solid rgba(255,255,255,0.25)',
+            color: '#fff', fontSize: 12, fontWeight: 600,
+            cursor: rows.length === 0 ? 'default' : 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6,
+          }}
+        >
+          <Download size={13} /> {IS_ANDROID_POS ? 'Print' : 'Download PDF'}
+        </button>
+      </>}
+      zIndex={1100}
+      width={760}
+      maxHeight="88vh"
     >
-      <style>{`@keyframes swfade { from { opacity:0 } to { opacity:1 } }`}</style>
-
-      <div style={{
-        width: 760, maxWidth: '96vw', maxHeight: '88vh',
-        background: '#fff', borderRadius: 20,
-        boxShadow: '0 32px 80px rgba(0,0,0,0.20)',
-        display: 'flex', flexDirection: 'column', overflow: 'hidden',
-      }}>
-
-        {/* Header */}
-        <div style={{
-          background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
-          padding: '13px 18px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 34, height: 34, borderRadius: 9,
-              background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Grid size={16} color="#fff" />
-            </div>
-            <div>
-              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', margin: 0 }}>
-                Reports
-              </p>
-              <p style={{ fontSize: 14, fontWeight: 800, color: '#fff', lineHeight: 1, margin: 0 }}>
-                Group Wise Sales Report
-              </p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={fetchData}
-              disabled={loading}
-              style={{
-                height: 32, padding: '0 14px', borderRadius: 8,
-                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
-                color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 6,
-              }}
-            >
-              <RefreshCw size={13} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-              Refresh
-            </button>
-            <button
-              onClick={handleDownloadPdf}
-              disabled={loading || rows.length === 0}
-              style={{
-                height: 32, padding: '0 14px', borderRadius: 8,
-                background: rows.length === 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.20)',
-                border: '1px solid rgba(255,255,255,0.25)',
-                color: '#fff', fontSize: 12, fontWeight: 600,
-                cursor: rows.length === 0 ? 'default' : 'pointer',
-                display: 'flex', alignItems: 'center', gap: 6,
-              }}
-            >
-              <Download size={13} /> {IS_ANDROID_POS ? 'Print' : 'Download PDF'}
-            </button>
-            <button
-              onClick={onClose}
-              style={{
-                width: 32, height: 32, borderRadius: 8,
-                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', cursor: 'pointer',
-              }}
-            >
-              <X size={14} />
-            </button>
-          </div>
-        </div>
+      <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 18 }}>
@@ -321,9 +270,6 @@ export default function GroupWiseReportModal({ onClose, reportFn = null }) {
             <X size={13} /> Close
           </button>
         </div>
-      </div>
-
-      <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
-    </div>
+    </Modal>
   )
 }

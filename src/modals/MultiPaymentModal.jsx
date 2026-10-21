@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { X, Layers, Delete, AlertCircle } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Layers, Delete, AlertCircle } from 'lucide-react'
+import Modal, { ModalHeader } from '../components/common/Modal'
 import { usePosStore } from '../store/posStore'
 import { SPLIT_PAY_MODES, PM } from '../lib/paymentModes'
 import { fmtMoney, moneyInputRegex, moneyPlaceholder, roundMoney } from '../lib/currencyFormat'
@@ -47,7 +48,6 @@ const NUM_ROWS = [
 ]
 
 export default function MultiPaymentModal({ onClose, billAmount, initialSplits, onConfirm }) {
-  const overlayRef = useRef()
 
   const storeNet = usePosStore(s => s.netAmount)
   const netAmount = billAmount != null ? Number(billAmount) : storeNet
@@ -84,12 +84,6 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
       return next
     })
   }
-
-  useEffect(() => {
-    const onKey = e => { if (e.key === 'Escape') onClose?.() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
 
   const billTotal = useMemo(
     () => roundMoney(rows.reduce((a, r) => a + num(r.amount, 0), 0)),
@@ -343,69 +337,22 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
   }
 
   return (
-    <div
-      ref={overlayRef}
-      data-pos-overlay
-      onClick={e => e.target === overlayRef.current && onClose?.()}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(10,8,6,0.44)',
-        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: 'sp-fade 0.15s ease',
-      }}
-    >
-      <style>{`
-        @keyframes sp-fade  { from{opacity:0} to{opacity:1} }
-        @keyframes sp-slide { from{opacity:0;transform:scale(0.96) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
-      `}</style>
-
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          width: 700, maxWidth: '96vw', maxHeight: '94vh',
-          background: '#fff', borderRadius: 24, overflow: 'hidden',
-          boxShadow: '0 28px 72px rgba(0,0,0,0.18)',
-          display: 'flex', flexDirection: 'column',
-          animation: 'sp-slide 0.18s cubic-bezier(.22,.68,0,1.2)',
-        }}
-      >
-        {/* Header */}
+    <Modal
+      onClose={onClose}
+      width={700}
+      maxHeight="94vh"
+      header={
         <div style={{
           background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
           padding: '14px 18px', flexShrink: 0,
         }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: 10,
-                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Layers size={16} color="#fff" />
-              </div>
-              <div>
-                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>
-                  Settlement
-                </p>
-                <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>Split Payment</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                width: 32, height: 32, borderRadius: 9, flexShrink: 0,
-                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', cursor: 'pointer',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.28)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
-            >
-              <X size={14} />
-            </button>
-          </div>
+          <ModalHeader
+            icon={Layers}
+            kicker="Settlement"
+            title="Split Payment"
+            onClose={onClose}
+            style={{ padding: 0, background: 'none' }}
+          />
 
           <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
             {[
@@ -435,7 +382,8 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
             ))}
           </div>
         </div>
-
+      }
+    >
         {/* Body */}
         <div style={{ padding: '16px 18px', overflow: 'auto', flex: 1 }}>
 
@@ -657,7 +605,6 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
             Cancel
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }

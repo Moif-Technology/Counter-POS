@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Eraser, Trash2, RefreshCw, CheckCircle2, X } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Eraser, Trash2, RefreshCw, CheckCircle2 } from 'lucide-react'
 import { fmt3 } from '../lib/utils'
+import Modal from '../components/common/Modal'
 
 export default function ClearHoldBillModal({ onClose }) {
   const [holdBills, setHoldBills] = useState([])
@@ -8,7 +9,6 @@ export default function ClearHoldBillModal({ onClose }) {
   const [clearingId, setClearingId] = useState(null)
   const [error, setError] = useState(null)
   const [toast, setToast] = useState(null)
-  const overlayRef = useRef()
 
   const fetchHoldBills = useCallback(async () => {
     setLoading(true)
@@ -26,12 +26,6 @@ export default function ClearHoldBillModal({ onClose }) {
   }, [])
 
   useEffect(() => { fetchHoldBills() }, [fetchHoldBills])
-
-  useEffect(() => {
-    const onKey = e => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
 
   useEffect(() => {
     if (!toast) return
@@ -53,26 +47,32 @@ export default function ClearHoldBillModal({ onClose }) {
   }
 
   return (
-    <div
-      ref={overlayRef} data-pos-overlay
-      onClick={e => e.target === overlayRef.current && onClose()}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1100,
-        background: 'rgba(15,13,10,0.50)',
-        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: 'swfade 0.15s ease',
-      }}
+    <Modal
+      onClose={onClose}
+      icon={Eraser}
+      kicker="Operations"
+      title="Clear Hold Bill"
+      headerRight={<>
+        <button
+          onClick={fetchHoldBills}
+          disabled={loading}
+          title="Refresh"
+          style={{
+            width: 32, height: 32, borderRadius: 8,
+            background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
+            color: '#fff', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <RefreshCw size={13} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+        </button>
+      </>}
+      zIndex={1100}
+      width={700}
+      maxHeight="85vh"
+      cardStyle={{ position: 'relative' }}
     >
-      <style>{`@keyframes swfade { from { opacity:0 } to { opacity:1 } }`}</style>
-
-      <div style={{
-        width: 700, maxWidth: '96vw', maxHeight: '85vh',
-        background: '#fff', borderRadius: 20,
-        boxShadow: '0 32px 80px rgba(0,0,0,0.20)',
-        display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        position: 'relative',
-      }}>
+      <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
         {/* Project-Themed Toast Centered at the Bottom */}
         {toast && (
           <div style={{
@@ -104,56 +104,6 @@ export default function ClearHoldBillModal({ onClose }) {
         )}
 
         {/* Header */}
-        <div style={{
-          background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
-          padding: '13px 18px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 34, height: 34, borderRadius: 9,
-              background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Eraser size={16} color="#fff" />
-            </div>
-            <div>
-              <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', margin: 0 }}>
-                Operations
-              </p>
-              <p style={{ fontSize: 14, fontWeight: 800, color: '#fff', lineHeight: 1, margin: 0 }}>
-                Clear Hold Bill
-              </p>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button
-              onClick={fetchHoldBills}
-              disabled={loading}
-              title="Refresh"
-              style={{
-                width: 32, height: 32, borderRadius: 8,
-                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
-                color: '#fff', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <RefreshCw size={13} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-            </button>
-            <button
-              onClick={onClose}
-              title="Close"
-              style={{
-                width: 32, height: 32, borderRadius: 8,
-                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', cursor: 'pointer',
-              }}
-            >
-              <X size={14} />
-            </button>
-          </div>
-        </div>
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 18 }}>
@@ -235,9 +185,6 @@ export default function ClearHoldBillModal({ onClose }) {
             Close
           </button>
         </div>
-      </div>
-
-      <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
-    </div>
+    </Modal>
   )
 }

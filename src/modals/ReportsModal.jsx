@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import CounterReadingModal from './CounterReadingModal'
 import StaffWiseReportModal from './StaffWiseReportModal'
 import GroupWiseReportModal from './GroupWiseReportModal'
@@ -9,14 +9,8 @@ import PrivilegeSettingsModal from './PrivilegeSettingsModal'
 import SalesViewerModal from './SalesViewerModal'
 import CounterCloseViewerModal from './CounterCloseViewerModal'
 import CashInOutViewerModal from './CashInOutViewerModal'
-import {
-  X, BarChart2,
-  ClipboardList, Users, Star, Grid3x3, Receipt, Archive, Wallet,
-  UserCog, Eraser, Trash2,
-  Download, Upload, GitBranch,
-  KeyRound, Mail, ShieldCheck,
-  Power,
-} from 'lucide-react'
+import { X, BarChart2, ClipboardList, Users, Star, Grid3x3, Receipt, Archive, Wallet, UserCog, Eraser, Trash2, Download, Upload, GitBranch, KeyRound, Mail, ShieldCheck, Power } from 'lucide-react'
+import Modal from '../components/common/Modal'
 
 /* ─── Report / action items ─────────────────────────────────── */
 const SECTIONS = [
@@ -105,7 +99,6 @@ const [privilegeSettingsOpen, setPrivilegeSettingsOpen] = useState(false)
   const [salesViewerOpen,       setSalesViewerOpen]       = useState(false)
   const [counterCloseViewerOpen, setCounterCloseViewerOpen] = useState(false)
   const [cashInOutViewerOpen,    setCashInOutViewerOpen]    = useState(false)
-  const overlayRef = useRef()
 
   useEffect(() => {
     const onKey = e => {
@@ -138,89 +131,35 @@ if (itemKey === 12) { setPrivilegeSettingsOpen(true); return }
 
   return (
     <>
-    <div
-      ref={overlayRef} data-pos-overlay
-      onClick={e => e.target === overlayRef.current && onClose()}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(15,13,10,0.45)',
-        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: 'rm-fade 0.15s ease',
-      }}
+    <Modal
+      closeOnEsc={false}
+      onClose={onClose}
+      icon={BarChart2}
+      kicker="Counter POS"
+      title="Reports & Operations"
+      headerRight={<>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: 'rgba(255,255,255,0.10)', borderRadius: 8,
+          padding: '5px 10px', border: '1px solid rgba(255,255,255,0.15)',
+        }}>
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 600, letterSpacing: 0.5 }}>
+            Press key to select
+          </span>
+          <kbd style={{
+            background: 'rgba(255,255,255,0.18)', borderRadius: 4,
+            padding: '1px 5px', fontSize: 10, fontWeight: 700,
+            color: '#fff', fontFamily: 'inherit',
+            border: '1px solid rgba(255,255,255,0.25)',
+          }}>ESC</kbd>
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>close</span>
+        </div>
+      </>}
+      width={680}
     >
       <style>{`
-        @keyframes rm-fade  { from { opacity:0 } to { opacity:1 } }
-        @keyframes rm-slide { from { opacity:0; transform:scale(0.96) translateY(12px) } to { opacity:1; transform:scale(1) translateY(0) } }
         .rm-card:hover .rm-shortcut { opacity:1 }
       `}</style>
-
-      <div style={{
-        width: 680, maxWidth: '96vw', maxHeight: '90vh',
-        background: '#fff', borderRadius: 24,
-        boxShadow: '0 32px 80px rgba(0,0,0,0.20), 0 2px 8px rgba(0,0,0,0.06)',
-        display: 'flex', flexDirection: 'column',
-        animation: 'rm-slide 0.18s cubic-bezier(.22,.68,0,1.2)',
-        overflow: 'hidden',
-      }}>
-
-        {/* ── Header ────────────────────────────────────────── */}
-        <div style={{
-          background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
-          padding: '14px 18px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <BarChart2 size={17} color="#fff" />
-            </div>
-            <div>
-              <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase', margin: 0 }}>
-                Counter POS
-              </p>
-              <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1, margin: 0 }}>
-                Reports &amp; Operations
-              </p>
-            </div>
-          </div>
-
-          {/* Shortcut hint */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(255,255,255,0.10)', borderRadius: 8,
-              padding: '5px 10px', border: '1px solid rgba(255,255,255,0.15)',
-            }}>
-              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 600, letterSpacing: 0.5 }}>
-                Press key to select
-              </span>
-              <kbd style={{
-                background: 'rgba(255,255,255,0.18)', borderRadius: 4,
-                padding: '1px 5px', fontSize: 10, fontWeight: 700,
-                color: '#fff', fontFamily: 'inherit',
-                border: '1px solid rgba(255,255,255,0.25)',
-              }}>ESC</kbd>
-              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>close</span>
-            </div>
-            <button
-              onClick={onClose}
-              style={{
-                width: 32, height: 32, borderRadius: 9,
-                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', cursor: 'pointer', transition: 'background 0.12s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.28)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)' }}
-            >
-              <X size={14} />
-            </button>
-          </div>
-        </div>
 
         {/* ── Body ─────────────────────────────────────────── */}
         <div style={{
@@ -374,9 +313,7 @@ if (itemKey === 12) { setPrivilegeSettingsOpen(true); return }
             <X size={13} /> Close
           </button>
         </div>
-
-      </div>
-    </div>
+    </Modal>
 
     {counterReadingOpen && (
       <CounterReadingModal

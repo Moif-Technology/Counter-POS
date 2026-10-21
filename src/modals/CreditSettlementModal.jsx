@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  X, Loader2, AlertCircle, CheckCircle2,
+  Loader2, AlertCircle, CheckCircle2,
   Banknote, CreditCard, ArrowLeft, Receipt, History,
   FileText,
 } from 'lucide-react'
 import { CreditSettlementHistoryList, CreditSettlementReceiptDetail } from './CreditSettlementHistory'
+import Modal from '../components/common/Modal'
 import Numpad from '../components/common/Numpad'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
@@ -13,7 +14,14 @@ import { applyAmountKey, useAmountNumpadKeyboard } from '../lib/posNumpadKeys'
 import { CREDIT_SETTLEMENT_PAY_MODES, PM, normalizePaymentMode } from '../lib/paymentModes'
 import { printCreditReceiptVoucher, receiptFromSettlementResult } from '../lib/printCreditReceiptVoucher'
 
-const PAY_MODE_ICONS = { [PM.CASH]: Banknote, [PM.CREDITCARD]: CreditCard }
+const STEP_TITLES = {
+  list:    'Credit Settlement',
+  settle:  'Credit Settlement',
+  history: 'Settlement History',
+  receipt: 'Receipt Details',
+}
+
+const PAY_MODE_ICONS ={ [PM.CASH]: Banknote, [PM.CREDITCARD]: CreditCard }
 const PAY_MODE_STYLES = {
   [PM.CASH]:       { color: 'var(--brand)', bg: 'var(--brand-bg)', border: 'var(--brand-border)' },
   [PM.CREDITCARD]: { color: 'var(--blue)',  bg: 'var(--blue-bg)',  border: 'var(--blue-border)' },
@@ -36,7 +44,6 @@ export default function CreditSettlementModal({
   const [error, setError]         = useState(null)
   const [success, setSuccess]     = useState(null)
   const [viewReceiptId, setViewReceiptId] = useState(null)
-  const overlayRef  = useRef()
   const debounceRef = useRef(null)
   const accessToken = usePosStore(s => s.accessToken)
   const counterNo   = usePosStore(s => s.counterNo)
@@ -154,56 +161,28 @@ export default function CreditSettlementModal({
   const billsTotal = billData?.billsTotal ?? billData?.osAmount ?? selected?.osAmount ?? 0
 
   return (
-    <div
-      ref={overlayRef} data-pos-overlay
-      onClick={e => e.target === overlayRef.current && onClose()}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(10,8,6,0.45)',
-        backdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}
+    <Modal
+      closeOnEsc={false}
+      onClose={onClose}
+      icon={FileText}
+      title={STEP_TITLES[step]}
+      leading={step !== 'list' && (
+        <button
+          onClick={() => {
+            if (step === 'receipt') { setStep('history'); setViewReceiptId(null); return }
+            if (step === 'history') { setStep('list'); return }
+            setStep('list'); setSelected(null); setBillData(null); setSuccess(null); setError(null)
+          }}
+          style={{
+            width: 32, height: 32, borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)',
+            background: 'rgba(255,255,255,0.12)', color: '#fff', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        ><ArrowLeft size={16} /></button>
+      )}
+      width={step === 'settle' ? 680 : 760}
+      maxHeight="92vh"
     >
-      <div style={{
-        width: step === 'list' || step === 'history' || step === 'receipt' ? 760 : 680,
-        maxWidth: '96vw', maxHeight: '92vh',
-        background: '#fff', borderRadius: 20, overflow: 'hidden',
-        boxShadow: '0 24px 64px rgba(0,0,0,0.2)',
-        display: 'flex', flexDirection: 'column',
-      }}>
-
-        {/* Header */}
-        <div style={{
-          background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
-          padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
-        }}>
-          {(step === 'settle' || step === 'history' || step === 'receipt') && (
-            <button
-              onClick={() => {
-                if (step === 'receipt') { setStep('history'); setViewReceiptId(null); return }
-                if (step === 'history') { setStep('list'); return }
-                setStep('list'); setSelected(null); setBillData(null); setSuccess(null); setError(null)
-              }}
-              style={{
-                width: 32, height: 32, borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)',
-                background: 'rgba(255,255,255,0.12)', color: '#fff', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            ><ArrowLeft size={16} /></button>
-          )}
-          <FileText size={18} color="#fff" />
-          <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1 }}>
-            {step === 'list' && 'Credit Settlement'}
-            {step === 'settle' && 'Credit Settlement'}
-            {step === 'history' && 'Settlement History'}
-            {step === 'receipt' && 'Receipt Details'}
-          </span>
-          <button onClick={onClose} style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
-            color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}><X size={14} /></button>
-        </div>
 
         {step === 'list' && (
           <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
@@ -470,7 +449,6 @@ export default function CreditSettlementModal({
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </Modal>
   )
 }
