@@ -1,0 +1,360 @@
+/* Lite POS page layout + quick-action toolbar. Imported by LiteHomePage. */
+
+/* Fixed-viewport shell — nothing scrolls the page, only inner zones
+   scroll (same model as the normal POS's .pos-root). */
+.lite-page { height: 100vh; height: 100dvh; }
+.lite-body {
+  display: flex; flex: 1; min-height: 0; overflow: hidden;
+}
+.lite-panel-left, .lite-panel-right {
+  width: clamp(244px, 23vw, 340px); flex-shrink: 0;
+  min-height: 0; overflow: hidden;
+}
+.lite-panel-left { border-right: 1px solid var(--border); }
+.lite-panel-right { border-left: 1px solid var(--border); }
+.lite-panel-center { flex: 1; min-width: 0; min-height: 0; }
+.lite-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.lite-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+.lite-scroll::-webkit-scrollbar { display: none; }
+
+/* Laptop / small desktop — trim the side panels */
+@media (max-width: 1240px) {
+  .lite-panel-left, .lite-panel-right { width: clamp(206px, 22vw, 288px); }
+}
+
+/* Landscape tablet — tighter still, keeps 3 columns */
+@media (max-width: 960px) {
+  .lite-panel-left, .lite-panel-right { width: clamp(184px, 26vw, 236px); }
+}
+
+/* Portrait tablet / phone — three panels can't sit side-by-side and
+   stay usable, so switch to one-panel-at-a-time with a bottom tab
+   bar. The active panel fills the whole body; nothing overflows the
+   viewport and the product list gets the full height it needs. */
+.lite-mobile-tabs { display: none; }
+
+@media (max-width: 720px) {
+  .lite-body { flex-direction: column; }
+  .lite-panel-left, .lite-panel-center, .lite-panel-right {
+    width: 100% !important; flex: 1 1 auto !important;
+    border: none !important; min-height: 0;
+  }
+  .lite-body[data-mtab="search"] .lite-panel-center,
+  .lite-body[data-mtab="search"] .lite-panel-right,
+  .lite-body[data-mtab="cart"]   .lite-panel-left,
+  .lite-body[data-mtab="cart"]   .lite-panel-right,
+  .lite-body[data-mtab="bill"]   .lite-panel-left,
+  .lite-body[data-mtab="bill"]   .lite-panel-center { display: none !important; }
+  .lite-mobile-tabs { display: flex; }
+}
+
+/* =========================================================
+   QUICK ACTION TOOLBAR
+   Bottom-docked, full-width cashier action area
+   ========================================================= */
+
+.lite-quick-toolbar {
+  flex: 0 0 auto;
+
+  width: 100%;
+  max-width: none;
+
+  margin: 10px 0 10px;
+  padding: 10px 12px;
+
+  box-sizing: border-box;
+
+  background: var(--surface);
+  border: 1px solid color-mix(
+    in srgb,
+    var(--border) 65%,
+    transparent
+  );
+
+  border-radius: 14px;
+
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.06);
+
+  position: relative;
+  z-index: 2;
+}
+
+/* =========================================================
+   ACTION ROW
+   Six equal cashier-friendly buttons
+   ========================================================= */
+
+.lite-quick-actions {
+  display: grid;
+
+grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+
+  width: 100%;
+}
+
+/* =========================================================
+   INDIVIDUAL ACTION BUTTON
+   ========================================================= */
+
+.lite-quick-action {
+  appearance: none;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 76px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  padding: 10px 8px;
+
+  box-sizing: border-box;
+
+  border: 1px solid color-mix(
+    in srgb,
+    var(--border) 60%,
+    transparent
+  );
+
+  border-radius: 12px;
+
+  background: var(--surface-2);
+
+  color: var(--text-1);
+
+  cursor: pointer;
+
+  font-family: inherit;
+
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 100ms ease;
+}
+
+/* =========================================================
+   ICON
+   ========================================================= */
+
+.lite-quick-action-icon {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 auto;
+
+  border-radius: 9px;
+
+  color: var(--brand);
+
+  background: var(--brand-bg);
+}
+
+/* =========================================================
+   LABEL
+   ========================================================= */
+
+.lite-quick-action-label {
+  display: block;
+
+  width: 100%;
+  min-width: 0;
+
+  font-size: 11px;
+  line-height: 1.2;
+
+  font-weight: 750;
+
+  text-align: center;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  color: var(--text-1);
+}
+
+/* =========================================================
+   HOVER
+   ========================================================= */
+
+.lite-quick-action:hover {
+  background: var(--brand-bg);
+
+  border-color: color-mix(
+    in srgb,
+    var(--brand) 35%,
+    var(--border)
+  );
+
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.08);
+
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   PRESS / TOUCH FEEDBACK
+   ========================================================= */
+
+.lite-quick-action:active {
+  transform: translateY(1px);
+
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+/* =========================================================
+   KEYBOARD ACCESSIBILITY
+   ========================================================= */
+
+.lite-quick-action:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* =========================================================
+   DISABLED STATE
+   ========================================================= */
+
+.lite-quick-action:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+
+  transform: none;
+
+  box-shadow: none;
+}
+
+/* =========================================================
+   TABLET / SMALL DESKTOP
+   ========================================================= */
+
+@media (max-width: 1050px) {
+
+  .lite-quick-toolbar {
+    margin: 8px 0;
+    padding: 10px;
+  }
+
+  .lite-quick-actions {
+    gap: 8px;
+  }
+
+  .lite-quick-action {
+    min-height: 70px;
+
+    padding: 9px 6px;
+
+    gap: 6px;
+  }
+
+  .lite-quick-action-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .lite-quick-action-label {
+    font-size: 10.5px;
+  }
+}
+
+/* =========================================================
+   NARROW POS LAYOUT
+   ========================================================= */
+
+@media (max-width: 760px) {
+
+  .lite-quick-toolbar {
+    margin: 7px 0;
+
+    padding: 8px;
+
+    border-radius: 12px;
+  }
+
+  .lite-quick-toolbar-header {
+    margin-bottom: 7px;
+  }
+
+  .lite-quick-toolbar-title {
+    font-size: 11px;
+  }
+
+  .lite-quick-toolbar-hint {
+    display: none;
+  }
+
+  .lite-quick-actions {
+    gap: 6px;
+  }
+
+  .lite-quick-action {
+    min-height: 64px;
+
+    padding: 8px 4px;
+
+    gap: 5px;
+
+    border-radius: 10px;
+  }
+
+  .lite-quick-action-icon {
+    width: 29px;
+    height: 29px;
+
+    border-radius: 7px;
+  }
+
+  .lite-quick-action-label {
+    font-size: 9px;
+  }
+}
+
+/* =========================================================
+   VERY NARROW SCREEN
+   ========================================================= */
+
+@media (max-width: 560px) {
+
+  .lite-quick-toolbar {
+    padding: 6px;
+  }
+
+  .lite-quick-actions {
+    gap: 4px;
+  }
+
+  .lite-quick-action {
+    min-height: 58px;
+
+    padding: 6px 2px;
+
+    gap: 4px;
+
+    border-radius: 8px;
+  }
+
+  .lite-quick-action-icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .lite-quick-action-label {
+    font-size: 8px;
+  }
+}
+
