@@ -37,7 +37,7 @@ const BRAND_LIGHT = 'var(--brand-light)'
 const BG       = 'var(--palette-11)'
 const SURFACE  = '#ffffff'
 const BORDER   = 'var(--border)'
-const TEXT_1   = 'var(--palette-1)'
+const TEXT_1   = 'var(--text-1)'
 const TEXT_2   = 'var(--text-2)'
 const TEXT_3   = 'var(--text-3)'
 
@@ -95,7 +95,7 @@ function TwoLineDisplay({ data }) {
           {l1}{'\n'}{l2}
         </div>
       </div>
-      <div style={{ color: 'var(--palette-4)', fontSize: 11, fontFamily: 'inherit', letterSpacing: 2 }}>
+      <div style={{ color: 'var(--text-3)', fontSize: 11, fontFamily: 'inherit', letterSpacing: 2 }}>
         {shopName} · 20-CHARACTER VFD POLE DISPLAY
       </div>
     </div>
@@ -291,7 +291,7 @@ function SavedScreen({ data }) {
         <span style={{ fontSize: 44, color: 'var(--palette-1)' }}>✓</span>
       </div>
 
-      <h1 style={{ color: 'var(--palette-2)', fontSize: 52, fontWeight: 900, margin: 0, letterSpacing: 2 }}>
+      <h1 style={{ color: 'var(--brand)', fontSize: 52, fontWeight: 900, margin: 0, letterSpacing: 2 }}>
         THANK YOU!
       </h1>
 
