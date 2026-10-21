@@ -290,7 +290,7 @@ export default function LiteProductLookupModal({ onClose, onSelect, groupId = nu
                   fontSize: 12, fontWeight: 800,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   cursor: selected ? 'pointer' : 'not-allowed',
-                  boxShadow: selected ? '0 3px 10px rgba(107,0,0,0.2)' : 'none',
+                  boxShadow: selected ? '0 3px 10px rgba(120,8,41,0.2)' : 'none',
                 }}
               >
                 <Check size={14} /> Select
@@ -328,7 +328,7 @@ const inputStyle = active => ({
   border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
   background: active ? 'var(--brand-bg)' : '#fff',
   fontSize: 12.5, fontWeight: 600, color: 'var(--text-1)',
-  fontFamily: "'JetBrains Mono', monospace",
+  fontFamily: 'inherit',
   outline: 'none', width: '100%', boxSizing: 'border-box',
   transition: 'border-color 0.12s, background 0.12s',
 })

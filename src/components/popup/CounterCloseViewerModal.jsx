@@ -126,8 +126,8 @@ function CloseDetailModal({ closeId, accessToken, onClose, detailFn = null }) {
             const labelColor = row.accent === 'green' ? 'var(--green)'
               : row.accent === 'red' ? 'var(--red)'
               : row.accent ? 'var(--brand)' : 'var(--text-3)'
-            const rowBg = row.accent === 'green' ? 'rgba(34,197,94,0.06)'
-              : row.accent === 'red' ? 'rgba(239,68,68,0.06)'
+            const rowBg = row.accent === 'green' ? 'rgba(120,8,41,0.06)'
+              : row.accent === 'red' ? 'rgba(120,8,41,0.06)'
               : undefined
             return (
             <div
@@ -145,7 +145,7 @@ function CloseDetailModal({ closeId, accessToken, onClose, detailFn = null }) {
               }}>{row.label}</span>
               <span style={{
                 fontWeight: 800, color: valueColor,
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: 'inherit',
               }}>
                 {row.value}
               </span>
@@ -188,7 +188,7 @@ function CloseDetailModal({ closeId, accessToken, onClose, detailFn = null }) {
                     </div>
                     <span style={{
                       fontSize: 12, fontWeight: 800, flexShrink: 0,
-                      fontFamily: "'JetBrains Mono', monospace",
+                      fontFamily: 'inherit',
                       color: isIn ? 'var(--green)' : 'var(--red)',
                     }}>
                       {fmt3(row.amount)}

@@ -281,10 +281,10 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
         {/* ── Close result banner ── */}
         {closeResult && (
           <div style={{
-            background: closeResult.reportType === 'Z' ? 'var(--green-bg)' : 'rgba(59,130,246,0.08)',
-            borderBottom: `1px solid ${closeResult.reportType === 'Z' ? 'var(--green-border)' : 'rgba(59,130,246,0.2)'}`,
+            background: closeResult.reportType === 'Z' ? 'var(--green-bg)' : 'rgba(147,57,83,0.08)',
+            borderBottom: `1px solid ${closeResult.reportType === 'Z' ? 'var(--green-border)' : 'rgba(147,57,83,0.2)'}`,
             padding: '8px 18px', fontSize: 12,
-            color: closeResult.reportType === 'Z' ? 'var(--green)' : '#2563eb',
+            color: closeResult.reportType === 'Z' ? 'var(--green)' : 'var(--blue)',
             fontWeight: 700,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
@@ -343,7 +343,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
                   </span>
                   <span style={{
                     fontSize: row.large ? 14 : 12, fontWeight: 800,
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: 'inherit',
                     color: row.accent === 'brand' ? 'var(--brand)' : row.accent === 'green' ? 'var(--green)' : row.accent === 'red' ? 'var(--red)' : 'var(--text-1)',
                   }}>
                     {row.value}
@@ -358,19 +358,19 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
                   {billRows.map(([l, v]) => (
                     <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px solid var(--border)' }}>
                       <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>{l}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-1)', fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{v}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-1)', fontWeight: 800, fontFamily: 'inherit' }}>{v}</span>
                     </div>
                   ))}
                   {summary.creditReceiptCount > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', marginTop: 4 }}>
                       <span style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 600 }}>Credit Receipts</span>
-                      <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{summary.creditReceiptCount}</span>
+                      <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 800, fontFamily: 'inherit' }}>{summary.creditReceiptCount}</span>
                     </div>
                   )}
                   {summary.startBillNo && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
                       <span style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 600 }}>Bill Range</span>
-                      <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>
+                      <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 700, fontFamily: 'inherit' }}>
                         {summary.startBillNo} – {summary.endBillNo}
                       </span>
                     </div>
@@ -409,7 +409,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
                         </div>
                         <span style={{
                           fontSize: 11, fontWeight: 800, flexShrink: 0,
-                          fontFamily: "'JetBrains Mono', monospace",
+                          fontFamily: 'inherit',
                           color: isIn ? 'var(--green)' : 'var(--red)',
                         }}>
                           {fmt3(row.amount)}
@@ -450,13 +450,13 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
                       padding: '6px 12px', alignItems: 'center',
                       borderBottom: i < DENOMS.length - 1 ? '1px solid var(--border)' : 'none',
                       borderLeft: `3px solid ${isActive ? 'var(--brand)' : 'transparent'}`,
-                      background: isActive ? 'rgba(107,0,0,0.06)' : '#fff',
+                      background: isActive ? 'rgba(120,8,41,0.06)' : '#fff',
                       transition: 'background 0.1s',
                     }}
                   >
                     <span
                       onClick={() => setActiveDenom(d.label)}
-                      style={{ fontSize: 13, fontWeight: 800, color: isActive ? 'var(--brand)' : 'var(--text-2)', fontFamily: "'JetBrains Mono', monospace", cursor: 'pointer', whiteSpace: 'nowrap' }}
+                      style={{ fontSize: 13, fontWeight: 800, color: isActive ? 'var(--brand)' : 'var(--text-2)', fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap' }}
                     >
                       {d.label}×
                     </span>
@@ -480,11 +480,11 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
                         padding: '0 6px', textAlign: 'center',
                         fontSize: 13, fontWeight: 700,
                         color: counts[d.label] ? 'var(--text-1)' : 'var(--text-4)',
-                        fontFamily: "'JetBrains Mono', monospace",
+                        fontFamily: 'inherit',
                         outline: 'none', boxSizing: 'border-box',
                       }}
                     />
-                    <span style={{ fontSize: 12, fontWeight: 700, color: cnt > 0 ? 'var(--green)' : 'var(--text-4)', textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: cnt > 0 ? 'var(--green)' : 'var(--text-4)', textAlign: 'right', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
                       {cnt > 0 ? amt : '—'}
                     </span>
                   </div>
@@ -506,7 +506,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
                 display: 'flex', alignItems: 'center', padding: '0 12px',
                 fontSize: 15, fontWeight: 900,
                 color: 'var(--brand)',
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: 'inherit',
               }}>
                 {loading ? '...' : fmt3(cashToCollect)}
               </div>
@@ -549,7 +549,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
                   padding: '0 12px',
                   fontSize: 18, fontWeight: 900,
                   color: collectedAmount > 0 ? 'var(--green)' : 'var(--text-4)',
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: 'inherit',
                   outline: 'none', width: '100%', boxSizing: 'border-box',
                 }}
               />
@@ -565,7 +565,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
                 display: 'flex', alignItems: 'center', padding: '0 12px',
                 fontSize: 18, fontWeight: 900,
                 color: cashDifference >= 0 ? 'var(--brand)' : 'var(--red)',
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: 'inherit',
               }}>
                 {cashDifference >= 0 ? '+' : ''}{fmtMoney(cashDifference)}
               </div>
@@ -600,7 +600,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
                   height: 50, borderRadius: 10, border: 'none',
                   background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
                   color: '#fff', fontSize: 15, fontWeight: 800,
-                  cursor: 'pointer', boxShadow: '0 4px 14px rgba(107,0,0,0.2)',
+                  cursor: 'pointer', boxShadow: '0 4px 14px rgba(120,8,41,0.2)',
                   transition: 'filter 0.1s, transform 0.07s',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.08)' }}

@@ -1,0 +1,67 @@
+/* ─── Colour Palette ─────────────────────────────────────────────
+   The ONLY colours used in the app UI. Every theme token below maps to
+   one of these 11 shades — do not add other colours anywhere else.
+   Change a shade here and the whole app follows.
+
+   (Printed receipts keep plain black, since thermal printers are mono.)
+   ───────────────────────────────────────────────────────────────── */
+:root {
+  --palette-1:  #780829;  /* PRIMARY */
+  --palette-2:  #85203e;
+  --palette-3:  #933953;
+  --palette-4:  #a05269;
+  --palette-5:  #ae6a7e;
+  --palette-6:  #bb8394;
+  --palette-7:  #c99ca9;
+  --palette-8:  #d6b4be;
+  --palette-9:  #e4cdd4;
+  --palette-10: #f1e6e9;
+  --palette-11: #ffffff;
+
+  /* Primary as RGB channels, for translucent glows: rgba(var(--primary-rgb), 0.1) */
+  --primary-rgb: 120, 8, 41;
+
+  /* ── Theme tokens (used across all components) ── */
+
+  /* Surfaces */
+  --bg:        var(--palette-10);
+  --surface:   var(--palette-11);
+  --surface-2: var(--palette-10);
+  --surface-3: var(--palette-9);
+
+  /* Borders */
+  --border:    var(--palette-9);
+  --border-2:  var(--palette-8);
+
+  /* Text */
+  --text-1: var(--palette-1);
+  --text-2: var(--palette-2);
+  --text-3: var(--palette-4);
+  --text-4: var(--palette-6);
+
+  /* Brand */
+  --brand:        var(--palette-1);
+  --brand-2:      var(--palette-2);
+  --brand-light:  var(--palette-3);
+  --brand-bg:     var(--palette-10);
+  --brand-tint:   var(--palette-9);
+  --brand-border: var(--palette-8);
+  --brand-glow:   rgba(var(--primary-rgb), 0.10);
+
+  /* Semantic accents — all drawn from the palette */
+  --green:         var(--palette-1);
+  --green-bg:      var(--palette-10);
+  --green-border:  var(--palette-8);
+  --blue:          var(--palette-3);
+  --blue-bg:       var(--palette-10);
+  --blue-border:   var(--palette-8);
+  --amber:         var(--palette-4);
+  --amber-bg:      var(--palette-10);
+  --amber-border:  var(--palette-8);
+  --purple:        var(--palette-5);
+  --purple-bg:     var(--palette-10);
+  --purple-border: var(--palette-8);
+  --red:           var(--palette-1);
+  --red-bg:        var(--palette-10);
+  --red-border:    var(--palette-7);
+}

@@ -229,7 +229,7 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
                 onChange={handlePriceChange}
                 onKeyDown={e => e.key === 'Enter' && fireNow(query, price)}
                 placeholder="Any"
-                style={{ ...inputStyle, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}
+                style={{ ...inputStyle, textAlign: 'right', fontFamily: 'inherit' }}
                 onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
                 onBlur={e => { e.target.style.borderColor = 'var(--border)' }}
               />

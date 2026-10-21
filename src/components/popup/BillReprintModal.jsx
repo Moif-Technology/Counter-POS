@@ -98,7 +98,7 @@ export default function BillReprintModal({ onClose }) {
     border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
     background: active ? 'var(--brand-bg)' : 'var(--surface)',
     padding: '0 12px', fontSize: 15, fontWeight: 700,
-    color: 'var(--text-1)', fontFamily: "'JetBrains Mono', monospace",
+    color: 'var(--text-1)', fontFamily: 'inherit',
     outline: 'none', cursor: 'pointer', transition: 'border-color 0.12s, background 0.12s',
   })
 
@@ -232,7 +232,7 @@ export default function BillReprintModal({ onClose }) {
                     onClick={() => setCalOpen(o => !o)}
                     style={{ ...fieldStyle(calOpen), display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                   >
-                    <span style={{ fontSize: 14, fontWeight: 700, color: billDate ? 'var(--text-1)' : 'var(--text-4)', fontFamily: "'JetBrains Mono', monospace" }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: billDate ? 'var(--text-1)' : 'var(--text-4)', fontFamily: 'inherit' }}>
                       {billDate ? formatDisplay(billDate) : 'DD / MM / YYYY'}
                     </span>
                     <CalendarDays size={15} color={calOpen ? 'var(--brand)' : 'var(--text-4)'} />

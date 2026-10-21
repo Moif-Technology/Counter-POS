@@ -201,7 +201,7 @@ if (itemKey === 12) { setPrivilegeSettingsOpen(true); return }
               <kbd style={{
                 background: 'rgba(255,255,255,0.18)', borderRadius: 4,
                 padding: '1px 5px', fontSize: 10, fontWeight: 700,
-                color: '#fff', fontFamily: "'JetBrains Mono', monospace",
+                color: '#fff', fontFamily: 'inherit',
                 border: '1px solid rgba(255,255,255,0.25)',
               }}>ESC</kbd>
               <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>close</span>
@@ -306,7 +306,7 @@ if (itemKey === 12) { setPrivilegeSettingsOpen(true); return }
                           borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: 9, fontWeight: 800, letterSpacing: 0.3,
                           color: item.danger ? '#fff' : section.color,
-                          fontFamily: "'JetBrains Mono', monospace",
+                          fontFamily: 'inherit',
                           opacity: 0.7, transition: 'opacity 0.12s',
                           padding: '0 4px',
                         }}

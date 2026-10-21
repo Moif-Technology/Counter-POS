@@ -127,7 +127,7 @@ export default function TouchKeyboard({ onKey, onClose, caps = true }) {
             background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
             color: '#fff', fontSize: 12, fontWeight: 800,
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-            boxShadow: '0 3px 10px rgba(107,0,0,0.2)',
+            boxShadow: '0 3px 10px rgba(120,8,41,0.2)',
             transition: 'filter 0.1s, transform 0.07s',
             userSelect: 'none', WebkitTapHighlightColor: 'transparent',
           }}

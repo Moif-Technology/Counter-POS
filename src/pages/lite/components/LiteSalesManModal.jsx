@@ -249,7 +249,7 @@ export default function LiteSalesManModal({ onClose, onApply }) {
                   background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
                   color: '#fff', fontSize: 12, fontWeight: 800,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  cursor: 'pointer', boxShadow: '0 3px 10px rgba(107,0,0,0.2)',
+                  cursor: 'pointer', boxShadow: '0 3px 10px rgba(120,8,41,0.2)',
                   transition: 'filter 0.12s, transform 0.08s',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.08)' }}
@@ -304,7 +304,7 @@ const inputStyle = active => ({
   border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
   background: active ? 'var(--brand-bg)' : '#fff',
   fontSize: 13, fontWeight: 600, color: 'var(--text-1)',
-  fontFamily: "'JetBrains Mono', monospace",
+  fontFamily: 'inherit',
   outline: 'none', width: '100%', boxSizing: 'border-box',
   transition: 'border-color 0.12s, background 0.12s',
 })

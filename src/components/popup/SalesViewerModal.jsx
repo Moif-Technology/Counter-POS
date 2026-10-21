@@ -417,10 +417,10 @@ function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, p
                               <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {s.payMode}
                               </span>
-                              <span style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>
+                              <span style={{ textAlign: 'right', fontFamily: 'inherit', fontWeight: 700 }}>
                                 {fmtMoney(s.amount)}
                               </span>
-                              <span style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}>
+                              <span style={{ textAlign: 'right', fontFamily: 'inherit' }}>
                                 {fmtMoney(s.tip ?? 0)}
                               </span>
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-3)' }}>
@@ -434,7 +434,7 @@ function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, p
                             fontSize: 10, fontWeight: 800, color: 'var(--purple)',
                           }}>
                             <span>Split total</span>
-                            <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                            <span style={{ fontFamily: 'inherit' }}>
                               {fmtMoney(bill.paymentSplits.reduce((a, s) => a + Number(s.amount || 0), 0))}
                             </span>
                           </div>
@@ -468,7 +468,7 @@ function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, p
               color: loading || error ? 'var(--text-4)' : '#fff',
               fontSize: 12, fontWeight: 700, cursor: loading || error ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
-              boxShadow: loading || error ? 'none' : '0 2px 10px rgba(107,0,0,0.25)',
+              boxShadow: loading || error ? 'none' : '0 2px 10px rgba(120,8,41,0.25)',
             }}
           >
             <Printer size={14} /> {printing ? 'Printing…' : 'Print Invoice'}

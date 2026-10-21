@@ -89,7 +89,7 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
     border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
     background: active ? 'var(--brand-bg)' : '#fff',
     transition: 'border-color 0.15s',
-    fontFamily: "'JetBrains Mono', monospace",
+    fontFamily: 'inherit',
   })
 
   const numBtnStyle = {
@@ -207,7 +207,7 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
                         display: 'grid', gridTemplateColumns: '1fr 1fr 2fr',
                         padding: '9px 12px', cursor: 'pointer',
                         borderBottom: isLast ? 'none' : '1px solid var(--border)',
-                        background: isActive ? 'rgba(107,0,0,0.06)' : '#fff',
+                        background: isActive ? 'rgba(120,8,41,0.06)' : '#fff',
                         borderLeft: `3px solid ${isActive ? 'var(--brand)' : 'transparent'}`,
                         transition: 'background 0.1s',
                         borderRadius: isLast ? '0 0 8px 8px' : 0,
@@ -215,8 +215,8 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
                       onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--surface-2)' }}
                       onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = '#fff' }}
                     >
-                      <span style={{ fontSize: 12, color: 'var(--text-1)', fontFamily: "'JetBrains Mono', monospace", fontWeight: isActive ? 700 : 500 }}>{c.customerId}</span>
-                      <span style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: "'JetBrains Mono', monospace", fontWeight: isActive ? 700 : 500 }}>{c.customerCode}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-1)', fontFamily: 'inherit', fontWeight: isActive ? 700 : 500 }}>{c.customerId}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'inherit', fontWeight: isActive ? 700 : 500 }}>{c.customerCode}</span>
                       <span style={{ fontSize: 12, color: 'var(--text-1)', fontWeight: isActive ? 700 : 500 }}>{c.customerName}</span>
                     </div>
                   )

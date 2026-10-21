@@ -11,7 +11,7 @@ function Cell({ label, value, accent, mono }) {
         fontSize: 13, fontWeight: 700, lineHeight: 1,
         color: accent ? 'var(--brand)' : 'var(--text-1)',
         fontVariantNumeric: mono ? 'tabular-nums' : undefined,
-        fontFamily: mono ? "'JetBrains Mono', monospace" : undefined,
+        fontFamily: mono ? 'inherit' : undefined,
       }}>
         {value}
       </span>

@@ -13,7 +13,7 @@ export default function SummaryRow({ label, value, muted, bold, accent }) {
       <span style={{ fontSize: 12, color: muted ? 'var(--text-4)' : 'var(--text-3)', fontWeight: bold ? 700 : 500 }}>{label}</span>
       <span style={{
         fontSize: 12, fontWeight: bold ? 800 : 600, color,
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: 'inherit',
       }}>
         {value}
       </span>

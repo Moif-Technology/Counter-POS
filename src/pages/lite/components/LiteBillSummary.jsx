@@ -34,7 +34,7 @@ export default function LiteBillSummary({
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{
             fontSize: 17, fontWeight: 800, color: 'var(--brand)',
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: 'inherit',
           }}>
             {fmtMoney(total)}
           </span>

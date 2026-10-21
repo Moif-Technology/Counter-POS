@@ -6,8 +6,11 @@
 
 import { usePosStore } from '../store/posStore.js'
 
-/** Legacy POS BillFont — Courier New bold */
-export const BILL_FONT = '"Courier New", Courier, monospace'
+/** Bill font — Sora, the single font used across the app */
+export const BILL_FONT = "'Sora', system-ui, sans-serif"
+
+/** Loads Sora inside print windows (must be the first rule in a <style>) */
+export const BILL_FONT_IMPORT = "@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap');"
 
 export const RECEIPT_PAGE_WIDTH = '80mm'
 
@@ -184,6 +187,7 @@ export function buildReceiptBaseCss(opts = {}) {
   ` : ''
 
   return `
+    ${BILL_FONT_IMPORT}
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body, table, div, span, td, th {
       font-family: ${BILL_FONT};
@@ -265,6 +269,7 @@ export function buildReceiptBaseCss(opts = {}) {
 export function buildReportPrintFontCss() {
   const f = RECEIPT_FONT
   return `
+    ${BILL_FONT_IMPORT}
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body, table, div, span, td, th {
       font-family: ${BILL_FONT};

@@ -251,7 +251,7 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
         fontWeight: 700,
         cursor: 'pointer',
         fontFamily: typeof label === 'string' && label !== 'C' && label !== 'ADD'
-          ? "'JetBrains Mono', monospace"
+          ? 'inherit'
           : 'inherit',
         transition: 'all 0.1s',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -299,7 +299,7 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
             fontSize: mono ? 15 : 12,
             fontWeight: mono ? 800 : 600,
             color: value ? 'var(--text-1)' : 'var(--text-4)',
-            fontFamily: mono ? "'JetBrains Mono', monospace" : 'inherit',
+            fontFamily: mono ? 'inherit' : 'inherit',
             cursor: 'text',
           }}
         >
@@ -424,10 +424,10 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
               >
                 {chip.label}{' '}
                 <span style={{
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: 'inherit',
                   fontSize: 16,
                   fontWeight: 800,
-                  color: chip.accent ? '#fecaca' : '#fff',
+                  color: chip.accent ? 'var(--red-border)' : '#fff',
                 }}>
                   {chip.value}
                 </span>
@@ -479,7 +479,7 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
                   marginTop: 4, height: 42, borderRadius: 10, border: 'none',
                   background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
                   color: '#fff', fontSize: 12, fontWeight: 800, letterSpacing: 0.4,
-                  cursor: 'pointer', boxShadow: '0 3px 12px rgba(107,0,0,0.2)',
+                  cursor: 'pointer', boxShadow: '0 3px 12px rgba(120,8,41,0.2)',
                 }}
               >
                 ADD PAYMENT
@@ -572,10 +572,10 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
                       <td style={{ padding: '8px 10px', fontWeight: 700, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {r.payMode}
                       </td>
-                      <td style={{ padding: '8px 10px', fontFamily: "'JetBrains Mono', monospace", fontWeight: 800 }}>
+                      <td style={{ padding: '8px 10px', fontFamily: 'inherit', fontWeight: 800 }}>
                         {fmtMoney(r.amount)}
                       </td>
-                      <td style={{ padding: '8px 10px', fontFamily: "'JetBrains Mono', monospace" }}>
+                      <td style={{ padding: '8px 10px', fontFamily: 'inherit' }}>
                         {fmtMoney(r.tip)}
                       </td>
                     </tr>
@@ -607,11 +607,11 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
             marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)',
             fontSize: 12, fontWeight: 700, color: 'var(--text-2)',
           }}>
-            <span>Paid <span style={{ fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-1)' }}>{fmtMoney(billTotal)}</span></span>
-            <span>Tips <span style={{ fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-1)' }}>{fmtMoney(tipTotal)}</span></span>
+            <span>Paid <span style={{ fontFamily: 'inherit', color: 'var(--text-1)' }}>{fmtMoney(billTotal)}</span></span>
+            <span>Tips <span style={{ fontFamily: 'inherit', color: 'var(--text-1)' }}>{fmtMoney(tipTotal)}</span></span>
             <span>
               Grand Total{' '}
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", color: 'var(--green)', fontWeight: 800 }}>
+              <span style={{ fontFamily: 'inherit', color: 'var(--green)', fontWeight: 800 }}>
                 {fmtMoney(grandTotal)}
               </span>
             </span>
@@ -637,7 +637,7 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
               color: canDone ? '#fff' : 'var(--text-4)',
               fontSize: 13, fontWeight: 900, letterSpacing: 0.5,
               cursor: canDone ? 'pointer' : 'not-allowed',
-              boxShadow: canDone ? '0 4px 14px rgba(107,0,0,0.22)' : 'none',
+              boxShadow: canDone ? '0 4px 14px rgba(120,8,41,0.22)' : 'none',
             }}
           >
             Done

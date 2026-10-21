@@ -29,17 +29,17 @@ function fmt(n, cur = 'AED') {
 }
 
 // ── Brand colors (mirrors index.css --brand tokens) ──────────────
-const BRAND       = '#6b0000'
-const BRAND_2     = '#990000'
-const BRAND_LIGHT = '#c10000'
+const BRAND       = 'var(--brand)'
+const BRAND_2     = 'var(--brand-2)'
+const BRAND_LIGHT = 'var(--brand-light)'
 
 // ── Light theme tokens ────────────────────────────────────────────
-const BG       = '#f4f3ef'
+const BG       = 'var(--palette-10)'
 const SURFACE  = '#ffffff'
-const BORDER   = '#dbd9d2'
-const TEXT_1   = '#17150f'
-const TEXT_2   = '#514e47'
-const TEXT_3   = '#8c8980'
+const BORDER   = 'var(--border)'
+const TEXT_1   = 'var(--palette-1)'
+const TEXT_2   = 'var(--text-2)'
+const TEXT_3   = 'var(--text-3)'
 
 // ── 2-Line VFD Pole Display Simulation ───────────────────────────
 function TwoLineDisplay({ data }) {
@@ -72,21 +72,21 @@ function TwoLineDisplay({ data }) {
 
   return (
     <div style={{
-      width: '100vw', height: '100vh', background: '#0a0a0a',
+      width: '100vw', height: '100vh', background: 'var(--palette-1)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32,
     }}>
       <div style={{
-        background: '#001200',
-        border: '3px solid #1a1a1a',
+        background: 'var(--palette-2)',
+        border: '3px solid var(--palette-3)',
         borderRadius: 10,
         padding: '28px 36px',
-        boxShadow: '0 0 60px rgba(0,255,65,0.08), inset 0 0 30px rgba(0,0,0,0.5)',
+        boxShadow: '0 0 60px rgba(241,230,233,0.08), inset 0 0 30px rgba(0,0,0,0.5)',
       }}>
         <div style={{
-          fontFamily: '"Courier New", Courier, monospace',
+          fontFamily: 'inherit',
           fontSize: 26,
-          color: '#00ff41',
-          textShadow: '0 0 6px #00ff41, 0 0 12px rgba(0,255,65,0.3)',
+          color: 'var(--palette-10)',
+          textShadow: '0 0 6px var(--palette-10), 0 0 12px rgba(241,230,233,0.3)',
           letterSpacing: 3,
           lineHeight: 1.8,
           whiteSpace: 'pre',
@@ -95,7 +95,7 @@ function TwoLineDisplay({ data }) {
           {l1}{'\n'}{l2}
         </div>
       </div>
-      <div style={{ color: '#2a2a2a', fontSize: 11, fontFamily: 'monospace', letterSpacing: 2 }}>
+      <div style={{ color: 'var(--palette-4)', fontSize: 11, fontFamily: 'inherit', letterSpacing: 2 }}>
         {shopName} · 20-CHARACTER VFD POLE DISPLAY
       </div>
     </div>
@@ -117,14 +117,14 @@ function IdleScreen({ data }) {
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      background: `linear-gradient(160deg, #f0eeea 0%, #faf9f6 50%, #f0eeea 100%)`,
+      background: `linear-gradient(160deg, var(--palette-10) 0%, var(--palette-11) 50%, var(--palette-10) 100%)`,
     }}>
       <div style={{
         width: 96, height: 96, borderRadius: 22,
         background: `linear-gradient(135deg, ${BRAND} 0%, ${BRAND_2} 100%)`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         marginBottom: 28,
-        boxShadow: `0 10px 40px rgba(107,0,0,0.25)`,
+        boxShadow: `0 10px 40px rgba(120,8,41,0.25)`,
       }}>
         <span style={{ fontSize: 46, color: '#fff', fontWeight: 900 }}>M</span>
       </div>
@@ -150,7 +150,7 @@ function IdleScreen({ data }) {
       <div style={{
         marginTop: 60,
         padding: '14px 44px',
-        border: `1px solid rgba(107,0,0,0.2)`,
+        border: `1px solid rgba(120,8,41,0.2)`,
         borderRadius: 100,
         color: TEXT_3,
         fontSize: 13,
@@ -180,7 +180,7 @@ function ScanScreen({ data }) {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: BG, color: TEXT_1, minHeight: 0 }}>
       {customerName ? (
         <div style={{
-          background: '#fff2f2', borderBottom: `1px solid #f5b8b8`,
+          background: 'var(--palette-10)', borderBottom: `1px solid var(--brand-border)`,
           padding: '8px 24px', fontSize: 13, color: TEXT_2,
           display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
         }}>
@@ -217,7 +217,7 @@ function ScanScreen({ data }) {
                 display: 'grid', gridTemplateColumns: '1fr 60px 110px 110px',
                 padding: '11px 24px',
                 borderBottom: `1px solid ${BORDER}`,
-                background: isLast ? '#fff2f2' : (idx % 2 === 0 ? SURFACE : BG),
+                background: isLast ? 'var(--palette-10)' : (idx % 2 === 0 ? SURFACE : BG),
                 borderLeft: isLast ? `3px solid ${BRAND}` : '3px solid transparent',
                 transition: 'background 0.2s',
               }}>
@@ -278,20 +278,20 @@ function SavedScreen({ data }) {
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(160deg, #f0faf3 0%, #fafffe 50%, #f0faf3 100%)',
+      background: 'linear-gradient(160deg, var(--palette-10) 0%, var(--palette-11) 50%, var(--palette-10) 100%)',
       gap: 20,
     }}>
       <div style={{
         width: 90, height: 90, borderRadius: '50%',
-        background: 'rgba(39,174,96,0.12)',
-        border: '2px solid rgba(39,174,96,0.35)',
+        background: 'rgba(120,8,41,0.12)',
+        border: '2px solid rgba(120,8,41,0.35)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         marginBottom: 8,
       }}>
-        <span style={{ fontSize: 44, color: '#27ae60' }}>✓</span>
+        <span style={{ fontSize: 44, color: 'var(--palette-1)' }}>✓</span>
       </div>
 
-      <h1 style={{ color: '#1e7a44', fontSize: 52, fontWeight: 900, margin: 0, letterSpacing: 2 }}>
+      <h1 style={{ color: 'var(--palette-2)', fontSize: 52, fontWeight: 900, margin: 0, letterSpacing: 2 }}>
         THANK YOU!
       </h1>
 
@@ -321,7 +321,7 @@ function Stat({ label, value, large, accent, green }) {
       <div style={{
         fontSize: large ? 32 : 22,
         fontWeight: large ? 600 : 400,
-        color: accent ? BRAND : green ? '#27ae60' : TEXT_1,
+        color: accent ? BRAND : green ? 'var(--palette-1)' : TEXT_1,
         fontVariantNumeric: 'tabular-nums',
       }}>
         {value}

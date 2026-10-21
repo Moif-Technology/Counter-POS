@@ -27,13 +27,22 @@ const NUMBER_ROWS = [
   ['0', '.', '00'],
 ]
 
+/* Neumorphic (soft-UI) look — same shadows as the Lite NeumorphicKeyboard */
+const NEU_RAISED  = '4px 4px 8px rgba(0,0,0,0.10), -4px -4px 8px rgba(255,255,255,0.75)'
+const NEU_PRESSED = 'inset 2px 2px 5px rgba(0,0,0,0.12), inset -2px -2px 5px rgba(255,255,255,0.6)'
+
+function neuPress(e)   { e.currentTarget.style.boxShadow = NEU_PRESSED; e.currentTarget.style.transform = 'scale(0.97)' }
+function neuRelease(e) { e.currentTarget.style.boxShadow = NEU_RAISED;  e.currentTarget.style.transform = 'scale(1)' }
+function enterPress(e) { e.currentTarget.style.boxShadow = 'inset 2px 2px 6px rgba(0,0,0,0.30)'; e.currentTarget.style.transform = 'scale(0.98)' }
+
 const NUM_BTN = {
-  height: '100%', width: '100%', borderRadius: 'var(--r-md)',
-  border: '1.5px solid var(--border)', background: 'var(--surface)',
+  height: '100%', width: '100%', borderRadius: 12,
+  border: '1px solid var(--border)', background: 'var(--surface-2)',
   color: 'var(--text-1)', fontSize: 24, fontWeight: 700, cursor: 'pointer',
-  fontFamily: "'JetBrains Mono', monospace",
-  boxShadow: 'var(--shadow-xs)', transition: 'transform 0.07s, background 0.08s',
+  fontFamily: 'inherit',
+  boxShadow: NEU_RAISED, transition: 'box-shadow 0.1s, transform 0.07s',
   lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+  userSelect: 'none', WebkitTapHighlightColor: 'transparent',
 }
 
 export default function NumPad({ onEnter }) {
@@ -85,10 +94,10 @@ export default function NumPad({ onEnter }) {
         onClose={closeAndFocusBarcode(() => setMultiPayModalOpen(false))}
       />
     )}
-    <div style={{ padding: '7px 8px 8px' }}>
+    <div style={{ padding: '10px 10px 12px', background: 'var(--surface-2)' }}>
 
       {/* 4-column grid: 3 number cols + 1 payment col */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 5 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
         {NUMBER_ROWS.map((row, ri) => {
           const mode = BILL_PAYMENT_MODES[ri]
           const active = paymentMode === mode.key
@@ -102,10 +111,11 @@ export default function NumPad({ onEnter }) {
                 key={`${ri}-${k}`}
                 onClick={() => pressNum(k)}
                 style={{ ...NUM_BTN, height: rowH }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.borderColor = 'var(--border-2)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.borderColor = 'var(--border)' }}
-                onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)'; e.currentTarget.style.boxShadow = 'none' }}
-                onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'var(--shadow-xs)' }}
+                onMouseDown={neuPress}
+                onMouseUp={neuRelease}
+                onMouseLeave={neuRelease}
+                onTouchStart={neuPress}
+                onTouchEnd={neuRelease}
               >
                 {k}
               </button>
@@ -116,33 +126,23 @@ export default function NumPad({ onEnter }) {
               key={`pay-${mode.key}`}
               onClick={() => selectPayment(mode)}
               style={{
-                height: rowH, borderRadius: 'var(--r-md)',
-                border: `1.5px solid ${active ? style.border : 'var(--border)'}`,
-                background: active ? style.bg : 'var(--surface)',
+                height: rowH, borderRadius: 12,
+                border: `1px solid ${active ? style.border : 'var(--border)'}`,
+                background: active ? style.bg : 'var(--surface-2)',
                 color: active ? style.color : 'var(--text-3)',
                 cursor: 'pointer',
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 gap: 3, fontSize: 10, fontWeight: active ? 800 : 600,
-                boxShadow: active ? 'var(--shadow-sm)' : 'var(--shadow-xs)',
-                transition: 'all 0.12s',
+                /* Selected mode stays "pressed in" */
+                boxShadow: active ? NEU_PRESSED : NEU_RAISED,
+                transition: 'box-shadow 0.1s, transform 0.07s, color 0.12s',
                 lineHeight: 1,
+                userSelect: 'none', WebkitTapHighlightColor: 'transparent',
               }}
-              onMouseEnter={e => {
-                if (!active) {
-                  e.currentTarget.style.background  = style.bg
-                  e.currentTarget.style.color       = style.color
-                  e.currentTarget.style.borderColor = style.border
-                }
-              }}
-              onMouseLeave={e => {
-                if (!active) {
-                  e.currentTarget.style.background  = 'var(--surface)'
-                  e.currentTarget.style.color       = 'var(--text-3)'
-                  e.currentTarget.style.borderColor = 'var(--border)'
-                }
-              }}
-              onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.94)' }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.color = style.color }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; if (!active) e.currentTarget.style.color = 'var(--text-3)' }}
+              onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.97)' }}
               onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
             >
               <Icon size={13} />
@@ -156,20 +156,23 @@ export default function NumPad({ onEnter }) {
       <button
         onClick={togglePosQtyMode}
         style={{
-          width: '100%', height: 38, marginTop: 5,
-          borderRadius: 'var(--r-md)',
-          border: '1.5px solid var(--brand-border)',
-          background: 'var(--brand-bg)',
+          width: '100%', height: 38, marginTop: 8,
+          borderRadius: 12,
+          border: '1px solid var(--brand-border)',
+          background: 'var(--surface-2)',
           color: 'var(--brand)',
           fontSize: 12, fontWeight: 800, letterSpacing: 2,
           cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          transition: 'all 0.12s',
+          boxShadow: NEU_RAISED,
+          transition: 'box-shadow 0.1s, transform 0.07s',
+          userSelect: 'none', WebkitTapHighlightColor: 'transparent',
         }}
-        onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand)'; e.currentTarget.style.color = '#fff' }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'var(--brand-bg)'; e.currentTarget.style.color = 'var(--brand)' }}
-        onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.97)' }}
-        onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+        onMouseDown={neuPress}
+        onMouseUp={neuRelease}
+        onMouseLeave={neuRelease}
+        onTouchStart={neuPress}
+        onTouchEnd={neuRelease}
       >
         # QTY
       </button>
@@ -178,19 +181,21 @@ export default function NumPad({ onEnter }) {
       <button
         onClick={onEnter}
         style={{
-          width: '100%', height: 52, marginTop: 5,
-          borderRadius: 'var(--r-md)',
+          width: '100%', height: 52, marginTop: 8,
+          borderRadius: 12,
           background: 'linear-gradient(145deg, var(--brand) 0%, var(--brand-2) 100%)',
           border: 'none',
           color: '#fff', fontSize: 12.5, fontWeight: 800, letterSpacing: 2,
           cursor: 'pointer',
-          boxShadow: '0 3px 14px rgba(107,0,0,0.22)',
-          transition: 'box-shadow 0.12s, transform 0.08s',
+          boxShadow: NEU_RAISED,
+          transition: 'box-shadow 0.1s, transform 0.07s',
+          userSelect: 'none', WebkitTapHighlightColor: 'transparent',
         }}
-        onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 5px 20px rgba(107,0,0,0.32)' }}
-        onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 3px 14px rgba(107,0,0,0.22)' }}
-        onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)' }}
-        onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+        onMouseDown={enterPress}
+        onMouseUp={neuRelease}
+        onMouseLeave={neuRelease}
+        onTouchStart={enterPress}
+        onTouchEnd={neuRelease}
       >
         ENTER
       </button>

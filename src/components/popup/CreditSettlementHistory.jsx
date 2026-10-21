@@ -286,11 +286,11 @@ export function CreditSettlementHistoryList({ accessToken, onSelectReceipt, hist
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-bg)' }}
               onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
             >
-              <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{r.receiptNo}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'inherit' }}>{r.receiptNo}</span>
               <span style={{ fontSize: 11, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.customerName}</span>
               <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{fmtDateTime(r.transactionDate)}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}>{fmt3(r.paidAmount)}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", color: r.osAfter > 0 ? 'var(--red)' : 'var(--green)' }}>{fmt3(r.osAfter)}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, textAlign: 'right', fontFamily: 'inherit' }}>{fmt3(r.paidAmount)}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, textAlign: 'right', fontFamily: 'inherit', color: r.osAfter > 0 ? 'var(--red)' : 'var(--green)' }}>{fmt3(r.osAfter)}</span>
             </div>
           ))}
         </div>
@@ -325,7 +325,7 @@ export function CreditSettlementReceiptDetail({ accessToken, transactionId, onBa
 
   const rowStyle = { display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 12 }
   const labelStyle = { color: 'var(--text-3)', fontWeight: 600 }
-  const valueStyle = { fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }
+  const valueStyle = { fontWeight: 700, fontFamily: 'inherit' }
 
   return (
     <div style={{ flex: 1, padding: 16, overflowY: 'auto', minHeight: 420 }}>
@@ -358,7 +358,7 @@ export function CreditSettlementReceiptDetail({ accessToken, transactionId, onBa
             background: 'var(--surface-2)', border: '1px solid var(--border)',
           }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', marginBottom: 4 }}>{b.label}</div>
-            <div style={{ fontSize: 16, fontWeight: 900, color: b.color, fontFamily: "'JetBrains Mono', monospace" }}>{fmt3(b.value)}</div>
+            <div style={{ fontSize: 16, fontWeight: 900, color: b.color, fontFamily: 'inherit' }}>{fmt3(b.value)}</div>
           </div>
         ))}
       </div>
@@ -386,10 +386,10 @@ export function CreditSettlementReceiptDetail({ accessToken, transactionId, onBa
                 {b.billDate ? new Date(b.billDate).toLocaleDateString('en-GB') : '—'}
               </div>
             </div>
-            <span style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}>{fmt3(b.invoiceAmount)}</span>
-            <span style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}>{fmt3(b.osBefore)}</span>
-            <span style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", color: 'var(--green)' }}>{fmt3(b.paidAmount)}</span>
-            <span style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", color: b.osAfter > 0 ? 'var(--red)' : 'var(--green)' }}>{fmt3(b.osAfter)}</span>
+            <span style={{ textAlign: 'right', fontFamily: 'inherit' }}>{fmt3(b.invoiceAmount)}</span>
+            <span style={{ textAlign: 'right', fontFamily: 'inherit' }}>{fmt3(b.osBefore)}</span>
+            <span style={{ textAlign: 'right', fontFamily: 'inherit', color: 'var(--green)' }}>{fmt3(b.paidAmount)}</span>
+            <span style={{ textAlign: 'right', fontFamily: 'inherit', color: b.osAfter > 0 ? 'var(--red)' : 'var(--green)' }}>{fmt3(b.osAfter)}</span>
           </div>
         ))}
       </div>

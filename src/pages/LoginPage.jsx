@@ -92,7 +92,7 @@ export default function LoginPage() {
       {/* ── LEFT BRAND PANEL ──────────────────── */}
       <div style={{
         width: 340, flexShrink: 0,
-        background: 'linear-gradient(160deg, var(--brand) 0%, var(--brand-2) 60%, #4a0000 100%)',
+        background: 'linear-gradient(160deg, var(--brand) 0%, var(--brand-2) 60%, var(--palette-1) 100%)',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         padding: '48px 40px', position: 'relative', overflow: 'hidden',
@@ -216,7 +216,7 @@ export default function LoginPage() {
                     background: isAction ? 'var(--red-bg)' : 'var(--surface)',
                     color: isAction ? 'var(--red)' : 'var(--text-1)',
                     fontSize: isAction ? 13 : 20, fontWeight: 700,
-                    fontFamily: k === '⌫' ? 'inherit' : "'JetBrains Mono', monospace",
+                    fontFamily: k === '⌫' ? 'inherit' : 'inherit',
                     boxShadow: 'var(--shadow-xs)',
                     transition: 'transform 0.08s, background 0.1s',
                     cursor: 'pointer',
@@ -242,7 +242,7 @@ export default function LoginPage() {
               color: loading ? 'var(--text-3)' : '#fff',
               fontSize: 14, fontWeight: 800, letterSpacing: 1,
               cursor: loading ? 'not-allowed' : 'pointer',
-              boxShadow: loading ? 'none' : '0 4px 18px rgba(107,0,0,0.28)',
+              boxShadow: loading ? 'none' : '0 4px 18px rgba(120,8,41,0.28)',
               transition: 'all 0.18s',
             }}
           >

@@ -18,7 +18,7 @@ function TableRow({ row, isLast, highlight }) {
         display: 'grid', gridTemplateColumns: COLS,
         padding: '8px 10px',
         borderBottom: isLast ? 'none' : '1px solid var(--border)',
-        background: highlight ? 'rgba(107,0,0,0.06)' : hover ? 'var(--surface-2)' : '#fff',
+        background: highlight ? 'rgba(120,8,41,0.06)' : hover ? 'var(--surface-2)' : '#fff',
         borderLeft: highlight ? '3px solid var(--brand)' : '3px solid transparent',
         transition: 'background 0.1s',
         borderRadius: isLast ? '0 0 8px 8px' : 0,
@@ -27,11 +27,11 @@ function TableRow({ row, isLast, highlight }) {
       <span style={{ fontSize: 11, color: 'var(--text-4)', fontWeight: 600 }}>{row.sl}</span>
       <span style={{ fontSize: 11, color: 'var(--text-1)', fontWeight: highlight ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.description}</span>
       <span style={{ fontSize: 11, color: 'var(--text-2)' }}>{row.pack}</span>
-      <span style={{ fontSize: 11, color: 'var(--text-1)', fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>{fmt(row.unitPrice)}</span>
+      <span style={{ fontSize: 11, color: 'var(--text-1)', fontFamily: 'inherit', fontWeight: 600 }}>{fmt(row.unitPrice)}</span>
       <span style={{ fontSize: 11, color: row.discount ? 'var(--amber)' : 'var(--text-4)', fontWeight: row.discount ? 700 : 400 }}>{row.discount}%</span>
       <span style={{ fontSize: 11, color: 'var(--text-2)' }}>{row.vatPer}%</span>
-      <span style={{ fontSize: 11, color: 'var(--text-2)', fontFamily: "'JetBrains Mono', monospace" }}>{fmt(row.vatAmt)}</span>
-      <span style={{ fontSize: 11, color: 'var(--brand)', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{fmt(row.price)}</span>
+      <span style={{ fontSize: 11, color: 'var(--text-2)', fontFamily: 'inherit' }}>{fmt(row.vatAmt)}</span>
+      <span style={{ fontSize: 11, color: 'var(--brand)', fontFamily: 'inherit', fontWeight: 700 }}>{fmt(row.price)}</span>
     </div>
   )
 }
@@ -269,7 +269,7 @@ export default function PriceEnquiryModal({ onClose, searchFn = null }) {
                     flex: 1, height: 34, padding: '0 10px', borderRadius: 7,
                     border: '1.5px solid var(--brand)', background: 'var(--brand-bg)',
                     fontSize: 12, fontWeight: 700, color: 'var(--text-1)', outline: 'none',
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: 'inherit',
                   }}
                 />
                 <button

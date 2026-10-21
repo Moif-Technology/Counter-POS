@@ -72,7 +72,7 @@ export default function BarcodeInput({ onEnter }) {
           border: `1.5px solid ${isReturn ? 'var(--red)' : qtyActive ? 'var(--brand)' : 'var(--border)'}`,
           borderRadius: 'var(--r-md)', padding: '0 10px', height: 42,
           flexShrink: 0, minWidth: 80,
-          boxShadow: isReturn ? '0 0 0 3px var(--red-glow, rgba(220,38,38,0.15))' : qtyActive ? '0 0 0 3px var(--brand-glow)' : 'none',
+          boxShadow: isReturn ? '0 0 0 3px var(--red-glow, rgba(120,8,41,0.15))' : qtyActive ? '0 0 0 3px var(--brand-glow)' : 'none',
           transition: 'all 0.13s', cursor: 'text',
         }}
         onClick={() => { usePosStore.setState({ inputMode: 'qty' }); qtyRef.current?.focus() }}
@@ -89,7 +89,7 @@ export default function BarcodeInput({ onEnter }) {
             width: 46, background: 'none', border: 'none', outline: 'none',
             fontSize: 20, fontWeight: 800, textAlign: 'right',
             fontVariantNumeric: 'tabular-nums',
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: 'inherit',
             color: isReturn ? 'var(--red)' : qtyActive ? 'var(--brand)' : 'var(--text-1)',
             lineHeight: 1, cursor: 'text',
           }}
@@ -121,7 +121,7 @@ export default function BarcodeInput({ onEnter }) {
             <span style={{
               fontSize: 13, fontWeight: 800, color: '#fff',
               fontVariantNumeric: 'tabular-nums',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: 'inherit',
               lineHeight: 1,
             }}>{qtyBuffer}</span>
             <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: 0.3 }}>

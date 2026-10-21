@@ -38,9 +38,10 @@ function buildReceiptHtml(bill) {
 <meta charset="utf-8">
 <title>Receipt ${esc(billNo)}</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap');
   @page { size: 80mm auto; margin: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { width: 72mm; margin: 0 auto; font-family: 'Courier New', monospace; font-size: 11px; color: #000; }
+  body { width: 72mm; margin: 0 auto; font-family: 'Sora', system-ui, sans-serif; font-size: 11px; color: #000; }
   .c { text-align: center; }
   .r { text-align: right; }
   h1 { font-size: 14px; }

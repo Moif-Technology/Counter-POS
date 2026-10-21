@@ -457,7 +457,7 @@ export default function RecallHoldModal({ onClose, onRecall }) {
                 fontSize: 12, fontWeight: 800,
                 cursor: selected && !recalling ? 'pointer' : 'default',
                 display: 'flex', alignItems: 'center', gap: 6,
-                boxShadow: selected ? '0 4px 14px rgba(107,0,0,0.22)' : 'none',
+                boxShadow: selected ? '0 4px 14px rgba(120,8,41,0.22)' : 'none',
                 transition: 'all 0.12s',
                 opacity: recalling ? 0.7 : 1,
               }}
@@ -486,7 +486,7 @@ export default function RecallHoldModal({ onClose, onRecall }) {
                 height: 32, borderRadius: 8,
                 border: '1.5px solid var(--border)', background: 'var(--surface)',
                 padding: '0 10px', fontSize: 13, fontWeight: 700,
-                color: 'var(--text-1)', fontFamily: "'JetBrains Mono', monospace",
+                color: 'var(--text-1)', fontFamily: 'inherit',
                 outline: 'none', textAlign: 'center',
               }}
               onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
@@ -503,7 +503,7 @@ export default function RecallHoldModal({ onClose, onRecall }) {
             }}>
               <span style={{
                 fontSize: 15, fontWeight: 800, color: 'var(--brand)',
-                fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums',
+                fontFamily: 'inherit', fontVariantNumeric: 'tabular-nums',
               }}>
                 {selected ? fmtMoney(selected.amount) : moneyPlaceholder()}
               </span>

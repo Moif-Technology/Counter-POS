@@ -90,7 +90,7 @@ export default function CreditCustomerModal({ onClose, onApply }) {
     border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
     background: active ? 'var(--brand-bg)' : '#fff',
     transition: 'border-color 0.15s',
-    fontFamily: "'JetBrains Mono', monospace",
+    fontFamily: 'inherit',
   })
 
   const numBtnStyle = {
@@ -206,7 +206,7 @@ export default function CreditCustomerModal({ onClose, onApply }) {
                         onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--surface-2)' }}
                         onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = '#fff' }}
                       >
-                        <span style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: "'JetBrains Mono', monospace", fontWeight: isActive ? 700 : 500 }}>{c.customerCode}</span>
+                        <span style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'inherit', fontWeight: isActive ? 700 : 500 }}>{c.customerCode}</span>
                         <span style={{ fontSize: 12, color: 'var(--text-1)', fontWeight: isActive ? 700 : 500 }}>{c.customerName}</span>
                       </div>
 
@@ -232,7 +232,7 @@ export default function CreditCustomerModal({ onClose, onApply }) {
                           </div>
                           <span style={{
                             fontSize: 15, fontWeight: 800,
-                            fontFamily: "'JetBrains Mono', monospace",
+                            fontFamily: 'inherit',
                             fontVariantNumeric: 'tabular-nums',
                             color: cOs > 0 ? 'var(--red)' : 'var(--green)',
                             letterSpacing: '-0.3px',

@@ -18,7 +18,7 @@ function SummaryRow({ label, value, highlight, muted, minus }) {
         fontSize: highlight ? 16 : 13,
         fontWeight: highlight ? 900 : 700,
         color: minus ? 'var(--amber)' : highlight ? 'var(--brand)' : 'var(--text-1)',
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: 'inherit',
       }}>
         {minus && value !== fmtMoney(0) ? `− ${value}` : value}
       </span>
@@ -168,7 +168,7 @@ export default function DiscountEntryPanel({
             <span style={{
               flex: 1, textAlign: 'center',
               fontSize: 22, fontWeight: 900, color: 'var(--amber)',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: 'inherit',
             }}>
               {inputValue}
             </span>
@@ -241,7 +241,7 @@ export default function DiscountEntryPanel({
             height: 50, borderRadius: 10, border: 'none', marginTop: 4,
             background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
             color: '#fff', fontSize: 15, fontWeight: 900, cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(107,0,0,0.22)',
+            boxShadow: '0 4px 14px rgba(120,8,41,0.22)',
           }}
         >
           Done

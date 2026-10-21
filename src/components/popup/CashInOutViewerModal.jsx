@@ -180,7 +180,7 @@ export default function CashInOutViewerModal({ onClose, reportFn = null }) {
                 </div>
                 <div style={{
                   fontSize: 14, fontWeight: 800, marginTop: 4,
-                  fontFamily: "'JetBrains Mono', monospace", color: item.color,
+                  fontFamily: 'inherit', color: item.color,
                 }}>
                   {item.value}
                 </div>
@@ -255,7 +255,7 @@ export default function CashInOutViewerModal({ onClose, reportFn = null }) {
                   </span>
                   <span style={{
                     textAlign: 'right', fontWeight: 800,
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: 'inherit',
                     color: isIn ? 'var(--green)' : 'var(--red)',
                   }}>
                     {fmt3(r.amount)}

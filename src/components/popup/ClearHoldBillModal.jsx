@@ -78,7 +78,7 @@ export default function ClearHoldBillModal({ onClose }) {
           <div style={{
             position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)',
             zIndex: 1200, background: '#fff',
-            border: '1.5px solid var(--red-border, #fecaca)',
+            border: '1.5px solid var(--red-border, var(--red-border))',
             padding: '10px 14px', borderRadius: 14,
             display: 'flex', alignItems: 'center', gap: 10,
             boxShadow: '0 10px 30px rgba(0,0,0,0.12)',
@@ -86,17 +86,17 @@ export default function ClearHoldBillModal({ onClose }) {
           }}>
             <div style={{
               width: 28, height: 28, borderRadius: '50%',
-              background: 'var(--red-bg, #fef2f2)',
+              background: 'var(--red-bg, var(--red-bg))',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
-              <CheckCircle2 size={15} color="var(--red, #dc2626)" />
+              <CheckCircle2 size={15} color="var(--red, var(--red))" />
             </div>
             <div>
-              <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1, #111)', margin: 0, lineHeight: 1.2 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-1, var(--palette-1))', margin: 0, lineHeight: 1.2 }}>
                 {toast.title}
               </p>
-              <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-3, #666)', margin: 0, lineHeight: 1.2 }}>
+              <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-3, var(--text-2))', margin: 0, lineHeight: 1.2 }}>
                 {toast.subtitle}
               </p>
             </div>
@@ -227,9 +227,9 @@ export default function ClearHoldBillModal({ onClose }) {
             onClick={onClose}
             style={{
               height: 36, padding: '0 22px', borderRadius: 10,
-              border: '1.5px solid var(--red-border, #fecaca)', 
-              background: 'var(--red-bg, #fef2f2)',
-              color: 'var(--red, #dc2626)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+              border: '1.5px solid var(--red-border, var(--red-border))', 
+              background: 'var(--red-bg, var(--red-bg))',
+              color: 'var(--red, var(--red))', fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
             }}
           >
             Close

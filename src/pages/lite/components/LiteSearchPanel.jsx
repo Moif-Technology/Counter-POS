@@ -112,7 +112,7 @@ export default function LiteSearchPanel({
             }}>
               {p.description}
             </span>
-            <span style={{ fontSize: 'clamp(9.5px, 1.5vh, 13px)', color: 'var(--text-3)', fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
+            <span style={{ fontSize: 'clamp(9.5px, 1.5vh, 13px)', color: 'var(--text-3)', fontFamily: 'inherit', flexShrink: 0 }}>
               {fmtMoney(p.price)}
             </span>
           </button>

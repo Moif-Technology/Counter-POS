@@ -176,7 +176,7 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
               }}>
                 <div style={{
                   width: 68, height: 68, borderRadius: 18,
-                  background: 'rgba(34,197,94,0.12)', border: '2px solid rgba(34,197,94,0.25)',
+                  background: 'rgba(120,8,41,0.12)', border: '2px solid rgba(120,8,41,0.25)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <Wallet size={32} color="var(--green)" strokeWidth={1.6} />
@@ -195,7 +195,7 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
               }}>
                 <div style={{
                   width: 68, height: 68, borderRadius: 18,
-                  background: 'rgba(239,68,68,0.10)', border: '2px solid rgba(239,68,68,0.22)',
+                  background: 'rgba(120,8,41,0.10)', border: '2px solid rgba(120,8,41,0.22)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <Banknote size={32} color="var(--red)" strokeWidth={1.6} />
@@ -370,7 +370,7 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
                         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)' }}>{e.accountName}</span>
                         <span style={{ fontSize: 10, color: 'var(--text-4)', marginLeft: 6 }}>{e.category}</span>
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: accent, textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: accent, textAlign: 'right', fontFamily: 'inherit' }}>
                         {e.amount}
                       </span>
                       <button
@@ -430,7 +430,7 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
                   display: 'flex', alignItems: 'center', padding: '0 12px',
                   fontSize: 20, fontWeight: 800,
                   color: amount ? accent : 'var(--text-4)',
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: 'inherit',
                   transition: 'border-color 0.15s, background 0.15s',
                 }}>
                   {amount || <span style={{ fontSize: 13, fontWeight: 500 }}>{moneyPlaceholder()}</span>}
@@ -455,7 +455,7 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
                       : 'var(--border)',
                     color: parsed > 0 ? '#fff' : 'var(--text-4)',
                     border: 'none', fontSize: 13, fontWeight: 800,
-                    boxShadow: parsed > 0 ? '0 4px 12px rgba(107,0,0,0.2)' : 'none',
+                    boxShadow: parsed > 0 ? '0 4px 12px rgba(120,8,41,0.2)' : 'none',
                   },
                   onClick: handleEnter,
                 }]]}
@@ -486,7 +486,7 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
                 display: 'flex', alignItems: 'center',
                 fontSize: 16, fontWeight: 800,
                 color: entries.length ? accent : 'var(--text-4)',
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: 'inherit',
                 minWidth: 110,
               }}>
                 {totalAmount}
@@ -510,7 +510,7 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
                 color: entries.length && !saving ? '#fff' : 'var(--text-4)',
                 fontSize: 13, fontWeight: 800, cursor: entries.length && !saving ? 'pointer' : 'default',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                boxShadow: entries.length && !saving ? '0 4px 14px rgba(107,0,0,0.2)' : 'none',
+                boxShadow: entries.length && !saving ? '0 4px 14px rgba(120,8,41,0.2)' : 'none',
                 transition: 'filter 0.12s, transform 0.08s',
                 opacity: saving ? 0.8 : 1,
               }}

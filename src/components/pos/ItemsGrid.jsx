@@ -88,15 +88,15 @@ export default function ItemsGrid() {
               style={{
                 display: 'flex', alignItems: 'center', cursor: 'pointer',
                 background: selected
-                  ? 'rgba(107,0,0,0.06)'
-                  : idx % 2 === 0 ? 'var(--surface)' : '#fafaf8',
-                borderBottom: `1px solid ${selected ? 'rgba(107,0,0,0.12)' : 'var(--border)'}`,
+                  ? 'rgba(120,8,41,0.06)'
+                  : idx % 2 === 0 ? 'var(--surface)' : 'var(--palette-10)',
+                borderBottom: `1px solid ${selected ? 'rgba(120,8,41,0.12)' : 'var(--border)'}`,
                 borderLeft: `3px solid ${selected ? 'var(--brand)' : 'transparent'}`,
                 transition: 'background 0.1s',
                 minHeight: 40,
               }}
-              onMouseEnter={e => { if (!selected) e.currentTarget.style.background = '#f5f5f5' }}
-              onMouseLeave={e => { if (!selected) e.currentTarget.style.background = idx % 2 === 0 ? 'var(--surface)' : '#fafaf8' }}
+              onMouseEnter={e => { if (!selected) e.currentTarget.style.background = 'var(--palette-10)' }}
+              onMouseLeave={e => { if (!selected) e.currentTarget.style.background = idx % 2 === 0 ? 'var(--surface)' : 'var(--palette-10)' }}
             >
               {COLS.map(col => {
 
@@ -148,7 +148,7 @@ export default function ItemsGrid() {
                       <span style={{
                         fontSize: 12, fontWeight: 700, padding: '0 8px',
                         fontVariantNumeric: 'tabular-nums',
-                        fontFamily: "'JetBrains Mono', monospace",
+                        fontFamily: 'inherit',
                         color: 'var(--text-1)', userSelect: 'none',
                       }}>
                         {row.qty % 1 === 0 ? row.qty : row.qty.toFixed(3)}
@@ -187,7 +187,7 @@ export default function ItemsGrid() {
                     color: isTotal ? 'var(--brand)' : isDesc ? 'var(--text-1)' : 'var(--text-2)',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     fontVariantNumeric: isNum ? 'tabular-nums' : undefined,
-                    fontFamily: isNum ? "'JetBrains Mono', monospace" : undefined,
+                    fontFamily: isNum ? 'inherit' : undefined,
                     ...(col.flex ? { flex: 1, minWidth: 0 } : { width: col.w, flexShrink: 0 }),
                   }}>
                     {col.key === 'slNo' ? (
@@ -229,7 +229,7 @@ export default function ItemsGrid() {
           <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.6, textTransform: 'uppercase' }}>Total Qty</span>
           <span style={{
             fontSize: 14, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.2,
-            fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums',
+            fontFamily: 'inherit', fontVariantNumeric: 'tabular-nums',
           }}>
             {totalQty % 1 === 0 ? totalQty : totalQty.toFixed(3)}
           </span>
@@ -241,7 +241,7 @@ export default function ItemsGrid() {
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
             <span style={{
               fontSize: 20, fontWeight: 900, color: 'var(--brand)', lineHeight: 1,
-              fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: 'tabular-nums',
+              fontFamily: 'inherit', fontVariantNumeric: 'tabular-nums',
             }}>
               {fmt3(netAmount)}
             </span>

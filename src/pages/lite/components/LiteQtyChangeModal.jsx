@@ -44,7 +44,7 @@ export default function LiteQtyChangeModal({ onClose }) {
     display: 'flex', alignItems: 'center', padding: '0 12px',
     fontSize: 15, fontWeight: 700,
     color: accent ? 'var(--text-1)' : 'var(--text-2)',
-    fontFamily: "'JetBrains Mono', monospace",
+    fontFamily: 'inherit',
     minWidth: 110,
   })
 
@@ -158,7 +158,7 @@ export default function LiteQtyChangeModal({ onClose }) {
                     color: parsed > 0 ? '#fff' : 'var(--text-4)',
                     border: 'none',
                     fontSize: 13,
-                    boxShadow: parsed > 0 ? '0 4px 12px rgba(107,0,0,0.2)' : 'none',
+                    boxShadow: parsed > 0 ? '0 4px 12px rgba(120,8,41,0.2)' : 'none',
                   },
                   onClick: handleDone,
                 },

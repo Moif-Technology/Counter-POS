@@ -155,10 +155,10 @@ export default function LiteCartTable({
                   background: checked
                     ? 'var(--brand-bg)'
                     : selected 
-                      ? 'rgba(107, 0, 0, 0.08)' 
+                      ? 'rgba(120,8,41, 0.08)' 
                       : idx % 2 === 0 ? 'transparent' : 'var(--surface-2)',
-                  boxShadow: selected ? 'inset 4px 0 0 var(--brand, #6b0000)' : 'none',
-                  borderBottom: `1px solid ${selected || checked ? 'rgba(107,0,0,0.12)' : 'var(--border)'}`,
+                  boxShadow: selected ? 'inset 4px 0 0 var(--brand, var(--brand))' : 'none',
+                  borderBottom: `1px solid ${selected || checked ? 'rgba(120,8,41,0.12)' : 'var(--border)'}`,
                   transition: 'background 0.1s, box-shadow 0.1s, opacity 0.14s ease, transform 0.14s ease',
                 }}
               >

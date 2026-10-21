@@ -143,7 +143,7 @@ export default function PrivilegeSettingsModal({ onClose }) {
           )}
 
           {successMsg && (
-            <div style={{ padding: 12, borderRadius: 8, background: 'var(--green-bg, #e6f4ea)', border: '1px solid var(--green-border, #ceead6)', color: 'var(--green, #137333)', fontSize: 12, fontWeight: 600 }}>
+            <div style={{ padding: 12, borderRadius: 8, background: 'var(--green-bg, var(--green-bg))', border: '1px solid var(--green-border, var(--green-border))', color: 'var(--green, var(--green))', fontSize: 12, fontWeight: 600 }}>
               {successMsg}
             </div>
           )}

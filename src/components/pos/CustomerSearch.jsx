@@ -165,7 +165,7 @@ export default function CustomerSearch() {
         >
           <div style={{
             width: 22, height: 22, borderRadius: '50%',
-            background: hasCustomer ? 'rgba(59,130,246,0.15)' : 'var(--surface-2)',
+            background: hasCustomer ? 'rgba(147,57,83,0.15)' : 'var(--surface-2)',
             border: `1px solid ${hasCustomer ? 'var(--blue-border)' : 'var(--border)'}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>

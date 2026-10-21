@@ -11,7 +11,7 @@
 // ─── Typography ────────────────────────────────────────────────────────────────
 export const font = {
   sans:  "'Sora', system-ui, sans-serif",
-  mono:  "'JetBrains Mono', monospace",
+  mono:  'inherit',
 }
 
 export const text = {
@@ -124,8 +124,8 @@ export const shadow = {
   lg: 'var(--shadow-lg)',
   modal:  '0 24px 64px rgba(0,0,0,0.18)',
   modalLg:'0 40px 100px rgba(0,0,0,0.22), 0 2px 10px rgba(0,0,0,0.06)',
-  brand:  '0 4px 14px rgba(107,0,0,0.22)',
-  brandHover: '0 6px 20px rgba(107,0,0,0.32)',
+  brand:  '0 4px 14px rgba(120,8,41,0.22)',
+  brandHover: '0 6px 20px rgba(120,8,41,0.32)',
 }
 
 // ─── Gradients ─────────────────────────────────────────────────────────────────
@@ -316,7 +316,7 @@ export const table = {
     cursor: 'pointer',
   },
   rowActive: {
-    background: 'rgba(107,0,0,0.06)',
+    background: 'rgba(120,8,41,0.06)',
     borderLeft: `3px solid ${colors.brand}`,
   },
   rowHover: {

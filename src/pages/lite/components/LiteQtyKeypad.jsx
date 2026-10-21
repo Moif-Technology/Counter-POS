@@ -13,7 +13,7 @@ export default function LiteQtyKeypad({ selectedRowKey, qtyBuffer, onPressKey, o
         display: 'flex', justifyContent: 'space-between',
       }}>
         <span>{selectedRowKey ? 'Set Qty' : 'Select a row'}</span>
-        <span style={{ fontWeight: 800, color: 'var(--brand)', fontFamily: "'JetBrains Mono', monospace" }}>
+        <span style={{ fontWeight: 800, color: 'var(--brand)', fontFamily: 'inherit' }}>
           {qtyBuffer || '—'}
         </span>
       </div>
@@ -31,7 +31,7 @@ export default function LiteQtyKeypad({ selectedRowKey, qtyBuffer, onPressKey, o
                 background: 'var(--surface-2)',
                 color: isAction ? 'var(--red)' : 'var(--text-1)',
                 fontSize: isAction ? 'clamp(12px, 2vh, 15px)' : 'clamp(16px, 2.6vh, 22px)', fontWeight: 700,
-                fontFamily: k === '⌫' ? 'inherit' : "'JetBrains Mono', monospace",
+                fontFamily: k === '⌫' ? 'inherit' : 'inherit',
                 cursor: 'pointer',
                 boxShadow: NEU_RAISED,
                 transition: 'transform 0.07s, box-shadow 0.1s',

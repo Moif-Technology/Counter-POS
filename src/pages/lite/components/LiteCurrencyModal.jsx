@@ -144,17 +144,17 @@ export default function LiteCurrencyModal({ onClose }) {
                       padding: '11px 16px', alignItems: 'center',
                       borderBottom: i < CURRENCIES.length - 1 ? '1px solid var(--border)' : 'none',
                       borderLeft: `3px solid ${isSelected ? 'var(--brand)' : 'transparent'}`,
-                      background: isSelected ? 'rgba(107,0,0,0.07)' : '#fff',
+                      background: isSelected ? 'rgba(120,8,41,0.07)' : '#fff',
                       transition: 'background 0.1s',
                     }}
                   >
-                    <span style={{ fontSize: 13, fontWeight: isSelected ? 800 : 600, color: isSelected ? 'var(--brand)' : 'var(--text-3)', fontFamily: "'JetBrains Mono', monospace" }}>
+                    <span style={{ fontSize: 13, fontWeight: isSelected ? 800 : 600, color: isSelected ? 'var(--brand)' : 'var(--text-3)', fontFamily: 'inherit' }}>
                       {cur.sl}
                     </span>
                     <span style={{ fontSize: 13, fontWeight: isSelected ? 800 : 600, color: isSelected ? 'var(--brand)' : 'var(--text-1)' }}>
                       {cur.name}
                     </span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? 'var(--brand)' : 'var(--text-2)', textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? 'var(--brand)' : 'var(--text-2)', textAlign: 'right', fontFamily: 'inherit' }}>
                       {cur.rate}
                     </span>
                   </div>
@@ -233,7 +233,7 @@ export default function LiteCurrencyModal({ onClose }) {
                       : 'var(--border)',
                     color: paid > 0 ? '#fff' : 'var(--text-4)',
                     border: 'none', fontSize: 13, fontWeight: 800,
-                    boxShadow: paid > 0 ? '0 4px 12px rgba(107,0,0,0.2)' : 'none',
+                    boxShadow: paid > 0 ? '0 4px 12px rgba(120,8,41,0.2)' : 'none',
                   },
                   onClick: handleEnter,
                 }]]}
@@ -280,6 +280,6 @@ const fieldBox = {
   height: 42, borderRadius: 9,
   display: 'flex', alignItems: 'center', padding: '0 12px',
   fontSize: 18, fontWeight: 800,
-  fontFamily: "'JetBrains Mono', monospace",
+  fontFamily: 'inherit',
   transition: 'border-color 0.14s, background 0.14s',
 }

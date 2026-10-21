@@ -156,7 +156,7 @@ export default function EnrollPage() {
                 color: loading ? 'var(--text-3)' : '#fff',
                 fontSize: 13.5, fontWeight: 800, letterSpacing: 0.8,
                 cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: loading ? 'none' : '0 4px 18px rgba(107,0,0,0.28)',
+                boxShadow: loading ? 'none' : '0 4px 18px rgba(120,8,41,0.28)',
               }}
             >
               {loading ? 'Verifying…' : 'NEXT →'}
@@ -222,7 +222,7 @@ export default function EnrollPage() {
                   color: loading || !stationId ? 'var(--text-3)' : '#fff',
                   fontSize: 13.5, fontWeight: 800, letterSpacing: 0.8,
                   cursor: loading || !stationId ? 'not-allowed' : 'pointer',
-                  boxShadow: loading || !stationId ? 'none' : '0 4px 18px rgba(107,0,0,0.28)',
+                  boxShadow: loading || !stationId ? 'none' : '0 4px 18px rgba(120,8,41,0.28)',
                 }}
               >
                 {loading ? 'Registering…' : 'REGISTER DEVICE'}

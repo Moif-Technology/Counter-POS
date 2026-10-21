@@ -161,7 +161,7 @@ export default function CreditSettlementModal({
     border: '1.5px solid var(--border)', background: '#fff',
     fontSize: 18, fontWeight: 700, color: 'var(--text-1)',
     cursor: 'pointer', transition: 'all 0.1s',
-    fontFamily: "'JetBrains Mono', monospace",
+    fontFamily: 'inherit',
   }
 
   const billsTotal = billData?.billsTotal ?? billData?.osAmount ?? selected?.osAmount ?? 0
@@ -293,11 +293,11 @@ export default function CreditSettlementModal({
                       onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-bg)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
                     >
-                      <span style={{ fontSize: 12, fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>{c.customerCode}</span>
+                      <span style={{ fontSize: 12, fontFamily: 'inherit', fontWeight: 600 }}>{c.customerCode}</span>
                       <span style={{ fontSize: 12, fontWeight: 600 }}>{c.customerName}</span>
                       <span style={{
                         fontSize: 12, fontWeight: 800, textAlign: 'right',
-                        fontFamily: "'JetBrains Mono', monospace",
+                        fontFamily: 'inherit',
                         color: c.osAmount > 0 ? 'var(--red)' : 'var(--green)',
                       }}>{fmt3(c.osAmount)}</span>
                     </div>
@@ -330,7 +330,7 @@ export default function CreditSettlementModal({
               }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', marginBottom: 4 }}>Customer</div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{selected?.customerName}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>
+                <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2, fontFamily: 'inherit' }}>
                   Code: {selected?.customerCode}
                 </div>
                 <div style={{
@@ -344,7 +344,7 @@ export default function CreditSettlementModal({
                   </span>
                   <span style={{
                     fontSize: 20, fontWeight: 900,
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: 'inherit',
                     color: billsTotal > 0 ? 'var(--red)' : 'var(--green)',
                   }}>{fmt3(billsTotal)}</span>
                   {(billData?.bills ?? []).length > 0 && (
@@ -376,7 +376,7 @@ export default function CreditSettlementModal({
                           {b.billDate ? new Date(b.billDate).toLocaleDateString('en-GB') : '—'}
                         </div>
                       </div>
-                      <span style={{ fontWeight: 800, fontFamily: "'JetBrains Mono', monospace" }}>{fmt3(b.currentAmount)}</span>
+                      <span style={{ fontWeight: 800, fontFamily: 'inherit' }}>{fmt3(b.currentAmount)}</span>
                     </div>
                   ))}
                 </div>
@@ -401,7 +401,7 @@ export default function CreditSettlementModal({
                     borderRadius: 8, border: '2px solid var(--brand-border)',
                     background: 'var(--brand-bg)', textAlign: 'right',
                     padding: '0 12px', outline: 'none',
-                    fontSize: 22, fontWeight: 900, fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 22, fontWeight: 900, fontFamily: 'inherit',
                     color: 'var(--brand)',
                   }}
                 />

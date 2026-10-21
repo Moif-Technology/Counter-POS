@@ -70,7 +70,7 @@ export default function ItemDetailModal({ item, onClose }) {
           display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10,
         }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5, fontFamily: "'JetBrains Mono', monospace" }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5, fontFamily: 'inherit' }}>
               {item.barcode}
             </p>
             <h2 style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -111,7 +111,7 @@ export default function ItemDetailModal({ item, onClose }) {
               <p style={{
                 fontSize: 14, fontWeight: 800,
                 color: s.accent ? 'var(--blue)' : 'var(--text-1)',
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: 'inherit',
                 fontVariantNumeric: 'tabular-nums',
               }}>
                 {s.value}
@@ -153,7 +153,7 @@ export default function ItemDetailModal({ item, onClose }) {
                 width: 68, height: 44, border: 'none', background: '#fff',
                 textAlign: 'center', fontSize: 20, fontWeight: 800,
                 color: 'var(--text-1)', outline: 'none',
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: 'inherit',
                 fontVariantNumeric: 'tabular-nums',
               }}
             />
@@ -225,11 +225,11 @@ export default function ItemDetailModal({ item, onClose }) {
               background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
               color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-              boxShadow: '0 4px 14px rgba(107,0,0,0.25)',
+              boxShadow: '0 4px 14px rgba(120,8,41,0.25)',
               transition: 'box-shadow 0.12s, transform 0.08s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(107,0,0,0.35)' }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(107,0,0,0.25)' }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(120,8,41,0.35)' }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(120,8,41,0.25)' }}
             onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.98)' }}
             onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
           >

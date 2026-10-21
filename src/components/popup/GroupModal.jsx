@@ -225,7 +225,7 @@ export default function GroupModal({ onClose, onSelect }) {
               <span style={{
                 fontSize: price ? 20 : 14, fontWeight: 800,
                 color: price ? 'var(--text-1)' : 'var(--text-4)',
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: 'inherit',
                 fontVariantNumeric: 'tabular-nums',
               }}>
                 {price || moneyPlaceholder()}
@@ -245,7 +245,7 @@ export default function GroupModal({ onClose, onSelect }) {
                         border: '1.5px solid var(--border)', background: 'var(--surface)',
                         color: 'var(--text-1)', fontSize: 16, fontWeight: 700,
                         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontFamily: "'JetBrains Mono', monospace",
+                        fontFamily: 'inherit',
                         boxShadow: 'var(--shadow-xs)', transition: 'transform 0.07s, background 0.08s',
                       }}
                       onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)' }}
@@ -265,7 +265,7 @@ export default function GroupModal({ onClose, onSelect }) {
                     border: '1.5px solid var(--border)', background: 'var(--surface)',
                     color: 'var(--text-1)', fontSize: 18, fontWeight: 700,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: 'inherit',
                     boxShadow: 'var(--shadow-xs)', transition: 'transform 0.07s, background 0.08s',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)' }}
@@ -280,7 +280,7 @@ export default function GroupModal({ onClose, onSelect }) {
                     border: '1.5px solid var(--border)', background: 'var(--surface)',
                     color: 'var(--text-1)', fontSize: 16, fontWeight: 700,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: 'inherit',
                     boxShadow: 'var(--shadow-xs)', transition: 'transform 0.07s, background 0.08s',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)' }}
@@ -333,11 +333,11 @@ export default function GroupModal({ onClose, onSelect }) {
                   color: selected && price ? '#fff' : 'var(--text-4)',
                   fontSize: 12, fontWeight: 800,
                   cursor: selected && price ? 'pointer' : 'not-allowed',
-                  boxShadow: selected && price ? '0 4px 14px rgba(107,0,0,0.22)' : 'none',
+                  boxShadow: selected && price ? '0 4px 14px rgba(120,8,41,0.22)' : 'none',
                   transition: 'box-shadow 0.12s, transform 0.08s',
                 }}
-                onMouseEnter={e => { if (selected && price) e.currentTarget.style.boxShadow = '0 6px 20px rgba(107,0,0,0.32)' }}
-                onMouseLeave={e => { if (selected && price) e.currentTarget.style.boxShadow = '0 4px 14px rgba(107,0,0,0.22)' }}
+                onMouseEnter={e => { if (selected && price) e.currentTarget.style.boxShadow = '0 6px 20px rgba(120,8,41,0.32)' }}
+                onMouseLeave={e => { if (selected && price) e.currentTarget.style.boxShadow = '0 4px 14px rgba(120,8,41,0.22)' }}
                 onMouseDown={e => { if (selected && price) e.currentTarget.style.transform = 'scale(0.97)' }}
                 onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
               >

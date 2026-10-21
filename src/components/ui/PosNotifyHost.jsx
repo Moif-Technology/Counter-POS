@@ -420,7 +420,7 @@ function PromptDialog({ prompt, onResolve }) {
               justifyContent: 'center',
               fontSize: 32,
               fontWeight: 900,
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: 'inherit',
               color: colors.brand,
             }}
           >

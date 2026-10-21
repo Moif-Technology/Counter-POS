@@ -200,7 +200,7 @@ export default function LiteCommentsModal({ onClose, onSave }) {
               background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
               color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-              boxShadow: '0 4px 14px rgba(107,0,0,0.22)',
+              boxShadow: '0 4px 14px rgba(120,8,41,0.22)',
               transition: 'filter 0.12s, transform 0.08s',
             }}
             onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.08)' }}

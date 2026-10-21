@@ -119,7 +119,7 @@ export default function ItemDetailModal({ item, onClose }) {
               display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10,
             }}>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5, fontFamily: "'JetBrains Mono', monospace" }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5, fontFamily: 'inherit' }}>
                   {liveItem.slNo ?? '—'}
                 </p>
                 <h2 style={{ fontSize: 16, fontWeight: 800, color: '#fff', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -150,8 +150,8 @@ export default function ItemDetailModal({ item, onClose }) {
                 <div key={s.label} style={{
                   flex: 1, textAlign: 'center',
                   padding: '8px 6px', borderRadius: 8,
-                  border: `1px solid ${s.accent ? 'var(--blue-border, #c3d9f0)' : 'var(--border)'}`,
-                  background: s.accent ? 'var(--blue-bg, #f0f6fd)' : 'var(--surface-2)',
+                  border: `1px solid ${s.accent ? 'var(--blue-border, var(--blue-border))' : 'var(--border)'}`,
+                  background: s.accent ? 'var(--blue-bg, var(--blue-bg))' : 'var(--surface-2)',
                 }}>
                   <p style={{ fontSize: 9, fontWeight: 700, color: s.accent ? 'var(--blue)' : 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 4 }}>
                     {s.label}
@@ -159,7 +159,7 @@ export default function ItemDetailModal({ item, onClose }) {
                   <p style={{
                     fontSize: 14, fontWeight: 800,
                     color: s.accent ? 'var(--blue)' : 'var(--text-1)',
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: 'inherit',
                   }}>
                     {s.value}
                   </p>
@@ -198,7 +198,7 @@ export default function ItemDetailModal({ item, onClose }) {
                     width: 68, height: 44, border: 'none', background: '#fff',
                     textAlign: 'center', fontSize: 20, fontWeight: 800,
                     color: 'var(--text-1)', outline: 'none',
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontFamily: 'inherit',
                   }}
                 />
                 <button type="button" onClick={() => changeQty(1)} style={{
@@ -251,7 +251,7 @@ export default function ItemDetailModal({ item, onClose }) {
                 background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
                 color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                boxShadow: '0 4px 14px rgba(107,0,0,0.25)',
+                boxShadow: '0 4px 14px rgba(120,8,41,0.25)',
               }}>
                 <Save size={14} /> Save Changes
               </button>

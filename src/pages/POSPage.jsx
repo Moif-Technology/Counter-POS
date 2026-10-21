@@ -69,7 +69,7 @@ function HeaderIconBtn({ icon: Icon, badge }) {
       {badge != null && (
         <span style={{
           position: 'absolute', top: -4, right: -4,
-          background: '#ef4444', color: '#fff',
+          background: 'var(--red)', color: '#fff',
           fontSize: 9, fontWeight: 800, minWidth: 16, height: 16,
           borderRadius: 99, display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '0 3px', border: '1.5px solid var(--brand)',
@@ -473,7 +473,7 @@ export default function POSPage() {
             borderRadius: 7, padding: '5px 11px', flexShrink: 0,
           }}>
             <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', letterSpacing: 0.4 }}>BILL </span>
-            <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: "'JetBrains Mono', monospace" }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', fontFamily: 'inherit' }}>
               {billNo}
             </span>
           </div>
@@ -628,11 +628,11 @@ export default function POSPage() {
                 color: '#fff',
                 fontSize: 15, fontWeight: 800, cursor: saving ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: '0 4px 14px rgba(107,0,0,0.25)',
+                boxShadow: '0 4px 14px rgba(120,8,41,0.25)',
                 transition: 'all 0.12s', letterSpacing: 0.3, opacity: saving ? 0.6 : 1,
               }}
-              onMouseEnter={e => { if (!saving) { e.currentTarget.style.boxShadow = '0 6px 20px rgba(107,0,0,0.38)'; e.currentTarget.style.opacity = '0.93' } }}
-              onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(107,0,0,0.25)'; e.currentTarget.style.opacity = saving ? '0.6' : '1' }}
+              onMouseEnter={e => { if (!saving) { e.currentTarget.style.boxShadow = '0 6px 20px rgba(120,8,41,0.38)'; e.currentTarget.style.opacity = '0.93' } }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(120,8,41,0.25)'; e.currentTarget.style.opacity = saving ? '0.6' : '1' }}
               onMouseDown={e => { if (!saving) e.currentTarget.style.transform = 'scale(0.97)' }}
               onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
             >

@@ -96,7 +96,7 @@ export default function LitePriceChangeModal({ onClose, rowKey: rowKeyProp, zInd
         display: 'flex', alignItems: 'center', padding: '0 10px',
         fontSize: 12, fontWeight: 700,
         color: accent ? 'var(--brand)' : 'var(--text-1)',
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: 'inherit',
       }}>
         {value}
       </div>
@@ -199,7 +199,7 @@ export default function LitePriceChangeModal({ onClose, rowKey: rowKeyProp, zInd
                 display: 'flex', alignItems: 'center', padding: '0 10px',
                 fontSize: 13, fontWeight: 800,
                 color: 'var(--text-1)',
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: 'inherit',
               }}>
                 {newPrice || <span style={{ color: 'var(--text-4)', fontWeight: 500, fontSize: 11 }}>Enter new price…</span>}
               </div>
@@ -223,7 +223,7 @@ export default function LitePriceChangeModal({ onClose, rowKey: rowKeyProp, zInd
                           border: '1px solid var(--border)', background: 'var(--surface-2)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: 11, fontWeight: 700,
-                          fontFamily: "'JetBrains Mono', monospace",
+                          fontFamily: 'inherit',
                         }}>{f.value}</div>
                       </div>
                     ))}
@@ -266,7 +266,7 @@ export default function LitePriceChangeModal({ onClose, rowKey: rowKeyProp, zInd
                     color: parsedInput > 0 ? '#fff' : 'var(--text-4)',
                     border: 'none',
                     fontSize: 12,
-                    boxShadow: parsedInput > 0 ? '0 4px 12px rgba(107,0,0,0.2)' : 'none',
+                    boxShadow: parsedInput > 0 ? '0 4px 12px rgba(120,8,41,0.2)' : 'none',
                   },
                   onClick: handleDone,
                 },

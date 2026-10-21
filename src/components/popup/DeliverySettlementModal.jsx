@@ -297,7 +297,7 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
               placeholder="Scan delivery no…"
               style={{
                 width: 130, height: 40, borderRadius: 10, border: '1.5px solid var(--border)',
-                padding: '0 12px', fontSize: 13, fontWeight: 700, fontFamily: 'monospace',
+                padding: '0 12px', fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
               }}
             />
             <button
@@ -345,7 +345,7 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
                       borderRadius: 14,
                       border: selected ? '2.5px solid var(--brand)' : '1.5px solid var(--border)',
                       background: selected ? 'var(--brand-bg)' : '#fff',
-                      boxShadow: selected ? '0 4px 14px rgba(107,0,0,0.08)' : 'var(--shadow-xs)',
+                      boxShadow: selected ? '0 4px 14px rgba(120,8,41,0.08)' : 'var(--shadow-xs)',
                       overflow: 'hidden',
                       cursor: 'pointer',
                       touchAction: 'manipulation',
@@ -377,7 +377,7 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
                         </div>
                       </div>
                       <div style={{
-                        fontSize: 17, fontWeight: 900, fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: 17, fontWeight: 900, fontFamily: 'inherit',
                         color: 'var(--text-1)', flexShrink: 0,
                       }}>
                         {fmtMoney(r.netAmount)}
@@ -443,7 +443,7 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
                             style={{
                               width: 100, height: 40, textAlign: 'right', borderRadius: 10,
                               border: '1.5px solid var(--border)', padding: '0 12px',
-                              fontFamily: 'monospace', fontWeight: 800, fontSize: 14, background: '#fff',
+                              fontFamily: 'inherit', fontWeight: 800, fontSize: 14, background: '#fff',
                             }}
                           />
                         ) : isMultiPaymentMode(r.paymentMode) ? (
@@ -451,7 +451,7 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
                             {r.paymentSplits?.length ? fmtMoney(r.netAmount) : '—'}
                           </span>
                         ) : (
-                          <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 14, minWidth: 80, textAlign: 'right' }}>
+                          <span style={{ fontFamily: 'inherit', fontWeight: 800, fontSize: 14, minWidth: 80, textAlign: 'right' }}>
                             {fmtMoney(r.netAmount)}
                           </span>
                         )}
@@ -481,7 +481,7 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
                 ? 'var(--surface-3)' : 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
               color: settling || !selectedRows.length ? 'var(--text-4)' : '#fff',
               fontWeight: 800, fontSize: 14, touchAction: 'manipulation',
-              boxShadow: settling || !selectedRows.length ? 'none' : '0 4px 14px rgba(107,0,0,0.2)',
+              boxShadow: settling || !selectedRows.length ? 'none' : '0 4px 14px rgba(120,8,41,0.2)',
             }}
           >
             {settling ? 'Posting…' : `Settle (${selectedRows.length})`}

@@ -158,7 +158,7 @@ export default function LitePacketScanModal({ onClose, onAddItem }) {
                   border: '1.5px solid var(--brand)', background: 'var(--brand-bg)',
                   display: 'flex', alignItems: 'center', padding: '0 10px',
                   fontSize: 13, fontWeight: 700, color: barcode ? 'var(--text-1)' : 'var(--text-4)',
-                  fontFamily: "'JetBrains Mono', monospace",
+                  fontFamily: 'inherit',
                   overflow: 'hidden',
                 }}>
                   {barcode || <span style={{ fontWeight: 500, fontSize: 11 }}>Scan or type…</span>}
@@ -203,7 +203,7 @@ export default function LitePacketScanModal({ onClose, onAddItem }) {
                     border: 'none',
                     fontSize: 14,
                     fontWeight: 800,
-                    boxShadow: barcode.trim() ? '0 4px 12px rgba(107,0,0,0.2)' : 'none',
+                    boxShadow: barcode.trim() ? '0 4px 12px rgba(120,8,41,0.2)' : 'none',
                   },
                   onClick: handleEnter,
                 },

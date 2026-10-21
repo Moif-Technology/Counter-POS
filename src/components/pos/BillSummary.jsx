@@ -31,7 +31,7 @@ function SummaryRow({ label, value, accent, muted, bold, large }) {
                 ? 'var(--text-4)'
                 : 'var(--text-2)',
         fontVariantNumeric: 'tabular-nums',
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: 'inherit',
       }}>
         {value}
       </span>
@@ -111,7 +111,7 @@ export default function BillSummary() {
           <span style={{
             fontSize: 16, fontWeight: 800, lineHeight: 1,
             fontVariantNumeric: 'tabular-nums',
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: 'inherit',
             color: balanceAmount >= 0 ? 'var(--green)' : 'var(--red)',
           }}>
             {fmt3(balanceAmount)}
@@ -135,7 +135,7 @@ export default function BillSummary() {
             <span style={{
               fontSize: 26, fontWeight: 900, color: 'var(--brand)',
               fontVariantNumeric: 'tabular-nums',
-              fontFamily: "'JetBrains Mono', monospace",
+              fontFamily: 'inherit',
               lineHeight: 1, letterSpacing: '-0.5px',
             }}>
               {fmt3(netAmount)}
