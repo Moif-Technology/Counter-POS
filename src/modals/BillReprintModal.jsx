@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Printer, FileText, CalendarDays, Receipt, Truck, Package } from 'lucide-react'
-import Calendar from '../components/common/Calendar'
+import { X, Printer, FileText, Receipt, Truck, Package } from 'lucide-react'
+import DatePicker from '../components/common/DatePicker'
 import Numpad from '../components/common/Numpad'
 import { usePosStore } from '../store/posStore'
 import { printBillReprintByNo } from '../lib/printBillReceipt'
@@ -11,11 +11,6 @@ import { posNotifyError } from '../lib/posNotify'
 
 const today = new Date()
 const isoDate = d => d.toISOString().split('T')[0]
-const formatDisplay = iso => {
-  if (!iso) return ''
-  const [y, m, d] = iso.split('-')
-  return `${d} / ${m} / ${y}`
-}
 
 const DOC_OPTIONS = [
   { key: DOC_TYPE.INVOICE, label: 'Invoice', icon: Receipt },
@@ -32,30 +27,20 @@ export default function BillReprintModal({ onClose }) {
   const [docNo,       setDocNo]       = useState('')
   const [counterNo,   setCounterNo]   = useState(String(storeCounter ?? 1))
   const [billDate,    setBillDate]    = useState(isoDate(today))
-  const [calOpen,     setCalOpen]     = useState(false)
   const [focus,       setFocus]       = useState('docNo')
   const [printing,    setPrinting]    = useState(false)
   const overlayRef   = useRef()
   const docNoRef     = useRef()
-  const calWrapRef   = useRef()
 
   const showDate = docType === DOC_TYPE.INVOICE
 
   useEffect(() => {
     docNoRef.current?.focus()
-    const onKey = e => { if (e.key === 'Escape') { if (calOpen) setCalOpen(false); else onClose() } }
+    const onKey = e => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose, calOpen])
+  }, [onClose])
 
-  useEffect(() => {
-    if (!calOpen) return
-    const handler = e => {
-      if (calWrapRef.current && !calWrapRef.current.contains(e.target)) setCalOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [calOpen])
 
   const handleKey = k => {
     if (focus !== 'docNo') return
@@ -223,26 +208,7 @@ export default function BillReprintModal({ onClose }) {
                   </select>
                 </div>
 
-                <div ref={calWrapRef} style={{ display: 'flex', flexDirection: 'column', gap: 4, position: 'relative' }}>
-                  <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>
-                    Bill Date
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setCalOpen(o => !o)}
-                    style={{ ...fieldStyle(calOpen), display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                  >
-                    <span style={{ fontSize: 14, fontWeight: 700, color: billDate ? 'var(--text-1)' : 'var(--text-4)', fontFamily: 'inherit' }}>
-                      {billDate ? formatDisplay(billDate) : 'DD / MM / YYYY'}
-                    </span>
-                    <CalendarDays size={15} color={calOpen ? 'var(--brand)' : 'var(--text-4)'} />
-                  </button>
-                  {calOpen && (
-                    <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 200, boxShadow: '0 -8px 40px rgba(0,0,0,0.14)', borderRadius: 12, overflow: 'hidden' }}>
-                      <Calendar value={billDate} onChange={d => { setBillDate(d); setCalOpen(false) }} />
-                    </div>
-                  )}
-                </div>
+                <DatePicker label="Bill Date" value={billDate} onChange={setBillDate} />
               </>
             )}
           </div>

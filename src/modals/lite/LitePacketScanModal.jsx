@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Package } from 'lucide-react'
 import Table from '../../components/common/Table'
-import Numpad from '../../components/common/NeumorphicNumpad'
+import Numpad from '../../components/common/Numpad'
 import { fmtMoney, moneyPlaceholder } from '../../lib/currencyFormat'
 import { searchLiteProducts } from '../../pages/lite/data/liteProducts'
 import { posNotifySuccess, posNotifyWarning } from '../../lib/posNotify'
@@ -183,7 +183,7 @@ export default function LitePacketScanModal({ onClose, onAddItem }) {
             </div>
 
             {/* Numpad */}
-            <Numpad
+            <Numpad variant="neumorphic"
               onKey={handleKey}
               showDot={false}
               showClear={false}

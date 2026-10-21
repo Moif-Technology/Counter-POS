@@ -89,7 +89,13 @@ export function usePosNumpadKeyboard(onEnter, enabled = true) {
 }
 
 /** Apply a key to a string amount buffer (touch + keyboard settlement fields). */
+/**
+ * Apply a Numpad key to a numeric string value.
+ *   setQty(v => applyAmountKey(v, key))
+ * Handles digits, '.', '⌫'/'Backspace' and 'C' (clear).
+ */
 export function applyAmountKey(current, key) {
+  if (key === 'C') return ''
   if (key === '⌫' || key === 'Backspace') return current.slice(0, -1)
   if (key === '.') {
     if (current.includes('.')) return current

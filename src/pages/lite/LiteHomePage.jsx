@@ -12,22 +12,21 @@ import { posConfirm, posNotifyError, posNotifyInfo, posNotifySuccess, posNotifyW
 
 import LitePacketScanModal from '../../modals/lite/LitePacketScanModal'
 import BillDiscountModal from '../../modals/BillDiscountModal'
-import PriceChangeModal from '../../modals/lite/LitePriceChangeModal'
-import QtyChangeModal from '../../modals/lite/LiteQtyChangeModal'
-import CurrencyModal from '../../modals/lite/LiteCurrencyModal'
-import CommentsModal from '../../modals/lite/LiteCommentsModal'
-import SalesManModal from '../../modals/lite/LiteSalesManModal'
+import PriceChangeModal from '../../modals/PriceChangeModal'
+import QtyChangeModal from '../../modals/QtyChangeModal'
+import CurrencyModal from '../../modals/CurrencyModal'
+import CommentsModal from '../../modals/CommentsModal'
+import SalesManModal from '../../modals/SalesManModal'
 import ProductLookupModal from '../../modals/lite/LiteProductLookupModal'
 import GroupModal from '../../modals/GroupModal'
 import PriceEnquiryModal from '../../modals/PriceEnquiryModal'
 import PrivilegeCustomerModal from '../../modals/PrivilegeCustomerModal'
-import CashInOutModal from '../../modals/lite/LiteCashInOutModal'
+import CashInOutModal from '../../modals/CashInOutModal'
 import DeliveryCustomerModal from '../../modals/DeliveryCustomerModal'
-import CreditSettlementModal from '../../modals/lite/LiteCreditSettlementModal'
+import CreditSettlementModal from '../../modals/CreditSettlementModal'
 import DeliverySettlementModal from '../../modals/DeliverySettlementModal'
 import ReportsModal from '../../modals/ReportsModal'
-
-
+import UiVariantProvider from '../../components/common/UiVariantProvider'
 
 import LiteHeader from './components/LiteHeader'
 import LiteSearchPanel from './components/LiteSearchPanel'
@@ -1497,16 +1496,42 @@ grid-template-columns: repeat(7, minmax(0, 1fr));
 
       {/* ── Real POS modals — same components/behaviour as the normal counter POS ── */}
       {showBillDiscount && <BillDiscountModal onClose={() => setShowBillDiscount(false)} />}
-      {showPriceChange && <PriceChangeModal onClose={() => setShowPriceChange(false)} />}
-      {showQtyChange && <QtyChangeModal onClose={() => setShowQtyChange(false)} />}
-      {showCurrencyModal && <CurrencyModal onClose={() => setShowCurrencyModal(false)} />}
-      {showCommentsModal && <CommentsModal onClose={() => setShowCommentsModal(false)} />}
-      {showSalesManModal && (
-        <SalesManModal
-          onClose={() => setShowSalesManModal(false)}
-          onApply={(s) => setSalesMan(s.name || s.code || null)}
-        />
-      )}
+
+      {/* Shared with the normal POS, restyled with the Lite soft-UI numpad/keyboard */}
+      <UiVariantProvider variant="neumorphic">
+        {showPriceChange && <PriceChangeModal onClose={() => setShowPriceChange(false)} />}
+        {showQtyChange && <QtyChangeModal onClose={() => setShowQtyChange(false)} />}
+        {showCurrencyModal && <CurrencyModal onClose={() => setShowCurrencyModal(false)} />}
+        {showCommentsModal && (
+          <CommentsModal
+            onClose={() => setShowCommentsModal(false)}
+            onSave={() => posNotifySuccess('Comment saved', { title: 'Comments', duration: 1200 })}
+          />
+        )}
+        {showSalesManModal && (
+          <SalesManModal
+            onClose={() => setShowSalesManModal(false)}
+            onApply={(s) => setSalesMan(s.name || s.code || null)}
+          />
+        )}
+        {showCashInOut && (
+          <CashInOutModal
+            onClose={() => setShowCashInOut(false)}
+            saveFn={handleCashInOutSave}
+          />
+        )}
+        {showReceiptModal && (
+          <CreditSettlementModal
+            onClose={() => setShowReceiptModal(false)}
+            loadCustomersFn={liteCreditCustomersFn}
+            loadBillsFn={liteOutstandingBillsFn}
+            settleFn={liteSettleFn}
+            historyFn={liteHistoryFn}
+            receiptFn={liteReceiptFn}
+            customerSearchFn={liteCustomerSearchFn(200)}
+          />
+        )}
+      </UiVariantProvider>
 
       {showPacketScan && (
         <LitePacketScanModal
@@ -1547,31 +1572,12 @@ grid-template-columns: repeat(7, minmax(0, 1fr));
         />
       )}
 
-      {showCashInOut && (
-        <CashInOutModal
-          onClose={() => setShowCashInOut(false)}
-          saveFn={handleCashInOutSave}
-        />
-      )}
-
       {showDeliveryModal && (
         <DeliveryCustomerModal
           onClose={() => setShowDeliveryModal(false)}
           onConfirm={handleDeliveryConfirm}
           title={deliverySavePending ? 'Save Delivery' : 'Delivery Details'}
           searchFn={liteCustomerSearchFn(80)}
-        />
-      )}
-
-      {showReceiptModal && (
-        <CreditSettlementModal
-          onClose={() => setShowReceiptModal(false)}
-          loadCustomersFn={liteCreditCustomersFn}
-          loadBillsFn={liteOutstandingBillsFn}
-          settleFn={liteSettleFn}
-          historyFn={liteHistoryFn}
-          receiptFn={liteReceiptFn}
-          customerSearchFn={liteCustomerSearchFn(200)}
         />
       )}
 

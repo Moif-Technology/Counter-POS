@@ -286,6 +286,12 @@ button { cursor: pointer; border: none; background: none; }
   flex-shrink: 0;
 }
 
+/* ─── Shared animations (Modal, Keyboard, spinners) ─────────── */
+@keyframes pos-modal-fade  { from { opacity: 0 } to { opacity: 1 } }
+@keyframes pos-modal-slide { from { opacity: 0; transform: scale(0.96) translateY(10px) } to { opacity: 1; transform: scale(1) translateY(0) } }
+@keyframes kb-slide        { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes pos-spin        { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+
 @keyframes scanner-pulse {
   0%, 100% { opacity: 1;   transform: scale(1);    }
   50%       { opacity: 0.4; transform: scale(0.75); }

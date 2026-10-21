@@ -6,6 +6,7 @@ import EnrollPage from './pages/enroll/EnrollPage'
 import CustomerDisplayPage from './pages/customer-display/CustomerDisplayPage'
 import LiteHomePage from './pages/lite/LiteHomePage'
 import PosNotifyHost from './components/common/PosNotifyHost'
+import ToastHost from './components/common/Toast'
 import { usePosStore } from './store/posStore'
 import { getEnrollment } from './lib/device'
 
@@ -27,6 +28,7 @@ export default function App() {
   return (
     <QueryClientProvider client={qc}>
       <PosNotifyHost />
+      <ToastHost />
       <BrowserRouter>
         <Routes>
           <Route path="/enroll" element={<EnrollPage />} />

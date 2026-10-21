@@ -1,22 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  X, Delete, Loader2, AlertCircle, CheckCircle2,
+  X, Loader2, AlertCircle, CheckCircle2,
   Banknote, CreditCard, ArrowLeft, Receipt, History,
   FileText,
 } from 'lucide-react'
 import { CreditSettlementHistoryList, CreditSettlementReceiptDetail } from './CreditSettlementHistory'
+import Numpad from '../components/common/Numpad'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import { fmt3 } from '../lib/utils'
 import { applyAmountKey, useAmountNumpadKeyboard } from '../lib/posNumpadKeys'
 import { CREDIT_SETTLEMENT_PAY_MODES, PM, normalizePaymentMode } from '../lib/paymentModes'
 import { printCreditReceiptVoucher, receiptFromSettlementResult } from '../lib/printCreditReceiptVoucher'
-
-const NUM_KEYS = [
-  ['7', '8', '9'],
-  ['4', '5', '6'],
-  ['1', '2', '3'],
-]
 
 const PAY_MODE_ICONS = { [PM.CASH]: Banknote, [PM.CREDITCARD]: CreditCard }
 const PAY_MODE_STYLES = {
@@ -155,14 +150,6 @@ export default function CreditSettlementModal({
     onEnter: handleSettle,
     enabled: step === 'settle',
   })
-
-  const numBtnStyle = {
-    flex: 1, height: 48, borderRadius: 8,
-    border: '1.5px solid var(--border)', background: '#fff',
-    fontSize: 18, fontWeight: 700, color: 'var(--text-1)',
-    cursor: 'pointer', transition: 'all 0.1s',
-    fontFamily: 'inherit',
-  }
 
   const billsTotal = billData?.billsTotal ?? billData?.osAmount ?? selected?.osAmount ?? 0
 
@@ -407,26 +394,7 @@ export default function CreditSettlementModal({
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                {NUM_KEYS.map((row, ri) => (
-                  <div key={ri} style={{ display: 'flex', gap: 5 }}>
-                    {row.map(k => (
-                      <button key={k} onClick={() => pressKey(k)} style={numBtnStyle}
-                        onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)' }}
-                        onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-                      >{k}</button>
-                    ))}
-                  </div>
-                ))}
-                <div style={{ display: 'flex', gap: 5 }}>
-                  <button onClick={() => pressKey('0')} style={{ ...numBtnStyle, flex: 2 }}>0</button>
-                  <button onClick={() => pressKey('.')} style={numBtnStyle}>.</button>
-                  <button onClick={() => pressKey('⌫')} style={{
-                    ...numBtnStyle, background: 'var(--red-bg)', borderColor: 'var(--red-border)',
-                    color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}><Delete size={16} /></button>
-                </div>
-              </div>
+              <Numpad onKey={pressKey} showClear={false} btnHeight={48} fontSize={18} gap={5} />
 
               <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase' }}>Payment Mode</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>

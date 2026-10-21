@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react'
+import { useToastStore } from '../../lib/toast'
 import { snackbar, keyframes } from './theme'
+
+// Renders toasts raised with `toast(...)` from lib/toast. Mounted once in App.
 
 const ICONS = {
   success: CheckCircle,
@@ -11,8 +14,7 @@ const ICONS = {
   neutral: Info,
 }
 
-// Single toast item
-function Toast({ id, message, type = 'brand', duration = 3000, onRemove }) {
+function ToastItem({ id, message, type, duration, onRemove }) {
   const [leaving, setLeaving] = useState(false)
 
   useEffect(() => {
@@ -47,36 +49,15 @@ function Toast({ id, message, type = 'brand', duration = 3000, onRemove }) {
   )
 }
 
-// Container rendered once at app root
-export function SnackbarContainer({ toasts, onRemove }) {
+export default function ToastHost() {
+  const toasts = useToastStore(s => s.toasts)
+  const remove = useToastStore(s => s.remove)
   return (
     <>
       <style>{keyframes.slideUp}</style>
       <div style={snackbar.container}>
-        {toasts.map(t => (
-          <Toast key={t.id} {...t} onRemove={onRemove} />
-        ))}
+        {toasts.map(t => <ToastItem key={t.id} {...t} onRemove={remove} />)}
       </div>
     </>
   )
-}
-
-/*
- * useSnackbar — hook to manage toast state
- *
- * const { toasts, removeToast, toast } = useSnackbar()
- * toast('Saved!', 'success')
- * toast('Error occurred', 'danger', 5000)
- */
-export function useSnackbar() {
-  const [toasts, setToasts] = useState([])
-
-  const toast = (message, type = 'brand', duration = 3000) => {
-    const id = Date.now() + Math.random()
-    setToasts(prev => [...prev, { id, message, type, duration }])
-  }
-
-  const removeToast = id => setToasts(prev => prev.filter(t => t.id !== id))
-
-  return { toasts, toast, removeToast }
 }

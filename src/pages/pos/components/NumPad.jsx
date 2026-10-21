@@ -11,6 +11,7 @@ import {
   usePosNumpadKeyboard,
 } from '../../../lib/posNumpadKeys'
 import { BILL_PAYMENT_MODES, PM, isCashTenderMode } from '../../../lib/paymentModes'
+import { NEU_RAISED, NEU_PRESSED, neuPress, neuRelease } from '../../../components/common/neumorphic'
 
 const ICONS = { [PM.CASH]: Banknote, [PM.CREDITCARD]: CreditCard, [PM.CREDIT]: UserCheck, [PM.MULTIPAYMENT]: Layers }
 const STYLES = {
@@ -27,12 +28,7 @@ const NUMBER_ROWS = [
   ['0', '.', '00'],
 ]
 
-/* Neumorphic (soft-UI) look — same shadows as the Lite NeumorphicKeyboard */
-const NEU_RAISED  = '4px 4px 8px rgba(0,0,0,0.10), -4px -4px 8px rgba(255,255,255,0.75)'
-const NEU_PRESSED = 'inset 2px 2px 5px rgba(0,0,0,0.12), inset -2px -2px 5px rgba(255,255,255,0.6)'
-
-function neuPress(e)   { e.currentTarget.style.boxShadow = NEU_PRESSED; e.currentTarget.style.transform = 'scale(0.97)' }
-function neuRelease(e) { e.currentTarget.style.boxShadow = NEU_RAISED;  e.currentTarget.style.transform = 'scale(1)' }
+/* Neumorphic (soft-UI) look — shadows shared via components/common/neumorphic */
 function enterPress(e) { e.currentTarget.style.boxShadow = 'inset 2px 2px 6px rgba(0,0,0,0.30)'; e.currentTarget.style.transform = 'scale(0.98)' }
 
 const NUM_BTN = {

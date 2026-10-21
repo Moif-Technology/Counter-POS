@@ -117,6 +117,26 @@ export function posConfirm({
 }
 
 /**
+ * Delete confirmation (red). Returns true if the user confirms.
+ *   if (await posConfirmDelete({ what: 'this hold bill' })) …
+ */
+export function posConfirmDelete({
+  what = 'this item',
+  title = 'Delete?',
+  message,
+  confirmLabel = 'Delete',
+  cancelLabel = 'Keep',
+} = {}) {
+  return posConfirm({
+    title,
+    message: message ?? `Delete ${what}? This cannot be undone.`,
+    confirmLabel,
+    cancelLabel,
+    danger: true,
+  })
+}
+
+/**
  * Ask how many receipt copies to print. Returns copy count (min 1) or null if skipped.
  */
 export function posAskPrintCopies(opts = {}) {

@@ -1,7 +1,6 @@
-const NUMPAD_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', '⌫']
+import { NEU_RAISED, NEU_PRESSED } from '../../../components/common/neumorphic'
 
-const NEU_RAISED = '4px 4px 8px rgba(0,0,0,0.10), -4px -4px 8px rgba(255,255,255,0.75)'
-const NEU_PRESSED = 'inset 2px 2px 5px rgba(0,0,0,0.12), inset -2px -2px 5px rgba(255,255,255,0.6)'
+const NUMPAD_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', '⌫']
 
 export default function LiteQtyKeypad({ selectedRowKey, qtyBuffer, onPressKey, onApply }) {
   return (

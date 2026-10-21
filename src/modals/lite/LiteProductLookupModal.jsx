@@ -4,8 +4,8 @@ import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
 import { fmtMoney } from '../../lib/currencyFormat'
 import Table from '../../components/common/Table'
-import NeumorphicNumpad from '../../components/common/NeumorphicNumpad'
-import NeumorphicKeyboard from '../../components/common/NeumorphicKeyboard'
+import Numpad from '../../components/common/Numpad'
+import TouchKeyboard from '../../components/common/Keyboard'
 
 const COLUMNS = [
   { key: 'barcode',       label: 'Barcode',     width: 110, mono: true },
@@ -267,7 +267,7 @@ export default function LiteProductLookupModal({ onClose, onSelect, groupId = nu
 
             {/* Numpad — always available for Max Price */}
             <div style={{ padding: '10px 14px', flex: 1 }}>
-              <NeumorphicNumpad
+              <Numpad variant="neumorphic"
                 onKey={handleNumKey}
                 showDot
                 showClear
@@ -311,7 +311,7 @@ export default function LiteProductLookupModal({ onClose, onSelect, groupId = nu
 
         {/* ── Neumorphic Keyboard ── */}
         {keyboardOpen && (
-          <NeumorphicKeyboard onKey={handleKbKey} onClose={() => setKeyboardOpen(false)} />
+          <TouchKeyboard variant="neumorphic" onKey={handleKbKey} onClose={() => setKeyboardOpen(false)} />
         )}
       </div>
     </div>
