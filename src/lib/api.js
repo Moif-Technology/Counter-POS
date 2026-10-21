@@ -14,6 +14,11 @@ async function request(method, path, body, token) {
   if (!res.ok) {
     const err = new Error(data?.message || `Request failed (${res.status})`);
     err.status = res.status;
+    err.code = data?.code;
+    // Signed-in call rejected: session expired or taken over by another terminal.
+    if (res.status === 401 && token) {
+      window.dispatchEvent(new CustomEvent('pos-session-ended', { detail: err.message }))
+    }
     throw err;
   }
   return data;

@@ -152,6 +152,9 @@ export const usePosStore = create((set, get) => ({
   },
 
   logout: () => {
+    // Free the server-side POS session slot, else the next cashier hits the plan's session limit until expiry.
+    const token = get().accessToken
+    if (token) api.post('/auth/logout', null, token).catch(() => {})
     clearTokens()
     set({
       cashier: null, counterNo: '', accessToken: null, refreshToken: null,

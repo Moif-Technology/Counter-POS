@@ -17,6 +17,7 @@ export default function LoginPage() {
 
   const [pin,     setPin]     = useState('')
   const [loading, setLoading] = useState(false)
+  const [conflict, setConflict] = useState(null)   // "already logged in on …" message
 
   const pressKey = useCallback((k) => {
     if (k === '⌫' || k === 'Backspace') { setPin(p => p.slice(0, -1)); return }
@@ -34,7 +35,7 @@ export default function LoginPage() {
     return () => window.removeEventListener('keydown', handler)
   }, [pressKey])  // eslint-disable-line react-hooks/exhaustive-deps
 
-  const login = async () => {
+  const login = async (takeOver = false) => {
     if (LITE_VERSION_ENABLED && pin === LITE_VERSION_PIN) { navigate('/lite'); return }
     if (pin.length < 4) { posNotifyWarning('PIN must be 4–6 digits', { title: 'Login' }); return }
     if (!enrollment)    { navigate('/enroll'); return }
@@ -45,7 +46,9 @@ export default function LoginPage() {
         pin,
         companyId:   enrollment.companyId,
         deviceToken: enrollment.deviceToken ?? getOrCreateDeviceToken(),
+        takeOver,
       })
+      setConflict(null)
 
       const cashier = {
         staffId:   session.user.staffId,
@@ -56,7 +59,7 @@ export default function LoginPage() {
       }
       setSession(
         cashier,
-        String(enrollment.branchId),
+        String(session.counterNo ?? enrollment.counterNo ?? 1),
         accessToken,
         refreshToken,
         enrollment.companyId,
@@ -73,6 +76,18 @@ export default function LoginPage() {
       setBillNo('')
       navigate('/pos')
     } catch (err) {
+      // Counter was moved to another terminal (or device removed) — set up again.
+      if (err.status === 401 && /not enrolled/i.test(err.message)) {
+        posNotifyWarning('This terminal is no longer assigned to a counter. Please set it up again.', { title: 'Login' })
+        clearEnrollment()
+        navigate('/enroll')
+        return
+      }
+      // Same staff is signed in on another terminal — keep the PIN for "continue here".
+      if (err.code === 'STAFF_ALREADY_LOGGED_IN') {
+        setConflict(err.message)
+        return
+      }
       posNotifyError(err.message, { title: 'Login' })
       setPin('')
     } finally {
@@ -171,15 +186,54 @@ export default function LoginPage() {
 
       {/* ── RIGHT PIN PANEL ──────────────────── */}
       <div style={{
-        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flex: 1, display: 'flex',
         padding: '32px 40px', overflowY: 'auto',
       }}>
-        <div style={{ width: '100%', maxWidth: 320 }}>
+        <div style={{ width: '100%', maxWidth: 320, margin: 'auto' }}>
 
           <div style={{ marginBottom: 28 }}>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.1 }}>Staff Sign In</h1>
             <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 5 }}>Enter your PIN to continue</p>
           </div>
+
+          {conflict && (
+            <div role="alert" style={{
+              marginBottom: 18, padding: '12px 14px', borderRadius: 'var(--r-md)',
+              background: 'rgba(217,119,6,0.08)', border: '1.5px solid rgba(217,119,6,0.45)',
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#b45309' }}>Already logged in</div>
+              <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.45 }}>
+                {conflict} Log out there first, or continue here — the other terminal will be signed out.
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => { setConflict(null); setPin('') }}
+                  disabled={loading}
+                  style={{
+                    flex: '0 0 auto', padding: '9px 14px', borderRadius: 8,
+                    background: 'var(--surface)', border: '1.5px solid var(--border)',
+                    color: 'var(--text-2)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => login(true)}
+                  disabled={loading}
+                  style={{
+                    flex: 1, padding: '9px 0', borderRadius: 8,
+                    background: '#b45309', border: 'none',
+                    color: '#fff', fontSize: 12.5, fontWeight: 800, letterSpacing: 0.3,
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {loading ? 'Signing in…' : 'Continue here'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* PIN dots */}
           <div style={{ marginBottom: 22 }}>
@@ -232,7 +286,7 @@ export default function LoginPage() {
 
           {/* Sign in button */}
           <button
-            onClick={login}
+            onClick={() => login()}
             disabled={loading}
             style={{
               width: '100%', padding: '15px 0', borderRadius: 'var(--r-lg)',
