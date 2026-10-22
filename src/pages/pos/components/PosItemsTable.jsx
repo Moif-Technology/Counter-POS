@@ -33,9 +33,7 @@ export default function PosItemsTable() {
       <div className="ph-table-body" ref={bodyRef}>
         {cartItems.length === 0 && (
           <div className="ph-table-empty">
-            <span className="ph-table-empty-logo"><BrandLogo variant="stacked" height={96} /></span>
-            <strong>No items yet</strong>
-            <span>Scan or type a barcode to start the bill</span>
+            <BrandLogo variant="stacked" height={96} />
           </div>
         )}
         {cartItems.map((row, idx) => {
