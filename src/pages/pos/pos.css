@@ -15,6 +15,13 @@
   --ph-brand-pressed: 0 2px 6px rgba(120,8,41,0.22), inset 0 2px 6px rgba(0,0,0,0.30);
   --ph-gradient: linear-gradient(145deg, var(--brand) 0%, var(--brand-2) 100%);
 
+  /* Right column pieces — used to size the square numpad keys */
+  --ph-card-h:  clamp(60px, 7.4vh, 74px);
+  --ph-tile-h:  clamp(50px, 6.6vh, 72px);
+  --ph-pay-gap: clamp(6px, 0.6vw, 10px);
+  --ph-kgap:    clamp(6px, 0.7vw, 10px);
+  --ph-enter-h: clamp(46px, 5.8vh, 60px);
+
   height: 100vh; height: 100dvh;
   display: grid;
   grid-template-columns: minmax(0, 1fr);   /* never wider than the screen */
@@ -106,7 +113,7 @@
 .ph-col { display: flex; flex-direction: column; gap: var(--ph-gap); min-height: 0; min-width: 0; }
 .ph-col-items { grid-area: items; }
 .ph-col-fn    { grid-area: fn; }
-.ph-col-pad   { grid-area: pad; }
+.ph-col-pad   { grid-area: pad; container-type: size; }   /* keys size from this box */
 
 /* Search row: search box + round scan button outside it */
 .ph-searchrow { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
@@ -196,9 +203,9 @@
 
 /* ─── Payment pad (like Lite keypad + payment modes) ───────────── */
 .ph-pad { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--ph-gap); }
-.ph-pay { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(6px, 0.6vw, 10px); }
+.ph-pay { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ph-pay-gap); }
 .ph-pay-tile {
-  height: clamp(54px, 7vh, 76px);
+  height: var(--ph-tile-h);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   border-width: 1.5px;
   font-size: clamp(11.5px, 0.8vw, 13.5px); font-weight: 600; color: var(--text-3);
@@ -208,19 +215,25 @@
   box-shadow: var(--ph-pressed);   /* selected mode stays "pressed in" */
 }
 .ph-pad-spacer { display: none; }
-/* Square keys, grouped just above ENTER (spare height goes above them) */
+/* Square keys, grouped just above ENTER. Side = the smaller of
+   (column width ÷ 3) and (height left after card, tiles and ENTER ÷ 4). */
 .ph-keys {
+  --k: min(
+    calc((100cqw - 2 * var(--ph-kgap)) / 3),
+    calc((100cqh - var(--ph-card-h) - 3 * var(--ph-gap) - 2 * var(--ph-tile-h) - var(--ph-pay-gap) - var(--ph-enter-h) - 3 * var(--ph-kgap)) / 4)
+  );
   margin-top: auto;
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(6px, 0.7vw, 10px);
+  display: grid; justify-content: center;
+  grid-template-columns: repeat(3, var(--k)); grid-auto-rows: var(--k);
+  gap: var(--ph-kgap);
 }
 .ph-key {
-  aspect-ratio: 1 / 1; height: auto;
+  width: 100%; height: 100%;
   font-size: clamp(18px, 1.6vw, 26px); font-weight: 700; color: var(--text-1);
   font-variant-numeric: tabular-nums;
 }
 .ph-enter {
-  height: clamp(46px, 5.8vh, 60px);
+  height: var(--ph-enter-h); flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; gap: 10px;
   background: var(--ph-gradient); color: #fff; border: none; border-radius: 14px;
   box-shadow: var(--ph-brand-raised);
@@ -229,16 +242,16 @@
 }
 .ph-enter:active { box-shadow: var(--ph-brand-pressed); transform: scale(0.98); }
 
-/* ─── Middle column ────────────────────────────────────────────── */
+/* ─── Item card (top of the numpad column) ─────────────────────── */
 .ph-itemcard {
-  flex-shrink: 0; padding: clamp(9px, 1.1vh, 13px) 14px;
-  display: flex; flex-direction: column; gap: 6px;
+  flex-shrink: 0; height: var(--ph-card-h); padding: 0 12px; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: center; gap: 4px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
 }
-.ph-itemcard-row { display: flex; align-items: baseline; gap: 10px; min-width: 0; font-size: clamp(11.5px, 0.8vw, 13.5px); }
-.ph-itemcard-name { font-size: clamp(14px, 1vw, 17px); font-weight: 800; color: var(--text-1); }
+.ph-itemcard-row { display: flex; align-items: baseline; gap: 6px; min-width: 0; font-size: clamp(10.5px, 0.72vw, 12.5px); white-space: nowrap; }
+.ph-itemcard-name { font-size: clamp(13px, 0.95vw, 16px); font-weight: 800; color: var(--text-1); }
 .ph-itemcard-nums { justify-content: space-between; }
-.ph-itemcard-nums b { font-size: clamp(14px, 1vw, 17px); font-weight: 800; color: var(--text-1); margin-left: 4px; font-variant-numeric: tabular-nums; }
+.ph-itemcard-nums b { font-size: clamp(12px, 0.9vw, 15px); font-weight: 800; color: var(--text-1); margin-left: 2px; font-variant-numeric: tabular-nums; }
 .ph-itemcard-nums span:last-child b { color: var(--brand); }
 
 .ph-fnpanel {
@@ -421,6 +434,8 @@
   .ph-root > * { flex-shrink: 0; }
   .ph-main { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-rows: none; grid-template-areas: none; }
   .ph-col-items, .ph-col-fn, .ph-col-pad, .ph-txn { grid-area: auto; }
+  .ph-col-pad { container-type: inline-size; }
+  .ph-keys { --k: calc((100cqw - 2 * var(--ph-kgap)) / 3); }
   .ph-col-items, .ph-txn { grid-column: 1 / -1; }
   .ph-table { min-height: 260px; max-height: 42vh; }
   .ph-fn-grid { max-height: 360px; }
