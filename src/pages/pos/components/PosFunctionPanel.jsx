@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Trash2, Hash, Monitor, Undo2, Search, Pause, FileText, Printer, RotateCw, Tag,
-  ChevronLeft, ChevronRight, Package, ScanBarcode, Crown, BarChart2, Wallet, Receipt,
-  MessageSquare, Calculator, Truck, Save, CircleDollarSign, Lock, Ban, User, TrendingUp,
+  ChevronLeft, ChevronRight, Package, ScanBarcode, BarChart2, Wallet, Receipt,
+  MessageSquare, Truck, Save, CircleDollarSign, Lock, Ban, User, TrendingUp,
   LogOut, Power, FilePlus,
 } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
