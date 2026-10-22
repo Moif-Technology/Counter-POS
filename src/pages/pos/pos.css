@@ -202,7 +202,20 @@
 .ph-status-line { flex-shrink: 0; font-size: 12px; color: var(--text-3); padding: 0 4px; }
 
 /* ─── Payment pad (like Lite keypad + payment modes) ───────────── */
-.ph-pad { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--ph-gap); }
+/* Tiles + keys + ENTER form one block, centred under the item card.
+   --k (key side) = the smaller of (column width ÷ 3) and
+   (height left after the card, tiles and ENTER ÷ 4); the block is 3 keys wide. */
+.ph-pad {
+  --k: min(
+    calc((100cqw - 2 * var(--ph-kgap)) / 3),
+    calc((100cqh - var(--ph-card-h) - 3 * var(--ph-gap) - 2 * var(--ph-tile-h) - var(--ph-pay-gap) - var(--ph-enter-h) - 3 * var(--ph-kgap)) / 4)
+  );
+  --pad-w: calc(3 * var(--k) + 2 * var(--ph-kgap));
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--ph-gap);
+}
+.ph-pay, .ph-keys, .ph-enter { width: var(--pad-w); }
 .ph-pay { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ph-pay-gap); }
 .ph-pay-tile {
   height: var(--ph-tile-h);
@@ -215,14 +228,8 @@
   box-shadow: var(--ph-pressed);   /* selected mode stays "pressed in" */
 }
 .ph-pad-spacer { display: none; }
-/* Square keys, centred between the payment tiles and ENTER. Side = the smaller of
-   (column width ÷ 3) and (height left after card, tiles and ENTER ÷ 4). */
+/* Square keys (side --k, set on .ph-pad) */
 .ph-keys {
-  --k: min(
-    calc((100cqw - 2 * var(--ph-kgap)) / 3),
-    calc((100cqh - var(--ph-card-h) - 3 * var(--ph-gap) - 2 * var(--ph-tile-h) - var(--ph-pay-gap) - var(--ph-enter-h) - 3 * var(--ph-kgap)) / 4)
-  );
-  margin-block: auto;   /* centre vertically in the spare height */
   display: grid; justify-content: center;
   grid-template-columns: repeat(3, var(--k)); grid-auto-rows: var(--k);
   gap: var(--ph-kgap);
@@ -435,7 +442,7 @@
   .ph-main { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-rows: none; grid-template-areas: none; }
   .ph-col-items, .ph-col-fn, .ph-col-pad, .ph-txn { grid-area: auto; }
   .ph-col-pad { container-type: inline-size; }
-  .ph-keys { --k: calc((100cqw - 2 * var(--ph-kgap)) / 3); }
+  .ph-pad { --k: calc((100cqw - 2 * var(--ph-kgap)) / 3); }
   .ph-col-items, .ph-txn { grid-column: 1 / -1; }
   .ph-table { min-height: 260px; max-height: 42vh; }
   .ph-fn-grid { max-height: 360px; }
