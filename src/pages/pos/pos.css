@@ -257,23 +257,17 @@
   box-shadow: 0 4px 14px rgba(0,0,0,0.06);
 }
 /* Tabs as pill chips (like the Lite group chips) */
-.ph-tabs { display: flex; align-items: center; gap: 6px; padding: 10px 10px 4px; flex-shrink: 0; }
-.ph-tabs-strip { flex: 1; min-width: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
-.ph-tabs-strip::-webkit-scrollbar { display: none; }
+/* Tabs share the strip width so all five stay visible */
+.ph-tabs { display: flex; gap: 6px; padding: 10px 10px 4px; flex-shrink: 0; overflow-x: auto; scrollbar-width: none; }
+.ph-tabs::-webkit-scrollbar { display: none; }
 .ph-tab {
-  flex: 0 0 auto; padding: clamp(5px, 0.7vh, 7px) clamp(10px, 0.9vw, 14px);
+  flex: 1 0 auto; padding: clamp(5px, 0.7vh, 7px) clamp(6px, 0.7vw, 12px);
   border-radius: 99px; border: 1px solid var(--border); background: var(--surface-2);
   font-size: clamp(11px, 0.75vw, 12.5px); font-weight: 600; color: var(--text-2); cursor: pointer; white-space: nowrap;
   transition: background 0.1s, color 0.1s, border-color 0.1s;
 }
 .ph-tab:hover { border-color: var(--brand-border); }
 .ph-tab.is-active { background: var(--brand-bg); border-color: var(--brand); color: var(--brand); font-weight: 800; }
-.ph-tabs-arrows { display: flex; align-items: center; gap: 2px; }
-.ph-tabs-arrows button {
-  width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--border); background: var(--surface); color: var(--text-3); border-radius: 99px; cursor: pointer; padding: 0;
-}
-.ph-tabs-arrows button:hover { color: var(--brand); border-color: var(--brand-border); }
 
 .ph-fn-grid {
   flex: 1; min-height: 0; overflow-y: auto;
@@ -383,6 +377,8 @@
 
 /* ─── Narrower terminals (≤1180px) ─────────────────────────────── */
 @media (max-width: 1180px) {
+  .ph-tabs { gap: 4px; padding: 8px 8px 4px; }
+  .ph-tab { padding: 5px 6px; font-size: 10.5px; }
   .ph-fn { gap: 4px; padding: 4px; font-size: 11px; }
   .ph-fn svg { width: 14px; height: 14px; padding: 4px; }
   .ph-col-barcode { display: none; }

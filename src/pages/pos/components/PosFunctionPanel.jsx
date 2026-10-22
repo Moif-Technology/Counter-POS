@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Trash2, Hash, Monitor, Undo2, Search, Pause, FileText, Printer, RotateCw, Tag,
-  ChevronLeft, ChevronRight, Package, ScanBarcode, BarChart2, Wallet, Receipt,
+  Package, ScanBarcode, BarChart2, Wallet, Receipt,
   MessageSquare, Truck, Save, CircleDollarSign, Lock, Ban, User, TrendingUp,
   LogOut, Power, FilePlus,
 } from 'lucide-react'
@@ -111,29 +111,20 @@ export default function PosFunctionPanel({ actions }) {
   const [tabKey, setTabKey] = useState('Page 1')
   const customerDisplayEnabled = usePosStore(s => s.customerDisplayEnabled)
   const flags = { customerDisplayEnabled }
-  const stripRef = useRef(null)
   const tab = TABS.find(t => t.key === tabKey)
-
-  const scrollTabs = (dir) => stripRef.current?.scrollBy({ left: dir * 120, behavior: 'smooth' })
 
   return (
     <div className="ph-card ph-fnpanel">
       <div className="ph-tabs">
-        <div className="ph-tabs-strip" ref={stripRef}>
-          {TABS.map(t => (
-            <button
-              key={t.key}
-              className={`ph-tab${tabKey === t.key ? ' is-active' : ''}`}
-              onClick={() => setTabKey(t.key)}
-            >
-              {t.key}
-            </button>
-          ))}
-        </div>
-        <div className="ph-tabs-arrows">
-          <button onClick={() => scrollTabs(-1)} aria-label="Previous tabs"><ChevronLeft size={12} /></button>
-          <button onClick={() => scrollTabs(1)} aria-label="More tabs"><ChevronRight size={12} /></button>
-        </div>
+        {TABS.map(t => (
+          <button
+            key={t.key}
+            className={`ph-tab${tabKey === t.key ? ' is-active' : ''}`}
+            onClick={() => setTabKey(t.key)}
+          >
+            {t.key}
+          </button>
+        ))}
       </div>
 
       <div className={`ph-fn-grid${tabKey === 'Groups' ? ' is-groups' : ''}`}>
