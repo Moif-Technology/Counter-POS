@@ -44,7 +44,7 @@ export default function PosItemsTable() {
               onClick={() => usePosStore.setState({ selectedRowKey: key })}
               onDoubleClick={() => setDetailItem(row)}
             >
-              <span>{row.slNo ?? idx + 1}</span>
+              <span><span className="ph-sl">{row.slNo ?? idx + 1}</span></span>
               <span className="ph-col-barcode ph-ellipsis">{row.barcode ?? row.productCode ?? '—'}</span>
               <span className="ph-ellipsis">{row.description}</span>
               <span className="ph-num">{fmtQty(row.qty)}</span>

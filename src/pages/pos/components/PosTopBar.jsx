@@ -38,8 +38,8 @@ export default function PosTopBar({ onOpenLite }) {
   return (
     <header className="ph-top">
       <div className="ph-top-brand">
-        <BrandLogo variant="icon" height={30} />
-        <span className="ph-top-title">MOIF Vendo</span>
+        {/* Same horizontal Vendo logo as the Lite header */}
+        <BrandLogo variant="horizontal" height={40} />
         <span className="ph-top-cashier" title="Logged-in cashier">{cashierName}</span>
       </div>
 
