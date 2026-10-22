@@ -8,13 +8,12 @@ import {
 import { usePosStore } from '../../../store/posStore'
 
 /*
- * Tab → buttons. `cols` is the grid width for that tab; `half` buttons take
- * one cell of a 2-up row (Page 1: Price Chan / Qty Chan share a row).
+ * Tab → buttons, shown as equal boxes (3 across).
  * `accent` buttons use the brand colour (destructive / session keys).
  */
 const TABS = [
   {
-    key: 'Page 1', cols: 2,
+    key: 'Page 1',
     buttons: [
       { label: 'Clear All',      icon: Trash2,  accent: true },
       { label: 'Clear Line',     icon: Trash2,  accent: true },
@@ -27,12 +26,12 @@ const TABS = [
       { label: 'Bill Print',     icon: Printer },
       { label: 'Bill Reprint',   icon: Printer },
       { label: 'Repeat',         icon: RotateCw },
-      { label: 'Price Change',   icon: Tag, text: 'Price Chan', half: true },
-      { label: 'Qty Change',     icon: Tag, text: 'Qty Chan',   half: true, accent: true },
+      { label: 'Price Change',   icon: Tag, text: 'Price Chan' },
+      { label: 'Qty Change',     icon: Tag, text: 'Qty Chan', accent: true },
     ],
   },
   {
-    key: 'Page 2', cols: 3,
+    key: 'Page 2',
     buttons: [
       { label: 'Privilege',     icon: User,         text: 'Privilege Customer' },
       { label: 'Price Enquiry', icon: Search },
@@ -52,9 +51,9 @@ const TABS = [
       { label: 'Cust Display',  icon: Monitor,      toggle: true, onlyIf: 'customerDisplayEnabled' },
     ],
   },
-  { key: 'Groups', cols: 3 },   // product group buttons
+  { key: 'Groups' },   // product group buttons
   {
-    key: 'Log Out', cols: 2,
+    key: 'Log Out',
     buttons: [
       { label: 'Log Out', icon: LogOut, accent: true },
       { label: 'Exit',    icon: Power,  accent: true },
@@ -62,7 +61,7 @@ const TABS = [
     ],
   },
   {
-    key: 'Delivery', cols: 3,
+    key: 'Delivery',
     buttons: [
       { label: 'Delivery',      icon: Truck },
       { label: 'Save Delivery', icon: Save },
@@ -77,11 +76,11 @@ function ActionButton({ btn, actions }) {
   const busy = btn.label === 'Hold' && actions.holdLoading
   return (
     <button
-      className={`ph-fn${btn.accent ? ' is-accent' : ''}${btn.half ? ' is-half' : ''}${active ? ' is-active' : ''}`}
+      className={`ph-fn${btn.accent ? ' is-accent' : ''}${active ? ' is-active' : ''}`}
       onClick={() => actions.run(btn.label)}
       disabled={busy}
     >
-      <Icon size={btn.half ? 16 : 20} />
+      <Icon size={20} />
       <span>{busy ? 'Holding…' : (btn.text ?? btn.label)}</span>
     </button>
   )
@@ -137,7 +136,7 @@ export default function PosFunctionPanel({ actions }) {
         </div>
       </div>
 
-      <div className={`ph-fn-grid cols-${tab.cols}${tabKey === 'Groups' ? ' is-groups' : ''}`} style={{ '--cols': tab.cols }}>
+      <div className={`ph-fn-grid${tabKey === 'Groups' ? ' is-groups' : ''}`}>
         {tabKey === 'Groups'
           ? <GroupsPage actions={actions} />
           : tab.buttons.filter(btn => !btn.onlyIf || flags[btn.onlyIf]).map(btn => <ActionButton key={btn.label} btn={btn} actions={actions} />)}
