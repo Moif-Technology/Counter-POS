@@ -18,7 +18,7 @@
   height: 100vh; height: 100dvh;
   display: grid;
   grid-template-columns: minmax(0, 1fr);   /* never wider than the screen */
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;   /* top bar · main · status bar */
   background: var(--bg);
   color: var(--text-1);
   overflow: hidden;
@@ -94,11 +94,19 @@
   display: grid;
   /* items (45% of the screen) | function keys | numpad (right) — the last two share the rest */
   grid-template-columns: 45% minmax(0, 1.4fr) minmax(0, 1fr);
+  /* the numpad column runs the full height; transaction details sit bottom-left */
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "items fn  pad"
+    "txn   txn pad";
   gap: var(--ph-gap);
   padding: var(--ph-gap);
   min-height: 0;
 }
 .ph-col { display: flex; flex-direction: column; gap: var(--ph-gap); min-height: 0; min-width: 0; }
+.ph-col-items { grid-area: items; }
+.ph-col-fn    { grid-area: fn; }
+.ph-col-pad   { grid-area: pad; }
 
 /* Search row: search box + round scan button outside it */
 .ph-searchrow { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
@@ -199,10 +207,15 @@
   background: var(--brand-bg); border-color: var(--brand); color: var(--brand); font-weight: 800;
   box-shadow: var(--ph-pressed);   /* selected mode stays "pressed in" */
 }
-.ph-pad-spacer { flex: 1; min-height: 4px; }
-.ph-keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(6px, 0.7vw, 10px); }
+.ph-pad-spacer { display: none; }
+/* Keys share the column height left after the payment tiles and ENTER */
+.ph-keys {
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: minmax(46px, 1fr);
+  gap: clamp(6px, 0.7vw, 10px);
+}
 .ph-key {
-  height: clamp(46px, 6.2vh, 64px);
+  height: auto;
   font-size: clamp(18px, 1.6vw, 26px); font-weight: 700; color: var(--text-1);
   font-variant-numeric: tabular-nums;
 }
@@ -322,7 +335,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) auto clamp(150px, 11.5vw, 220px);
   align-items: center; gap: clamp(10px, 1.6vw, 32px);
-  margin: 0 var(--ph-gap) var(--ph-gap);
+  grid-area: txn;
   padding: clamp(12px, 1.8vh, 20px) clamp(12px, 1.2vw, 20px);
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
 }
@@ -359,12 +372,15 @@
 .ph-txn-total span   { font-size: 10.5px; font-weight: 700; color: var(--text-3); letter-spacing: 0.6px; }
 .ph-txn-total strong { font-size: clamp(26px, 2.5vw, 44px); font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; line-height: 1.1; }
 
+/* Customer picker wrapper may shrink so the name truncates instead of overlapping */
+.ph-txn-line > div { min-width: 0; flex-shrink: 1 !important; }
+
 /* Customer name trigger (plain variant of CustomerSearch) */
 .ph-cust-trigger {
   display: flex; align-items: center; gap: 6px; min-width: 0;
   border: none; background: none; padding: 0; cursor: pointer;
   font-size: clamp(13px, 0.92vw, 16px); font-weight: 800; color: var(--brand);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
 }
 
 /* ─── Status bar ───────────────────────────────────────────────── */
@@ -395,7 +411,7 @@
   .ph-fn-grid.cols-3 .ph-fn svg { width: 14px; height: 14px; padding: 3px; }
   .ph-col-barcode { display: none; }
   .ph-table-row { grid-template-columns: 9% minmax(0, 1fr) 10% 13% 14%; }
-  .ph-txn { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) auto clamp(130px, 13vw, 180px); }
+  .ph-txn { grid-template-columns: minmax(0, 1fr) auto auto auto clamp(120px, 13vw, 170px); gap: 16px; }
 }
 
 /* ─── Portrait tablet (≤900px): stack, page scrolls ────────────── */
@@ -403,8 +419,9 @@
   /* body is fixed-height (index.css), so the page itself scrolls here */
   .ph-root { display: flex; flex-direction: column; overflow-y: auto; }
   .ph-root > * { flex-shrink: 0; }
-  .ph-main { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
-  .ph-col-items { grid-column: 1 / -1; }
+  .ph-main { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-rows: none; grid-template-areas: none; }
+  .ph-col-items, .ph-col-fn, .ph-col-pad, .ph-txn { grid-area: auto; }
+  .ph-col-items, .ph-txn { grid-column: 1 / -1; }
   .ph-table { min-height: 260px; max-height: 42vh; }
   .ph-fn-grid { max-height: 360px; }
   .ph-txn { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }

@@ -82,9 +82,11 @@ export default function POSPage() {
         <section className="ph-col ph-col-pad">
           <PosPaymentPad onEnter={handleEnter} />
         </section>
+
+        {/* Bottom-left — customer, tax breakdown, paid / balance, total (numpad column runs past it) */}
+        <PosTransactionPanel />
       </main>
 
-      <PosTransactionPanel />
       <PosStatusBar />
 
       {actions.modals}
