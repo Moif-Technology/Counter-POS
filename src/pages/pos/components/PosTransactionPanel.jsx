@@ -8,8 +8,8 @@ const MODE_LABEL = { [PM.CASH]: 'CASH', [PM.CREDITCARD]: 'CARD', [PM.CREDIT]: 'C
 
 /**
  * Bill summary card (top of the right side):
- *   title · payment mode · customer          TOTAL
- *   Sub total · Discount · Tax · Round off   Paid · Balance
+ *   title · payment mode · customer                     lines
+ *   [Sub total] [Discount] [Tax] [Round off] [  TOTAL  ]
  */
 export default function PosTransactionPanel() {
   const s = usePosStore(useShallow(st => ({
@@ -42,34 +42,30 @@ export default function PosTransactionPanel() {
 
   return (
     <section className={`ph-txn${s.returnMode ? ' is-return' : ''}`} aria-label="Bill summary">
-      <div className="ph-txn-info">
-        <div className="ph-txn-head">
-          <span className="ph-txn-title">{title}</span>
-          <span className="ph-txn-mode">{MODE_LABEL[s.paymentMode] ?? s.paymentMode}</span>
-          <span className="ph-txn-count">{s.itemCount} {s.itemCount === 1 ? 'line' : 'lines'}</span>
-        </div>
-
+      <div className="ph-txn-head">
         <div className="ph-txn-cust">
           <CustomerSearch variant="plain" />
           {s.customerCode && <span className="ph-label">{s.customerCode}</span>}
         </div>
-
-        <div className="ph-txn-stats">
-          {stats.map(st => (
-            <div key={st.label} className="ph-txn-stat">
-              <span>{st.label}</span>
-              <b>{fmt3(st.value)}</b>
-            </div>
-          ))}
-        </div>
+        <span className="ph-txn-title">{title}</span>
+        <span className="ph-txn-mode">{MODE_LABEL[s.paymentMode] ?? s.paymentMode}</span>
+        <span className="ph-txn-count">{s.itemCount} {s.itemCount === 1 ? 'line' : 'lines'}</span>
       </div>
 
-      <div className="ph-txn-total">
-        <span>TOTAL</span>
-        <strong>{fmt3(s.netAmount)}</strong>
-        <div className="ph-txn-paid">
-          <span>Paid <b>{fmt3(s.paidAmount)}</b></span>
-          <span>Bal <b>{fmt3(s.balanceAmount)}</b></span>
+      <div className="ph-txn-boxes">
+        {stats.map(st => (
+          <div key={st.label} className="ph-txn-stat">
+            <span>{st.label}</span>
+            <b>{fmt3(st.value)}</b>
+          </div>
+        ))}
+        <div className="ph-txn-total">
+          <span>TOTAL</span>
+          <strong>{fmt3(s.netAmount)}</strong>
+          <div className="ph-txn-paid">
+            <span>Paid <b>{fmt3(s.paidAmount)}</b></span>
+            <span>Bal <b>{fmt3(s.balanceAmount)}</b></span>
+          </div>
         </div>
       </div>
     </section>

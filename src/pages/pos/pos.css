@@ -331,35 +331,35 @@
 /* ─── Bill summary card (top of the right side) ────────────────── */
 .ph-txn {
   grid-area: txn;
-  display: flex; align-items: stretch; gap: clamp(12px, 1.4vw, 24px);
-  padding: clamp(10px, 1.4vh, 16px) clamp(12px, 1.2vw, 18px);
+  display: flex; flex-direction: column; gap: clamp(8px, 1.1vh, 12px);
+  padding: clamp(10px, 1.3vh, 14px) clamp(12px, 1.1vw, 16px);
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
 }
 .ph-txn.is-return { border-color: var(--brand); }
-.ph-txn-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; gap: clamp(6px, 1vh, 10px); }
-.ph-txn-head { display: flex; align-items: center; gap: 8px; }
-.ph-txn-title { font-size: 10.5px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.6px; }
-.ph-txn.is-return .ph-txn-title { color: var(--brand); }
-/* Payment mode: plain brand text after the title ("NEW TRANSACTION · CASH") */
-.ph-txn-mode { color: var(--brand); font-weight: 800; font-size: 10.5px; letter-spacing: 0.6px; }
-.ph-txn-mode::before { content: '·'; margin-right: 8px; color: var(--text-4); }
-.ph-txn-count { margin-left: auto; font-size: 11.5px; font-weight: 600; color: var(--text-3); white-space: nowrap; }
-.ph-txn-cust { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.ph-txn-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ph-txn-cust { flex: 1; display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .ph-txn-cust > div { min-width: 0; flex-shrink: 1 !important; }   /* name truncates instead of overflowing */
-/* Sub total · Discount · Tax · Round off — plain label / value pairs */
-.ph-txn-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.ph-txn-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.ph-txn-stat span { font-size: 10.5px; font-weight: 500; color: var(--text-3); white-space: nowrap; }
-.ph-txn-stat b { font-size: clamp(14px, 1vw, 17px); font-weight: 700; color: var(--text-1); font-variant-numeric: tabular-nums; }
-/* TOTAL: big brand number, set off by a hairline */
-.ph-txn-total {
-  flex: 0 0 clamp(150px, 13vw, 230px);
-  display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px;
-  padding-left: clamp(12px, 1.4vw, 24px); border-left: 1px solid var(--border);
+.ph-txn-title { font-size: 10.5px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.6px; white-space: nowrap; }
+.ph-txn.is-return .ph-txn-title { color: var(--brand); }
+.ph-txn-mode {
+  padding: 2px 9px; border-radius: 99px; background: var(--brand-bg); border: 1px solid var(--brand-border);
+  color: var(--brand); font-weight: 800; font-size: 10.5px; letter-spacing: 0.4px; white-space: nowrap;
 }
-.ph-txn-total > span { font-size: 10.5px; font-weight: 600; color: var(--text-3); letter-spacing: 0.6px; }
-.ph-txn-total strong { font-size: clamp(28px, 2.6vw, 46px); font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; line-height: 1.05; }
-.ph-txn-paid { display: flex; gap: 12px; font-size: 11px; color: var(--text-3); white-space: nowrap; }
+.ph-txn-count { font-size: 11.5px; font-weight: 600; color: var(--text-3); white-space: nowrap; }
+
+/* Sub total · Discount · Tax · Round off · TOTAL as equal-height boxes */
+.ph-txn-boxes { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.7fr); gap: 8px; }
+.ph-txn-stat, .ph-txn-total {
+  display: flex; flex-direction: column; justify-content: center; gap: 3px; min-width: 0;
+  padding: clamp(6px, 1vh, 10px) 12px; border-radius: 12px;
+}
+.ph-txn-stat { background: var(--surface-2); border: 1px solid var(--border); }
+.ph-txn-stat span { font-size: 10.5px; font-weight: 600; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph-txn-stat b { font-size: clamp(15px, 1.1vw, 19px); font-weight: 800; color: var(--text-1); font-variant-numeric: tabular-nums; }
+.ph-txn-total { align-items: flex-end; background: var(--brand-bg); border: 1.5px solid var(--brand); }
+.ph-txn-total > span { font-size: 10.5px; font-weight: 700; color: var(--text-3); letter-spacing: 0.6px; }
+.ph-txn-total strong { font-size: clamp(26px, 2.3vw, 42px); font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; line-height: 1.05; }
+.ph-txn-paid { display: flex; gap: 10px; font-size: 11px; color: var(--text-3); white-space: nowrap; }
 .ph-txn-paid b { color: var(--text-1); font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* Customer name trigger (plain variant of CustomerSearch) */
@@ -388,7 +388,7 @@
   .ph-col-barcode { display: none; }
   .ph-table-row { grid-template-columns: 9% minmax(0, 1fr) 10% 13% 14%; }
   .ph-txn-stat b { font-size: 13px; }
-  .ph-txn-total { flex-basis: 140px; }
+  .ph-txn-stat, .ph-txn-total { padding: 6px 9px; }
 }
 
 /* ─── Portrait tablet (≤900px): stack, page scrolls ────────────── */
@@ -414,9 +414,10 @@
   .ph-top-meta .ph-top-dot, .ph-top-meta span:last-child, .ph-top-user-text { display: none; }
   .ph-top-user { padding-left: 10px; }
   .ph-main { grid-template-columns: minmax(0, 1fr); }
-  .ph-txn { flex-direction: column; }
-  .ph-txn-total { flex-basis: auto; flex-direction: row; justify-content: space-between; align-items: center; padding: 10px 0 0; border-left: none; border-top: 1px solid var(--border); }
-  .ph-txn-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 8px; }
+  .ph-txn-head { flex-wrap: wrap; }
+  .ph-txn-cust { flex-basis: 100%; }
+  .ph-txn-boxes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ph-txn-total { grid-column: 1 / -1; }
   .ph-itemcard { flex-wrap: wrap; }
   .ph-table-row { grid-template-columns: 11% minmax(0, 1fr) 11% 18%; }
   .ph-table-row > :nth-child(5) { display: none; }
