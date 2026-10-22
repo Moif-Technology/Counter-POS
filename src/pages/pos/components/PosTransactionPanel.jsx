@@ -8,7 +8,7 @@ const MODE_LABEL = { [PM.CASH]: 'CASH', [PM.CREDITCARD]: 'CARD', [PM.CREDIT]: 'C
 
 /**
  * Bill summary card (top of the right side):
- *   title · payment mode · customer                     lines
+ *   customer          [special-bill label] · payment mode · lines
  *   [Sub total] [Discount] [Tax] [Round off] [  TOTAL  ]
  */
 export default function PosTransactionPanel() {
@@ -28,10 +28,11 @@ export default function PosTransactionPanel() {
     itemCount:     st.cartItems.length,
   })))
 
+  // Only special bills get a label; a normal new bill shows none.
   const title = s.returnMode ? 'Return Transaction'
     : s.recalledHold ? 'Recalled Hold'
     : s.recalledDelivery ? 'Recalled Delivery'
-    : 'New Transaction'
+    : null
 
   const stats = [
     { label: 'Sub Total', value: s.subTotal },
@@ -47,7 +48,7 @@ export default function PosTransactionPanel() {
           <CustomerSearch variant="plain" />
           {s.customerCode && <span className="ph-label">{s.customerCode}</span>}
         </div>
-        <span className="ph-txn-title">{title}</span>
+        {title && <span className="ph-txn-title">{title}</span>}
         <span className="ph-txn-mode">{MODE_LABEL[s.paymentMode] ?? s.paymentMode}</span>
         <span className="ph-txn-count">{s.itemCount} {s.itemCount === 1 ? 'line' : 'lines'}</span>
       </div>
