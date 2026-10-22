@@ -72,10 +72,10 @@ export default function POSPage() {
           <PosQtyBar status={status} />
         </section>
 
-        {/* Middle — selected item, function keys, billing */}
+        {/* Middle — function keys, selected item, billing */}
         <section className="ph-col ph-col-fn">
-          <PosItemCard />
           <PosFunctionPanel actions={actions} />
+          <PosItemCard />
           <PosBillingButtons saving={saving} onSave={handleSave} />
         </section>
 
