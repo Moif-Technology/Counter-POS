@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { registerPlugin } from '@capacitor/core'
+import { App as CapacitorApp } from '@capacitor/app'
 import { usePosStore } from '../../../store/posStore'
 import { api } from '../../../lib/api'
 import { enrichCartItemsForSave } from '../../../lib/cartLine'
@@ -276,13 +277,25 @@ export function usePosActions({ onSave }) {
     'Comments':       open('comments'),
     'Cust Display':   () => toggleCustomerDisplay(),
     'NP Scale':       () => posNotifyInfo('Weighing scale requires the Android/Sunmi hardware build', { title: 'NP Scale', duration: 1800 }),
+    // Lock: back to the PIN screen; the open bill stays in memory.
+    'Lock':           () => navigate('/'),
+    'No Sale':        () => posNotifyInfo('No cash drawer is connected to this counter', { title: 'No Sale', duration: 1800 }),
+    'Top Move':       () => posNotifyInfo('Not available yet', { title: 'Top Move' }),
 
     // Delivery
     'Delivery':       () => { setDeliverySavePending(false); setModal('delivery') },
     'Save Delivery':  needCart('Save Delivery', () => { setDeliverySavePending(true); setModal('delivery') }),
     'Settlement':     open('deliverySettlement'),
 
-    // Session
+    // Session (Log Out tab)
+    'Add New':        () => posNotifyInfo('Not available yet', { title: 'Add New' }),
+    'Exit': async () => {
+      const ok = await posConfirm({ title: 'Exit', message: 'Close the POS?', confirmLabel: 'Exit', cancelLabel: 'Cancel' })
+      if (!ok) return
+      usePosStore.getState().logout()
+      if (IS_ANDROID) CapacitorApp.exitApp()
+      else navigate('/')
+    },
     'Log Out': async () => {
       const ok = await posConfirm({ title: 'Log Out', message: 'Log out of the POS?', confirmLabel: 'Log Out', cancelLabel: 'Cancel' })
       if (!ok) return

@@ -1,55 +1,75 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Trash2, Hash, Monitor, Undo2, Search, Pause, FileText, Printer, RotateCw, Tag,
-  ChevronLeft, ChevronRight, Package, Percent, ScanBarcode, DollarSign, User, Crown,
-  BarChart2, Wallet, Receipt, MessageSquare, Calculator, Scale, Truck, Save, Tv,
+  ChevronLeft, ChevronRight, Package, ScanBarcode, Crown, BarChart2, Wallet, Receipt,
+  MessageSquare, Calculator, Truck, Save, CircleDollarSign, Lock, Ban, User, TrendingUp,
+  LogOut, Power, FilePlus,
 } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
 
 /*
- * Tabs → button pages. `span` is out of 2 columns (Price/Qty Chan share a row).
- * `accent` buttons use the brand colour for icon + label (destructive / mode keys).
+ * Tab → buttons. `cols` is the grid width for that tab; `half` buttons take
+ * one cell of a 2-up row (Page 1: Price Chan / Qty Chan share a row).
+ * `accent` buttons use the brand colour (destructive / session keys).
  */
-const PAGES = {
-  'Page 1': [
-    { label: 'Clear All',      icon: Trash2,     accent: true },
-    { label: 'Clear Line',     icon: Trash2,     accent: true },
-    { label: 'Qty',            icon: Hash,       text: '#Qty' },
-    { label: 'Groups',         icon: Monitor },
-    { label: 'Return',         icon: Undo2,      accent: true, toggle: true },
-    { label: 'Product Lookup', icon: Search },
-    { label: 'Hold',           icon: Pause },
-    { label: 'Recall Hold',    icon: FileText },
-    { label: 'Bill Print',     icon: Printer },
-    { label: 'Bill Reprint',   icon: Printer },
-    { label: 'Repeat',         icon: RotateCw },
-    { label: 'Price Change',   icon: Tag, text: 'Price Chan', half: true },
-    { label: 'Qty Change',     icon: Tag, text: 'Qty Chan',   half: true, accent: true },
-  ],
-  'Page 2': [
-    { label: 'Sub Total',      icon: Calculator },
-    { label: 'Discount',       icon: Percent },
-    { label: 'Packet Scan',    icon: Package },
-    { label: 'Price Enquiry',  icon: ScanBarcode },
-    { label: 'Currency',       icon: DollarSign },
-    { label: 'Sales Man',      icon: User },
-    { label: 'Privilege',      icon: Crown },
-    { label: 'Report',         icon: BarChart2 },
-    { label: 'Cash In/Out',    icon: Wallet },
-    { label: 'Receipt',        icon: Receipt },
-    { label: 'Comments',       icon: MessageSquare },
-    { label: 'NP Scale',       icon: Scale },
-    { label: 'Cust Display',   icon: Tv, toggle: true },
-  ],
-  'Delivery': [
-    { label: 'Delivery',       icon: Truck },
-    { label: 'Save Delivery',  icon: Save },
-    { label: 'Settlement',     icon: Receipt },
-  ],
-}
-
-// Tab strip order (matches the counter layout); "Log Out" acts immediately.
-const TABS = ['Page 1', 'Page 2', 'Groups', 'Log Out', 'Delivery']
+const TABS = [
+  {
+    key: 'Page 1', cols: 2,
+    buttons: [
+      { label: 'Clear All',      icon: Trash2,  accent: true },
+      { label: 'Clear Line',     icon: Trash2,  accent: true },
+      { label: 'Qty',            icon: Hash,    text: 'Qty' },
+      { label: 'Groups',         icon: Monitor },
+      { label: 'Return',         icon: Undo2,   accent: true, toggle: true },
+      { label: 'Product Lookup', icon: Search },
+      { label: 'Hold',           icon: Pause },
+      { label: 'Recall Hold',    icon: FileText },
+      { label: 'Bill Print',     icon: Printer },
+      { label: 'Bill Reprint',   icon: Printer },
+      { label: 'Repeat',         icon: RotateCw },
+      { label: 'Price Change',   icon: Tag, text: 'Price Chan', half: true },
+      { label: 'Qty Change',     icon: Tag, text: 'Qty Chan',   half: true, accent: true },
+    ],
+  },
+  {
+    key: 'Page 2', cols: 3,
+    buttons: [
+      { label: 'Privilege',     icon: User,         text: 'Privilege Customer' },
+      { label: 'Price Enquiry', icon: Search },
+      { label: 'Packet Scan',   icon: ScanBarcode },
+      { label: 'Cash In/Out',   icon: Wallet,       text: 'CashIn / CashOut' },
+      { label: 'Comments',      icon: MessageSquare },
+      { label: 'Currency',      icon: CircleDollarSign },
+      { label: 'Sub Total',     icon: Hash,         text: 'SubTotal' },
+      { label: 'Report',        icon: BarChart2 },
+      { label: 'Discount',      icon: Tag,          text: 'Disc' },
+      { label: 'Lock',          icon: Lock },
+      { label: 'Receipt',       icon: Receipt },
+      { label: 'No Sale',       icon: Ban },
+      { label: 'Sales Man',     icon: User },
+      { label: 'Top Move',      icon: TrendingUp },
+      // Shown only when the customer display feature is enabled (as before)
+      { label: 'Cust Display',  icon: Monitor,      toggle: true, onlyIf: 'customerDisplayEnabled' },
+    ],
+  },
+  { key: 'Groups', cols: 3 },   // product group buttons
+  {
+    key: 'Log Out', cols: 2,
+    buttons: [
+      { label: 'Log Out', icon: LogOut, accent: true },
+      { label: 'Exit',    icon: Power,  accent: true },
+      { label: 'Add New', icon: FilePlus },
+    ],
+  },
+  {
+    key: 'Delivery', cols: 3,
+    buttons: [
+      { label: 'Delivery',      icon: Truck },
+      { label: 'Save Delivery', icon: Save },
+      { label: 'Settlement',    icon: Package, text: 'Delivery Settlement' },
+    ],
+  },
+]
 
 function ActionButton({ btn, actions }) {
   const Icon = btn.icon
@@ -82,15 +102,18 @@ function GroupsPage({ actions }) {
 
   return productGroups.map(g => (
     <button key={g.groupId} className="ph-fn ph-fn-group" onClick={() => actions.openGroup(g)}>
-      <span className="ph-ellipsis">{g.groupDescription}</span>
+      <span>{g.groupDescription}</span>
     </button>
   ))
 }
 
-/** Right-hand tabbed function keys (Page 1 / Page 2 / Groups / Log Out / Delivery). */
+/** Tabbed function keys: Page 1 / Page 2 / Groups / Log Out / Delivery. */
 export default function PosFunctionPanel({ actions }) {
-  const [tab, setTab] = useState('Page 1')
+  const [tabKey, setTabKey] = useState('Page 1')
+  const customerDisplayEnabled = usePosStore(s => s.customerDisplayEnabled)
+  const flags = { customerDisplayEnabled }
   const stripRef = useRef(null)
+  const tab = TABS.find(t => t.key === tabKey)
 
   const scrollTabs = (dir) => stripRef.current?.scrollBy({ left: dir * 120, behavior: 'smooth' })
 
@@ -100,11 +123,11 @@ export default function PosFunctionPanel({ actions }) {
         <div className="ph-tabs-strip" ref={stripRef}>
           {TABS.map(t => (
             <button
-              key={t}
-              className={`ph-tab${tab === t ? ' is-active' : ''}`}
-              onClick={() => (t === 'Log Out' ? actions.run('Log Out') : setTab(t))}
+              key={t.key}
+              className={`ph-tab${tabKey === t.key ? ' is-active' : ''}`}
+              onClick={() => setTabKey(t.key)}
             >
-              {t}
+              {t.key}
             </button>
           ))}
         </div>
@@ -114,10 +137,10 @@ export default function PosFunctionPanel({ actions }) {
         </div>
       </div>
 
-      <div className="ph-fn-grid">
-        {tab === 'Groups'
+      <div className={`ph-fn-grid cols-${tab.cols}${tabKey === 'Groups' ? ' is-groups' : ''}`} style={{ '--cols': tab.cols }}>
+        {tabKey === 'Groups'
           ? <GroupsPage actions={actions} />
-          : PAGES[tab].map(btn => <ActionButton key={btn.label} btn={btn} actions={actions} />)}
+          : tab.buttons.filter(btn => !btn.onlyIf || flags[btn.onlyIf]).map(btn => <ActionButton key={btn.label} btn={btn} actions={actions} />)}
       </div>
     </div>
   )
