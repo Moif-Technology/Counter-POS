@@ -45,40 +45,37 @@
   box-shadow: var(--ph-pressed); transform: scale(0.97);
 }
 
-/* ─── Top bar (like the Lite header) ────────────────────────────── */
+/* ─── Top bar — one quiet line ─────────────────────────────────── */
 .ph-top {
-  display: flex; align-items: center; gap: clamp(10px, 2vw, 32px);
-  height: clamp(50px, 6.4vh, 66px);
+  display: flex; align-items: center; gap: clamp(14px, 2.4vw, 40px);
+  height: clamp(46px, 5.6vh, 58px);
   padding: 0 clamp(12px, 1.4vw, 20px);
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
-.ph-top-brand { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 0; }
-.ph-top-cashier {
-  padding: 4px 10px; border-radius: 99px;
-  background: var(--surface-2); border: 1px solid var(--border);
-  font-size: clamp(11px, 0.8vw, 13px); font-weight: 700; color: var(--text-2);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.ph-top-meta {
+  display: flex; align-items: baseline; gap: 8px; flex-shrink: 0;
+  font-size: clamp(12px, 0.85vw, 14px); color: var(--text-3);
 }
-.ph-top-meta { display: flex; gap: clamp(16px, 3vw, 48px); flex-shrink: 0; }
-.ph-top-field { display: flex; flex-direction: column; line-height: 1.15; }
-.ph-top-field span   { font-size: clamp(10px, 0.7vw, 12px); color: var(--text-3); }
-.ph-top-field strong { font-size: clamp(14px, 1.05vw, 18px); font-weight: 800; color: var(--text-1); font-variant-numeric: tabular-nums; }
-.ph-top-right { display: flex; align-items: center; justify-content: flex-end; gap: clamp(8px, 1.2vw, 18px); flex: 1 1 0; min-width: 0; }
-.ph-top-clock { display: flex; gap: 10px; font-size: clamp(12px, 0.85vw, 15px); font-weight: 600; color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ph-top-meta b { color: var(--text-1); font-weight: 700; font-variant-numeric: tabular-nums; margin-left: 2px; }
+.ph-top-dot { color: var(--text-4); }
+.ph-top-right {
+  display: flex; align-items: center; justify-content: flex-end; gap: clamp(12px, 1.6vw, 28px);
+  flex: 1; min-width: 0;
+}
+.ph-top-clock { font-size: clamp(12px, 0.85vw, 14px); color: var(--text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ph-top-user {
+  display: flex; align-items: baseline; gap: 6px; min-width: 0;
+  padding-left: clamp(12px, 1.6vw, 28px); border-left: 1px solid var(--border);
+  font-size: clamp(12.5px, 0.9vw, 14.5px); font-weight: 700; color: var(--text-1); white-space: nowrap;
+}
+.ph-top-user small { font-size: 11px; font-weight: 500; color: var(--text-3); }
 .ph-top-lite {
   display: flex; align-items: center; gap: 4px; flex-shrink: 0;
-  min-height: 38px; padding: 0 14px; border-radius: var(--r-md);
-  border: 1.5px solid var(--border); background: var(--surface);
-  color: var(--text-2); font-size: 12.5px; font-weight: 700; cursor: pointer;
+  border: none; background: none; padding: 4px 2px; cursor: pointer;
+  font-size: 12.5px; font-weight: 700; color: var(--brand);
 }
-.ph-top-lite:hover { border-color: var(--brand-border); color: var(--brand); }
-.ph-top-role {
-  display: flex; align-items: center; justify-content: center;
-  min-height: 38px; padding: 0 16px; border-radius: var(--r-md);
-  background: var(--ph-gradient); color: #fff; box-shadow: var(--ph-brand-raised);
-  font-size: clamp(11px, 0.78vw, 13px); font-weight: 800; letter-spacing: 0.4px; white-space: nowrap;
-}
+.ph-top-lite:hover { text-decoration: underline; }
 
 /* ─── Main three columns ───────────────────────────────────────── */
 .ph-main {
@@ -386,8 +383,7 @@
   .ph-txn { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .ph-txn-tender { align-items: flex-start; }
   .ph-txn-total { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
-  .ph-top-meta { gap: 16px; }
-  .ph-top-cashier, .ph-hide-sm { display: none; }
+  .ph-hide-sm { display: none; }
   .ph-pad-spacer { display: none; }
 }
 
@@ -395,8 +391,7 @@
 @media (max-width: 600px) {
   .ph-hide-sm { display: none; }
   .ph-top { gap: 10px; }
-  .ph-top-cashier, .ph-top-meta .ph-top-field:last-child { display: none; }
-  .ph-top-role { display: none; }
+  .ph-top-meta .ph-top-dot, .ph-top-meta span:last-child, .ph-top-user small { display: none; }
   .ph-main { grid-template-columns: minmax(0, 1fr); }
   .ph-table-row { grid-template-columns: 11% minmax(0, 1fr) 11% 18%; }
   .ph-table-row > :nth-child(5) { display: none; }

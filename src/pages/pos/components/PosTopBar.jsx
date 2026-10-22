@@ -25,7 +25,7 @@ function formatNow(d) {
   }
 }
 
-/** White top bar: brand · cashier · bill no / counter no · date & time · role. */
+/** Simple top bar: logo · bill / counter · date-time · cashier (role) · Lite. */
 export default function PosTopBar({ onOpenLite }) {
   const cashier   = usePosStore(s => s.cashier)
   const billNo    = usePosStore(s => s.billNo)
@@ -33,40 +33,30 @@ export default function PosTopBar({ onOpenLite }) {
   const { date, time } = formatNow(useNow())
 
   const cashierName = cashier?.staffName ?? cashier?.name ?? cashier?.staffCode ?? 'Cashier'
-  const roleLabel   = (cashier?.roleName || 'Cashier').toUpperCase()
 
   return (
     <header className="ph-top">
-      <div className="ph-top-brand">
-        {/* Same horizontal Vendo logo as the Lite header */}
-        <BrandLogo variant="horizontal" height={40} />
-        <span className="ph-top-cashier" title="Logged-in cashier">{cashierName}</span>
-      </div>
+      <BrandLogo variant="horizontal" height={34} />
 
       <div className="ph-top-meta">
-        <div className="ph-top-field">
-          <span>Bill No.</span>
-          <strong>{billNo || '—'}</strong>
-        </div>
-        <div className="ph-top-field">
-          <span>Counter No.</span>
-          <strong>{counterNo || '—'}</strong>
-        </div>
+        <span>Bill <b>{billNo || '—'}</b></span>
+        <span className="ph-top-dot" aria-hidden>·</span>
+        <span>Counter <b>{counterNo || '—'}</b></span>
       </div>
 
       <div className="ph-top-right">
         <span className="ph-top-clock">
-          <span className="ph-hide-sm">{date}</span>
-          <span>{time}</span>
+          <span className="ph-hide-sm">{date}</span> {time}
+        </span>
+        <span className="ph-top-user" title="Logged-in cashier">
+          <span className="ph-ellipsis">{cashierName}</span>
+          {cashier?.roleName && <small>{cashier.roleName}</small>}
         </span>
         {LITE_VERSION_ENABLED && (
           <button className="ph-top-lite" data-pos-skip-refocus onClick={onOpenLite} title="Switch to Lite mode">
             <Zap size={13} /> Lite
           </button>
         )}
-        <div className="ph-top-role" title={`${cashierName}${cashier?.roleName ? ` (${cashier.roleName})` : ''}`}>
-          {roleLabel}
-        </div>
       </div>
     </header>
   )
