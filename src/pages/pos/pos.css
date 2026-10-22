@@ -113,7 +113,7 @@
 .ph-col { display: flex; flex-direction: column; gap: var(--ph-gap); min-height: 0; min-width: 0; }
 .ph-col-items { grid-area: items; }
 .ph-col-fn    { grid-area: fn; }
-.ph-col-pad   { grid-area: pad; }
+.ph-col-pad   { grid-area: pad; justify-content: center; align-items: center; }
 
 /* Search row: search box + round scan button outside it */
 .ph-searchrow { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
@@ -205,7 +205,8 @@
 /* Tiles, keys and ENTER fill the whole column: keys share the width (3 across)
    and the height left between the tiles and ENTER (4 rows). */
 .ph-pad {
-  flex: 1; min-height: 0;
+  /* tiles + keys + ENTER as one block, centred in the column */
+  flex: 0 1 auto; min-height: 0; width: 100%; max-width: 440px;
   display: flex; flex-direction: column;
   gap: var(--ph-kgap);
 }
@@ -223,7 +224,7 @@
 .ph-pad-spacer { display: none; }
 .ph-keys {
   flex: 1; min-height: calc(4 * 44px + 3 * var(--ph-kgap));
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(44px, 1fr));
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(44px, 92px));
   gap: var(--ph-kgap);
 }
 .ph-key {
