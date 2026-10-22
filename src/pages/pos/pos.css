@@ -64,18 +64,30 @@
   flex: 1; min-width: 0;
 }
 .ph-top-clock { font-size: clamp(12px, 0.85vw, 14px); color: var(--text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.ph-top-user {
-  display: flex; align-items: baseline; gap: 6px; min-width: 0;
-  padding-left: clamp(12px, 1.6vw, 28px); border-left: 1px solid var(--border);
-  font-size: clamp(12.5px, 0.9vw, 14.5px); font-weight: 700; color: var(--text-1); white-space: nowrap;
-}
-.ph-top-user small { font-size: 11px; font-weight: 500; color: var(--text-3); }
+/* Lite switch — small boxed button */
 .ph-top-lite {
-  display: flex; align-items: center; gap: 4px; flex-shrink: 0;
-  border: none; background: none; padding: 4px 2px; cursor: pointer;
-  font-size: 12.5px; font-weight: 700; color: var(--brand);
+  display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+  height: 34px; padding: 0 12px; border-radius: var(--r-md);
+  border: 1.5px solid var(--border); background: var(--surface); cursor: pointer;
+  font-size: 12.5px; font-weight: 700; color: var(--text-2);
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
 }
-.ph-top-lite:hover { text-decoration: underline; }
+.ph-top-lite:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-bg); }
+
+/* Logged-in user — avatar initial + name over role */
+.ph-top-user {
+  display: flex; align-items: center; gap: 10px; min-width: 0;
+  padding-left: clamp(12px, 1.6vw, 24px); border-left: 1px solid var(--border);
+}
+.ph-top-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ph-gradient); color: #fff;
+  font-size: 14px; font-weight: 800;
+}
+.ph-top-user-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.ph-top-user-text b { font-size: clamp(12.5px, 0.88vw, 14px); font-weight: 700; color: var(--text-1); max-width: 200px; }
+.ph-top-user-text small { font-size: 11px; font-weight: 500; color: var(--text-3); }
 
 /* ─── Main three columns ───────────────────────────────────────── */
 .ph-main {
@@ -391,7 +403,8 @@
 @media (max-width: 600px) {
   .ph-hide-sm { display: none; }
   .ph-top { gap: 10px; }
-  .ph-top-meta .ph-top-dot, .ph-top-meta span:last-child, .ph-top-user small { display: none; }
+  .ph-top-meta .ph-top-dot, .ph-top-meta span:last-child, .ph-top-user-text { display: none; }
+  .ph-top-user { padding-left: 10px; }
   .ph-main { grid-template-columns: minmax(0, 1fr); }
   .ph-table-row { grid-template-columns: 11% minmax(0, 1fr) 11% 18%; }
   .ph-table-row > :nth-child(5) { display: none; }

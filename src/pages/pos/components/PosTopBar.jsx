@@ -48,15 +48,19 @@ export default function PosTopBar({ onOpenLite }) {
         <span className="ph-top-clock">
           <span className="ph-hide-sm">{date}</span> {time}
         </span>
-        <span className="ph-top-user" title="Logged-in cashier">
-          <span className="ph-ellipsis">{cashierName}</span>
-          {cashier?.roleName && <small>{cashier.roleName}</small>}
-        </span>
         {LITE_VERSION_ENABLED && (
           <button className="ph-top-lite" data-pos-skip-refocus onClick={onOpenLite} title="Switch to Lite mode">
-            <Zap size={13} /> Lite
+            <Zap size={14} /> Lite
           </button>
         )}
+        {/* Logged-in user: avatar initial · name · role */}
+        <div className="ph-top-user" title={`Logged in as ${cashierName}${cashier?.roleName ? ` (${cashier.roleName})` : ''}`}>
+          <span className="ph-top-avatar" aria-hidden>{cashierName.trim()[0]?.toUpperCase() ?? '?'}</span>
+          <span className="ph-top-user-text">
+            <b className="ph-ellipsis">{cashierName}</b>
+            {cashier?.roleName && <small>{cashier.roleName}</small>}
+          </span>
+        </div>
       </div>
     </header>
   )
