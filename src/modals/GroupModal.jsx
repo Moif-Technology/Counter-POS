@@ -5,14 +5,14 @@ import { moneyPlaceholder } from '../lib/currencyFormat'
 import { isGroupBrowseMode } from '../lib/groupUtils'
 import Modal from '../components/common/Modal'
 
-export default function GroupModal({ onClose, onSelect }) {
+export default function GroupModal({ onClose, onSelect, initialGroup = null }) {
   const productGroups = usePosStore(s => s.productGroups)
   const groupsLoading = usePosStore(s => s.groupsLoading)
   const groupsError   = usePosStore(s => s.groupsError)
   const fetchProductGroups = usePosStore(s => s.fetchProductGroups)
   const accessToken   = usePosStore(s => s.accessToken)
 
-  const [selected, setSelected] = useState(null)
+  const [selected, setSelected] = useState(initialGroup)
   const [price,    setPrice]    = useState('')
   const [search,   setSearch]   = useState('')
 

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePosStore } from '../../store/posStore'
 import { focusBarcodeScan, shouldSkipBarcodeRefocus } from '../../lib/posFocus'
@@ -6,25 +6,28 @@ import { posConfirm } from '../../lib/posNotify'
 import { usePosSession } from './hooks/usePosSession'
 import { useBarcodeEntry } from './hooks/useBarcodeEntry'
 import { useSaveBill } from './hooks/useSaveBill'
-import PosHeader from './components/PosHeader'
-import PosScanBar from './components/PosScanBar'
-import PosSaveButtons from './components/PosSaveButtons'
-import PosFooter from './components/PosFooter'
-import PosMobileTabs from './components/PosMobileTabs'
-import ItemsGrid from './components/ItemsGrid'
-import NumPad from './components/NumPad'
-import BillSummary from './components/BillSummary'
-import ItemPreview from './components/ItemPreview'
-import { SideNav, FeatureGrid } from './components/FunctionButtons'
+import { usePosActions } from './hooks/usePosActions'
+import PosTopBar from './components/PosTopBar'
+import PosSearchBar from './components/PosSearchBar'
+import PosItemsTable from './components/PosItemsTable'
+import PosQtyBar from './components/PosQtyBar'
+import PosPaymentPad from './components/PosPaymentPad'
+import PosItemCard from './components/PosItemCard'
+import PosFunctionPanel from './components/PosFunctionPanel'
+import PosBillingButtons from './components/PosBillingButtons'
+import PosTransactionPanel from './components/PosTransactionPanel'
+import PosStatusBar from './components/PosStatusBar'
+import './pos.css'
 
 export default function POSPage() {
-  const navigate = useNavigate()
-  const clearAll = usePosStore(s => s.clearAll)
-  const [mobileTab, setMobileTab] = useState('items') // 'items' | 'pay' — only used ≤640px
+  const navigate   = useNavigate()
+  const clearAll   = usePosStore(s => s.clearAll)
+  const returnMode = usePosStore(s => s.returnMode)
 
   const { fetchNextBillNo } = usePosSession()
   const { scanning, sunmiScanOpen, handleEnter, handleSunmiScan } = useBarcodeEntry()
   const { saving, handleSave } = useSaveBill({ fetchNextBillNo })
+  const actions = usePosActions({ onSave: handleSave })
 
   // Lite runs on its own demo catalogue but shares this cart store, so the
   // cart is cleared on the way in to keep real and demo items from mixing.
@@ -47,55 +50,45 @@ export default function POSPage() {
     focusBarcodeScan()
   }, [])
 
+  const status = saving ? 'Saving........Please Wait...........'
+    : scanning ? 'Searching........'
+    : returnMode ? 'Return mode — scanned items are returned'
+    : ''
+
   return (
-    <div className="pos-root" data-mtab={mobileTab} onPointerDown={handleMainScreenPointerDown}>
+    <div className="ph-root" onPointerDown={handleMainScreenPointerDown}>
+      <PosTopBar onOpenLite={handleOpenLite} />
 
-      <PosHeader onOpenLite={handleOpenLite} />
-
-      {/* ── BODY ───────────────────────────────────── */}
-      <div className="pos-body">
-
-        {/* LEFT — narrow icon sidebar */}
-        <div className="pos-sidebar">
-          <SideNav />
-        </div>
-
-        {/* CENTER */}
-        <div className="pos-center">
-          <PosScanBar
+      <main className="ph-main">
+        {/* Left — search, cart lines, qty */}
+        <section className="ph-col ph-col-items">
+          <PosSearchBar
+            onEnter={handleEnter}
+            onScan={handleSunmiScan}
             scanning={scanning}
             sunmiScanOpen={sunmiScanOpen}
-            onEnter={handleEnter}
-            onSunmiScan={handleSunmiScan}
           />
+          <PosItemsTable />
+          <PosQtyBar status={status} />
+        </section>
 
-          {/* Item preview strip */}
-          <div className="pos-preview">
-            <ItemPreview />
-          </div>
+        {/* Middle — payment modes, numpad, ENTER */}
+        <section className="ph-col ph-col-pad">
+          <PosPaymentPad onEnter={handleEnter} />
+        </section>
 
-          {/* Items table */}
-          <div className="pos-grid">
-            <ItemsGrid />
-          </div>
+        {/* Right — selected item, function keys, billing */}
+        <section className="ph-col ph-col-fn">
+          <PosItemCard />
+          <PosFunctionPanel actions={actions} />
+          <PosBillingButtons saving={saving} onSave={handleSave} />
+        </section>
+      </main>
 
-          {/* Feature buttons row */}
-          <div className="pos-fn-grid">
-            <FeatureGrid />
-          </div>
-        </div>
+      <PosTransactionPanel />
+      <PosStatusBar />
 
-        {/* RIGHT — payment mode + bill summary + numpad + actions */}
-        <div className="pos-right">
-          <div className="pos-bill-zone"><BillSummary /></div>
-          <div className="pos-numpad-zone"><NumPad onEnter={handleEnter} /></div>
-          <PosSaveButtons saving={saving} onSave={handleSave} />
-        </div>
-
-      </div>
-
-      <PosFooter />
-      <PosMobileTabs activeTab={mobileTab} onChange={setMobileTab} />
+      {actions.modals}
     </div>
   )
 }

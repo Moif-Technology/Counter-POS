@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { User, UserPlus, X, Search, CreditCard, Phone, ChevronDown } from 'lucide-react'
+import { User, X, Search, ChevronDown } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
 import { normalizePaymentMode, PM } from '../../../lib/paymentModes'
 import { api } from '../../../lib/api'
@@ -7,6 +7,7 @@ import { fmtMoney } from '../../../lib/currencyFormat'
 import { focusBarcodeScan } from '../../../lib/posFocus'
 
 const WALK_IN_LABEL = 'Walk-in Customer'
+const PLAIN_WALK_IN  = 'CASH CUSTOMER'
 
 function CustomerRow({ c, onSelect }) {
   const [hov, setHov] = useState(false)
@@ -59,7 +60,11 @@ function CustomerRow({ c, onSelect }) {
   )
 }
 
-export default function CustomerSearch() {
+/**
+ * Customer picker. variant "button" (default) = pill button; "plain" = bold brand
+ * text (home-screen transaction panel). dropUp opens the list above the trigger.
+ */
+export default function CustomerSearch({ variant = 'button', dropUp = false }) {
   const customerName   = usePosStore(s => s.customerName)
   const setCustomer    = usePosStore(s => s.setCustomer)
   const clearCustomer  = usePosStore(s => s.clearCustomer)
@@ -151,6 +156,12 @@ export default function CustomerSearch() {
 
       {/* ── Trigger button ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        {variant === 'plain' ? (
+          <button className="ph-cust-trigger" onClick={() => setOpen(o => !o)} title="Change customer">
+            {(customerName || PLAIN_WALK_IN).toUpperCase()}
+            <ChevronDown size={14} />
+          </button>
+        ) : (
         <button
           onClick={() => setOpen(o => !o)}
           style={{
@@ -176,6 +187,7 @@ export default function CustomerSearch() {
           </span>
           <ChevronDown size={11} color="var(--text-3)" style={{ flexShrink: 0 }} />
         </button>
+        )}
 
         {hasCustomer && (
           <button
@@ -200,7 +212,8 @@ export default function CustomerSearch() {
         <div
           data-pos-customer-dropdown
           style={{
-          position: 'absolute', top: 'calc(100% + 6px)', left: 0,
+          position: 'absolute', left: 0,
+          ...(dropUp ? { bottom: 'calc(100% + 6px)' } : { top: 'calc(100% + 6px)' }),
           width: 320, zIndex: 999,
           background: 'var(--surface)',
           border: '1.5px solid var(--border)',
