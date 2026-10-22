@@ -75,8 +75,8 @@
 /* ─── Main three columns ───────────────────────────────────────── */
 .ph-main {
   display: grid;
-  /* items | function keys | numpad (right) */
-  grid-template-columns: minmax(0, 1fr) clamp(270px, 24vw, 470px) clamp(210px, 14.6vw, 290px);
+  /* items (45% of the screen) | function keys | numpad (right) — the last two share the rest */
+  grid-template-columns: 45% minmax(0, 1.4fr) minmax(0, 1fr);
   gap: var(--ph-gap);
   padding: var(--ph-gap);
   min-height: 0;
@@ -337,7 +337,6 @@
 
 /* ─── Narrower terminals (≤1180px) ─────────────────────────────── */
 @media (max-width: 1180px) {
-  .ph-main { grid-template-columns: minmax(0, 1fr) clamp(290px, 29vw, 330px) clamp(200px, 19vw, 230px); }
   .ph-fn { padding: 0 8px; gap: 6px; font-size: 13px; }
   .ph-col-barcode { display: none; }
   .ph-table-row { grid-template-columns: 8% minmax(0, 1fr) 10% 13% 14%; }
