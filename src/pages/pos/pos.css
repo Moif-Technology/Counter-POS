@@ -262,12 +262,13 @@
 .ph-tabs::-webkit-scrollbar { display: none; }
 .ph-tab {
   flex: 1 0 auto; padding: clamp(5px, 0.7vh, 7px) clamp(6px, 0.7vw, 12px);
-  border-radius: 99px; border: 1px solid var(--border); background: var(--surface-2);
-  font-size: clamp(11px, 0.75vw, 12.5px); font-weight: 600; color: var(--text-2); cursor: pointer; white-space: nowrap;
+  border-radius: 99px; border: 1px solid var(--brand-border); background: var(--surface);
+  font-size: clamp(11px, 0.75vw, 12.5px); font-weight: 700; color: var(--brand-light); cursor: pointer; white-space: nowrap;
   transition: background 0.1s, color 0.1s, border-color 0.1s;
 }
-.ph-tab:hover { border-color: var(--brand-border); }
-.ph-tab.is-active { background: var(--brand-bg); border-color: var(--brand); color: var(--brand); font-weight: 800; }
+.ph-tab:hover { border-color: var(--brand-light); color: var(--brand); }
+/* Tabs are a different shade from the rose keys: white outline, active = solid brand */
+.ph-tab.is-active { background: var(--ph-gradient); border-color: transparent; color: #fff; font-weight: 800; box-shadow: var(--ph-brand-raised); }
 
 .ph-fn-grid {
   flex: 1; min-height: 0; overflow-y: auto;
