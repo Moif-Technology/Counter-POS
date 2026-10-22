@@ -6,23 +6,26 @@ import CustomerSearch from './CustomerSearch'
 
 const MODE_LABEL = { [PM.CASH]: 'CASH', [PM.CREDITCARD]: 'CARD', [PM.CREDIT]: 'CREDIT', [PM.MULTIPAYMENT]: 'MULTI PAY' }
 
-/** Bottom "New Transaction" panel: customer · tender · tax breakdown · paid / balance · TOTAL. */
+/**
+ * Bill summary card (top of the right side):
+ *   title · payment mode · customer          TOTAL
+ *   Sub total · Discount · Tax · Round off   Paid · Balance
+ */
 export default function PosTransactionPanel() {
   const s = usePosStore(useShallow(st => ({
-    customerCode: st.customerCode,
-    paymentMode:  st.paymentMode,
-    subTotal:     st.subTotal,
-    discountAmt:  st.discountAmt,
-    taxableAmt:   st.taxableAmt,
-    taxAmt:       st.taxAmt,
-    roundOff:     st.roundOff,
-    netAmount:    st.netAmount,
-    paidAmount:   st.paidAmount,
+    customerCode:  st.customerCode,
+    paymentMode:   st.paymentMode,
+    subTotal:      st.subTotal,
+    discountAmt:   st.discountAmt,
+    taxAmt:        st.taxAmt,
+    roundOff:      st.roundOff,
+    netAmount:     st.netAmount,
+    paidAmount:    st.paidAmount,
     balanceAmount: st.balanceAmount,
-    returnMode:   st.returnMode,
-    recalledHold: st.recalledHoldSalesId,
+    returnMode:    st.returnMode,
+    recalledHold:  st.recalledHoldSalesId,
     recalledDelivery: st.recalledDeliverySalesId,
-    currency:     st.currency,
+    itemCount:     st.cartItems.length,
   })))
 
   const title = s.returnMode ? 'Return Transaction'
@@ -30,47 +33,44 @@ export default function PosTransactionPanel() {
     : s.recalledDelivery ? 'Recalled Delivery'
     : 'New Transaction'
 
+  const stats = [
+    { label: 'Sub Total', value: s.subTotal },
+    { label: 'Discount',  value: s.discountAmt },
+    { label: 'Tax',       value: s.taxAmt },
+    { label: 'Round Off', value: s.roundOff },
+  ]
+
   return (
-    <section className="ph-txn" aria-label="Current transaction">
-      <div className="ph-txn-title">{title}</div>
-
-      <div className="ph-txn-cust">
-        <div className="ph-txn-line">
-          <span className="ph-label">Customer</span>
-          <CustomerSearch variant="plain" dropUp />
-        </div>
-        <div className="ph-txn-line">
-          <span className="ph-label">Customer Code</span>
-          <b>{s.customerCode || '—'}</b>
-        </div>
-      </div>
-
-      <div className="ph-txn-tender">
-        <div className="ph-txn-line">
+    <section className={`ph-txn${s.returnMode ? ' is-return' : ''}`} aria-label="Bill summary">
+      <div className="ph-txn-info">
+        <div className="ph-txn-head">
+          <span className="ph-txn-title">{title}</span>
           <span className="ph-txn-mode">{MODE_LABEL[s.paymentMode] ?? s.paymentMode}</span>
-          <b>{fmt3(s.subTotal)}</b>
+          <span className="ph-txn-count">{s.itemCount} {s.itemCount === 1 ? 'line' : 'lines'}</span>
         </div>
-        <div className="ph-txn-line">
-          <span className="ph-label ph-txn-right">Discount</span>
-          <b>{fmt3(s.discountAmt)}</b>
+
+        <div className="ph-txn-cust">
+          <CustomerSearch variant="plain" />
+          {s.customerCode && <span className="ph-label">{s.customerCode}</span>}
         </div>
-      </div>
 
-      <div className="ph-txn-tax">
-        <span className="ph-label">Taxable</span>    <b>{fmt3(s.taxableAmt)}</b>
-        <span className="ph-label">Tax Amount</span> <b>{fmt3(s.taxAmt)}</b>
-        <span className="ph-label">Round Off</span>  <b>{fmt3(s.roundOff)}</b>
-        <span className="ph-label ph-strong">Total</span> <b className="ph-brand">{fmt3(s.netAmount)}</b>
-      </div>
-
-      <div className="ph-txn-paid">
-        <label>Paid :</label><output>{fmt3(s.paidAmount)}</output>
-        <label>Bal :</label><output>{fmt3(s.balanceAmount)}</output>
+        <div className="ph-txn-stats">
+          {stats.map(st => (
+            <div key={st.label} className="ph-txn-stat">
+              <span>{st.label}</span>
+              <b>{fmt3(st.value)}</b>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="ph-txn-total">
         <span>TOTAL</span>
         <strong>{fmt3(s.netAmount)}</strong>
+        <div className="ph-txn-paid">
+          <span>Paid <b>{fmt3(s.paidAmount)}</b></span>
+          <span>Bal <b>{fmt3(s.balanceAmount)}</b></span>
+        </div>
       </div>
     </section>
   )

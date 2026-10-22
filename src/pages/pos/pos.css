@@ -1,5 +1,6 @@
 /* ─── POS home screen — Lite style ─────────────────────────────────
-   Top bar · [items 45% | function keys | numpad] · transaction · status.
+   Left: the cart (search · lines · selected line).
+   Right: bill summary → function keys | numpad → BILLING.
    Same visual language as Lite: soft-UI (neumorphic) keys on
    --surface-2, 12–14px radii, brand-tinted icon chips, pill tabs,
    gradient primary actions. Sized with clamp()/vh so 1920×1080 →
@@ -15,8 +16,7 @@
   --ph-brand-pressed: 0 2px 6px rgba(120,8,41,0.22), inset 0 2px 6px rgba(0,0,0,0.30);
   --ph-gradient: linear-gradient(145deg, var(--brand) 0%, var(--brand-2) 100%);
 
-  /* Right column pieces — used to size the square numpad keys */
-  --ph-card-h:  clamp(60px, 7.4vh, 74px);
+  /* Numpad pieces — used to size the square keys */
   --ph-tile-h:  clamp(50px, 6.6vh, 72px);
   --ph-pay-gap: clamp(6px, 0.6vw, 10px);
   --ph-kgap:    clamp(6px, 0.7vw, 10px);
@@ -96,16 +96,16 @@
 .ph-top-user-text b { font-size: clamp(12.5px, 0.88vw, 14px); font-weight: 700; color: var(--text-1); max-width: 200px; }
 .ph-top-user-text small { font-size: 11px; font-weight: 500; color: var(--text-3); }
 
-/* ─── Main three columns ───────────────────────────────────────── */
+/* ─── Main layout ─────────────────────────────────────────────── */
 .ph-main {
   display: grid;
-  /* items (45% of the screen) | numpad | function keys (right) — the last two share the rest */
-  grid-template-columns: 45% minmax(0, 1fr) minmax(0, 1.4fr);
-  /* the function-key column runs the full height; transaction details sit bottom-left */
-  grid-template-rows: minmax(0, 1fr) auto;
+  /* cart (45% of the screen) | function keys | numpad */
+  grid-template-columns: 45% minmax(0, 1.35fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   grid-template-areas:
-    "items pad fn"
-    "txn   txn fn";
+    "items txn  txn"
+    "items fn   pad"
+    "items bill bill";
   gap: var(--ph-gap);
   padding: var(--ph-gap);
   min-height: 0;
@@ -251,17 +251,20 @@
 }
 .ph-enter:active { box-shadow: var(--ph-brand-pressed); transform: scale(0.98); }
 
-/* ─── Item card (top of the function-key column) ────────────────── */
+/* ─── Selected line strip (under the cart) ──────────────────────── */
 .ph-itemcard {
-  flex-shrink: 0; height: var(--ph-card-h); padding: 0 12px; overflow: hidden;
-  display: flex; flex-direction: column; justify-content: center; gap: 4px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: clamp(14px, 1.8vw, 32px);
+  min-height: clamp(46px, 5.6vh, 58px); padding: 6px 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
 }
-.ph-itemcard-row { display: flex; align-items: baseline; gap: 6px; min-width: 0; font-size: clamp(10.5px, 0.72vw, 12.5px); white-space: nowrap; }
-.ph-itemcard-name { font-size: clamp(13px, 0.95vw, 16px); font-weight: 800; color: var(--text-1); }
-.ph-itemcard-nums { justify-content: space-between; }
-.ph-itemcard-nums b { font-size: clamp(12px, 0.9vw, 15px); font-weight: 800; color: var(--text-1); margin-left: 2px; font-variant-numeric: tabular-nums; }
-.ph-itemcard-nums span:last-child b { color: var(--brand); }
+.ph-itemcard .ph-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+.ph-itemcard-main { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.ph-itemcard-main strong { font-size: clamp(13.5px, 0.95vw, 16px); font-weight: 800; color: var(--text-1); }
+.ph-itemcard.is-empty .ph-itemcard-main strong { color: var(--text-4); font-weight: 600; }
+.ph-itemcard-stat { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25; }
+.ph-itemcard-stat b { font-size: clamp(13.5px, 0.95vw, 16px); font-weight: 800; color: var(--text-1); font-variant-numeric: tabular-nums; }
+.ph-itemcard-stat.is-total b { color: var(--brand); }
 
 .ph-fnpanel {
   flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
@@ -335,13 +338,13 @@
 }
 .ph-fn-empty { grid-column: 1 / -1; padding: 24px 8px; text-align: center; color: var(--text-3); font-size: 12.5px; }
 
-/* Billing (like the Lite Save / Bill & Print bar) */
-.ph-billing { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(6px, 0.6vw, 10px); flex-shrink: 0; }
+/* ─── BILLING (full width of the right side, last step) ────────── */
+.ph-billing { grid-area: bill; display: grid; grid-template-columns: 1fr 1fr; gap: var(--ph-gap); }
 .ph-bill {
-  height: clamp(64px, 10vh, 108px);
-  display: flex; align-items: center; justify-content: center; gap: 10px;
+  height: clamp(56px, 8vh, 84px);
+  display: flex; align-items: center; justify-content: center; gap: 12px;
   border-radius: 14px; cursor: pointer;
-  font-size: clamp(12.5px, 0.92vw, 16px); font-weight: 800; letter-spacing: 0.3px; line-height: 1.3; text-align: left;
+  font-size: clamp(13px, 0.95vw, 16px); font-weight: 800; letter-spacing: 0.3px; line-height: 1.3; text-align: left;
   transition: box-shadow 0.1s, transform 0.07s;
 }
 .ph-bill.is-solid   { background: var(--ph-gradient); color: #fff; border: none; box-shadow: var(--ph-brand-raised); }
@@ -351,57 +354,48 @@
 .ph-bill.is-outline:active { box-shadow: var(--ph-pressed); transform: scale(0.98); }
 .ph-bill:disabled { opacity: 0.6; cursor: wait; }
 
-/* ─── Transaction panel (like the Lite bill summary) ───────────── */
+/* ─── Bill summary card (top of the right side) ────────────────── */
 .ph-txn {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) auto clamp(150px, 11.5vw, 220px);
-  align-items: center; gap: clamp(10px, 1.6vw, 32px);
   grid-area: txn;
-  padding: clamp(12px, 1.8vh, 20px) clamp(12px, 1.2vw, 20px);
+  display: flex; align-items: stretch; gap: clamp(12px, 1.4vw, 24px);
+  padding: clamp(10px, 1.4vh, 16px) clamp(12px, 1.2vw, 18px);
   background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
 }
-.ph-txn-title {
-  position: absolute; top: clamp(6px, 0.8vh, 10px); left: clamp(12px, 1.2vw, 20px);
-  font-size: 10.5px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.6px;
-}
-.ph-txn-cust, .ph-txn-tender { display: flex; flex-direction: column; gap: clamp(6px, 1vh, 10px); min-width: 0; padding-top: 12px; }
-.ph-txn-line { display: flex; align-items: center; gap: 12px; min-width: 0; font-size: clamp(12px, 0.82vw, 14px); }
-.ph-txn-line b { font-weight: 700; font-variant-numeric: tabular-nums; }
-.ph-txn-tender { align-items: flex-end; }
+.ph-txn.is-return { border-color: var(--brand); }
+.ph-txn-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; gap: clamp(6px, 1vh, 10px); }
+.ph-txn-head { display: flex; align-items: center; gap: 8px; }
+.ph-txn-title { font-size: 10.5px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.6px; }
+.ph-txn.is-return .ph-txn-title { color: var(--brand); }
 .ph-txn-mode {
-  padding: 3px 12px; border-radius: 99px;
+  padding: 2px 10px; border-radius: 99px;
   background: var(--brand-bg); border: 1px solid var(--brand-border);
-  color: var(--brand); font-weight: 800; font-size: clamp(10.5px, 0.7vw, 12px); letter-spacing: 0.4px;
+  color: var(--brand); font-weight: 800; font-size: 11px; letter-spacing: 0.4px;
 }
-.ph-txn-tax {
-  display: grid; grid-template-columns: auto auto; justify-content: start; column-gap: clamp(16px, 1.6vw, 28px); row-gap: clamp(2px, 0.5vh, 6px);
-  font-size: clamp(12px, 0.82vw, 14px); align-items: baseline;
+.ph-txn-count { margin-left: auto; font-size: 11.5px; font-weight: 600; color: var(--text-3); white-space: nowrap; }
+.ph-txn-cust { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.ph-txn-cust > div { min-width: 0; flex-shrink: 1 !important; }   /* name truncates instead of overflowing */
+.ph-txn-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.ph-txn-stat {
+  display: flex; flex-direction: column; min-width: 0;
+  padding: clamp(4px, 0.7vh, 7px) 10px; border-radius: 10px; background: var(--surface-2);
 }
-.ph-txn-tax b { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
-.ph-txn-paid { display: grid; grid-template-columns: auto clamp(90px, 7vw, 130px); gap: clamp(6px, 0.9vh, 10px) 10px; align-items: center; }
-.ph-txn-paid label { font-size: clamp(11px, 0.78vw, 13px); font-weight: 700; color: var(--text-3); text-transform: uppercase; text-align: right; }
-.ph-txn-paid output {
-  height: clamp(32px, 3.8vh, 40px); display: flex; align-items: center; justify-content: flex-end; padding: 0 12px;
-  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-md);
-  font-size: clamp(15px, 1.1vw, 19px); font-weight: 800; font-variant-numeric: tabular-nums;
-}
+.ph-txn-stat span { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+.ph-txn-stat b { font-size: clamp(13px, 0.95vw, 16px); font-weight: 800; color: var(--text-1); font-variant-numeric: tabular-nums; }
 .ph-txn-total {
-  align-self: stretch;
-  display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 0;
+  flex: 0 0 clamp(150px, 13vw, 240px);
+  display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px;
   padding: 8px 14px; border-radius: 12px; background: var(--brand-bg); border: 1px solid var(--brand-border);
 }
-.ph-txn-total span   { font-size: 10.5px; font-weight: 700; color: var(--text-3); letter-spacing: 0.6px; }
-.ph-txn-total strong { font-size: clamp(26px, 2.5vw, 44px); font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; line-height: 1.1; }
-
-/* Customer picker wrapper may shrink so the name truncates instead of overlapping */
-.ph-txn-line > div { min-width: 0; flex-shrink: 1 !important; }
+.ph-txn-total > span { font-size: 10.5px; font-weight: 700; color: var(--text-3); letter-spacing: 0.6px; }
+.ph-txn-total strong { font-size: clamp(28px, 2.6vw, 46px); font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; line-height: 1.05; }
+.ph-txn-paid { display: flex; gap: 12px; font-size: 11.5px; color: var(--text-3); white-space: nowrap; }
+.ph-txn-paid b { color: var(--text-1); font-weight: 800; font-variant-numeric: tabular-nums; }
 
 /* Customer name trigger (plain variant of CustomerSearch) */
 .ph-cust-trigger {
   display: flex; align-items: center; gap: 6px; min-width: 0;
   border: none; background: none; padding: 0; cursor: pointer;
-  font-size: clamp(13px, 0.92vw, 16px); font-weight: 800; color: var(--brand);
+  font-size: clamp(14px, 1vw, 17px); font-weight: 800; color: var(--brand);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
 }
 
@@ -422,21 +416,6 @@
   .ph-fn.is-half span { -webkit-line-clamp: 2; }
 }
 
-/* ─── Transaction panel on ≤1300px terminals ──────────────────── */
-@media (max-width: 1300px) {
-  /* narrower panel: tender details go under the customer */
-  .ph-txn {
-    grid-template-columns: minmax(0, 1fr) auto auto clamp(120px, 13vw, 170px);
-    grid-template-areas: "cust tax paid total" "tender tax paid total";
-    gap: 8px 16px;
-  }
-  .ph-txn-cust   { grid-area: cust; }
-  .ph-txn-tender { grid-area: tender; align-items: flex-start; flex-direction: row; gap: 16px; padding-top: 0; }
-  .ph-txn-tax    { grid-area: tax; }
-  .ph-txn-paid   { grid-area: paid; }
-  .ph-txn-total  { grid-area: total; }
-}
-
 /* ─── Narrower terminals (≤1180px) ─────────────────────────────── */
 @media (max-width: 1180px) {
   .ph-fn { padding: 0 8px; gap: 7px; font-size: 12.5px; }
@@ -448,6 +427,9 @@
   .ph-fn-grid.cols-3 .ph-fn svg { width: 14px; height: 14px; padding: 3px; }
   .ph-col-barcode { display: none; }
   .ph-table-row { grid-template-columns: 9% minmax(0, 1fr) 10% 13% 14%; }
+  .ph-txn-stat { padding: 4px 7px; }
+  .ph-txn-stat b { font-size: 13px; }
+  .ph-txn-total { flex-basis: 140px; }
 }
 
 /* ─── Portrait tablet (≤900px): stack, page scrolls ────────────── */
@@ -455,19 +437,15 @@
   /* body is fixed-height (index.css), so the page itself scrolls here */
   .ph-root { display: flex; flex-direction: column; overflow-y: auto; }
   .ph-root > * { flex-shrink: 0; }
+  /* cart · summary · (function keys | numpad) · billing */
   .ph-main { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-rows: none; grid-template-areas: none; }
-  .ph-col-items, .ph-col-fn, .ph-col-pad, .ph-txn { grid-area: auto; }
+  .ph-col-items, .ph-col-fn, .ph-col-pad, .ph-txn, .ph-billing { grid-area: auto; }
+  .ph-col-items, .ph-txn, .ph-billing { grid-column: 1 / -1; }
   .ph-pad { container-type: inline-size; flex: none; }
   .ph-pay, .ph-keys, .ph-enter { --k: min(calc((100cqw - 2 * var(--ph-kgap)) / 3), 84px); }
-  .ph-col-items, .ph-txn { grid-column: 1 / -1; }
   .ph-table { min-height: 260px; max-height: 42vh; }
   .ph-fn-grid { max-height: 360px; }
-  .ph-txn { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: none; }
-  .ph-txn-cust, .ph-txn-tender, .ph-txn-tax, .ph-txn-paid, .ph-txn-total { grid-area: auto; }
-  .ph-txn-tender { align-items: flex-start; flex-direction: column; }
-  .ph-txn-total { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
   .ph-hide-sm { display: none; }
-  .ph-pad-spacer { display: none; }
 }
 
 /* ─── Phone (≤600px) ───────────────────────────────────────────── */
@@ -477,10 +455,12 @@
   .ph-top-meta .ph-top-dot, .ph-top-meta span:last-child, .ph-top-user-text { display: none; }
   .ph-top-user { padding-left: 10px; }
   .ph-main { grid-template-columns: minmax(0, 1fr); }
+  .ph-txn { flex-direction: column; }
+  .ph-txn-total { flex-basis: auto; flex-direction: row; justify-content: space-between; align-items: center; }
+  .ph-txn-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ph-itemcard { flex-wrap: wrap; }
   .ph-table-row { grid-template-columns: 11% minmax(0, 1fr) 11% 18%; }
   .ph-table-row > :nth-child(5) { display: none; }
-  .ph-txn { grid-template-columns: minmax(0, 1fr); }
-  .ph-txn-paid { grid-template-columns: auto minmax(0, 1fr); }
   .ph-status { grid-template-columns: auto minmax(0, 1fr); }
   .ph-status-right { display: none; }
 }

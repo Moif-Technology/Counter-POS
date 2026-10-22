@@ -58,8 +58,11 @@ export default function POSPage() {
     <div className="ph-root" onPointerDown={handleMainScreenPointerDown}>
       <PosTopBar onOpenLite={handleOpenLite} />
 
+      {/*
+        Left: the cart (search · lines · selected line).
+        Right: bill summary → function keys | numpad → BILLING.
+      */}
       <main className="ph-main">
-        {/* Left — search, cart lines */}
         <section className="ph-col ph-col-items">
           <PosSearchBar
             onEnter={handleEnter}
@@ -68,23 +71,21 @@ export default function POSPage() {
             sunmiScanOpen={sunmiScanOpen}
           />
           <PosItemsTable />
+          <PosItemCard />
           {status && <div className="ph-status-line">{status}</div>}
         </section>
 
-        {/* Middle — payment modes, numpad, ENTER, billing */}
-        <section className="ph-col ph-col-pad">
-          <PosPaymentPad onEnter={handleEnter} />
-          <PosBillingButtons saving={saving} onSave={handleSave} />
-        </section>
+        <PosTransactionPanel />
 
-        {/* Right — selected item, function keys (full height) */}
         <section className="ph-col ph-col-fn">
-          <PosItemCard />
           <PosFunctionPanel actions={actions} />
         </section>
 
-        {/* Bottom-left — customer, tax breakdown, paid / balance, total (function-key column runs past it) */}
-        <PosTransactionPanel />
+        <section className="ph-col ph-col-pad">
+          <PosPaymentPad onEnter={handleEnter} />
+        </section>
+
+        <PosBillingButtons saving={saving} onSave={handleSave} />
       </main>
 
       <PosStatusBar />
