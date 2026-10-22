@@ -192,11 +192,7 @@
   padding: 24px 16px; text-align: center; color: var(--text-3); font-size: 12.5px;
 }
 .ph-table-empty strong { font-size: 15px; font-weight: 800; color: var(--text-1); }
-.ph-table-empty-icon {
-  width: 64px; height: 64px; margin-bottom: 6px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--brand-bg); border: 1px solid var(--brand-border); color: var(--brand);
-}
+.ph-table-empty-logo { display: flex; margin-bottom: 10px; }
 
 /* Status under the table (Saving… / Searching… / Return mode) */
 .ph-status-line { flex-shrink: 0; font-size: 12px; color: var(--text-3); padding: 0 4px; }
