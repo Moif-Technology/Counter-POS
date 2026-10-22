@@ -99,13 +99,13 @@
 /* ─── Main three columns ───────────────────────────────────────── */
 .ph-main {
   display: grid;
-  /* items (45% of the screen) | function keys | numpad (right) — the last two share the rest */
-  grid-template-columns: 45% minmax(0, 1.4fr) minmax(0, 1fr);
-  /* the numpad column runs the full height; transaction details sit bottom-left */
+  /* items (45% of the screen) | numpad | function keys (right) — the last two share the rest */
+  grid-template-columns: 45% minmax(0, 1fr) minmax(0, 1.4fr);
+  /* the function-key column runs the full height; transaction details sit bottom-left */
   grid-template-rows: minmax(0, 1fr) auto;
   grid-template-areas:
-    "items fn  pad"
-    "txn   txn pad";
+    "items pad fn"
+    "txn   txn fn";
   gap: var(--ph-gap);
   padding: var(--ph-gap);
   min-height: 0;
@@ -113,7 +113,7 @@
 .ph-col { display: flex; flex-direction: column; gap: var(--ph-gap); min-height: 0; min-width: 0; }
 .ph-col-items { grid-area: items; }
 .ph-col-fn    { grid-area: fn; }
-.ph-col-pad   { grid-area: pad; container-type: size; }   /* keys size from this box */
+.ph-col-pad   { grid-area: pad; }
 
 /* Search row: search box + round scan button outside it */
 .ph-searchrow { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
@@ -202,20 +202,22 @@
 .ph-status-line { flex-shrink: 0; font-size: 12px; color: var(--text-3); padding: 0 4px; }
 
 /* ─── Payment pad (like Lite keypad + payment modes) ───────────── */
-/* Tiles + keys + ENTER form one block, centred under the item card.
-   --k (key side) = the smaller of (column width ÷ 3) and
-   (height left after the card, tiles and ENTER ÷ 4); the block is 3 keys wide. */
+/* Tiles + keys + ENTER form one centred block. The pad is a size container;
+   --k (key side) = the smaller of (pad width ÷ 3) and
+   (pad height left after the tiles and ENTER ÷ 4); the block is 3 keys wide. */
 .ph-pad {
-  --k: min(
-    calc((100cqw - 2 * var(--ph-kgap)) / 3),
-    calc((100cqh - var(--ph-card-h) - 3 * var(--ph-gap) - 2 * var(--ph-tile-h) - var(--ph-pay-gap) - var(--ph-enter-h) - 3 * var(--ph-kgap)) / 4)
-  );
-  --pad-w: calc(3 * var(--k) + 2 * var(--ph-kgap));
+  container-type: size;
   flex: 1; min-height: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: var(--ph-gap);
 }
-.ph-pay, .ph-keys, .ph-enter { width: var(--pad-w); }
+.ph-pay, .ph-keys, .ph-enter {
+  --k: min(
+    calc((100cqw - 2 * var(--ph-kgap)) / 3),
+    calc((100cqh - 2 * var(--ph-gap) - 2 * var(--ph-tile-h) - var(--ph-pay-gap) - var(--ph-enter-h) - 3 * var(--ph-kgap)) / 4)
+  );
+  width: calc(3 * var(--k) + 2 * var(--ph-kgap));
+}
 .ph-pay { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ph-pay-gap); }
 .ph-pay-tile {
   height: var(--ph-tile-h);
@@ -249,7 +251,7 @@
 }
 .ph-enter:active { box-shadow: var(--ph-brand-pressed); transform: scale(0.98); }
 
-/* ─── Item card (top of the numpad column) ─────────────────────── */
+/* ─── Item card (top of the function-key column) ────────────────── */
 .ph-itemcard {
   flex-shrink: 0; height: var(--ph-card-h); padding: 0 12px; overflow: hidden;
   display: flex; flex-direction: column; justify-content: center; gap: 4px;
@@ -420,6 +422,21 @@
   .ph-fn.is-half span { -webkit-line-clamp: 2; }
 }
 
+/* ─── Transaction panel on ≤1300px terminals ──────────────────── */
+@media (max-width: 1300px) {
+  /* narrower panel: tender details go under the customer */
+  .ph-txn {
+    grid-template-columns: minmax(0, 1fr) auto auto clamp(120px, 13vw, 170px);
+    grid-template-areas: "cust tax paid total" "tender tax paid total";
+    gap: 8px 16px;
+  }
+  .ph-txn-cust   { grid-area: cust; }
+  .ph-txn-tender { grid-area: tender; align-items: flex-start; flex-direction: row; gap: 16px; padding-top: 0; }
+  .ph-txn-tax    { grid-area: tax; }
+  .ph-txn-paid   { grid-area: paid; }
+  .ph-txn-total  { grid-area: total; }
+}
+
 /* ─── Narrower terminals (≤1180px) ─────────────────────────────── */
 @media (max-width: 1180px) {
   .ph-fn { padding: 0 8px; gap: 7px; font-size: 12.5px; }
@@ -431,7 +448,6 @@
   .ph-fn-grid.cols-3 .ph-fn svg { width: 14px; height: 14px; padding: 3px; }
   .ph-col-barcode { display: none; }
   .ph-table-row { grid-template-columns: 9% minmax(0, 1fr) 10% 13% 14%; }
-  .ph-txn { grid-template-columns: minmax(0, 1fr) auto auto auto clamp(120px, 13vw, 170px); gap: 16px; }
 }
 
 /* ─── Portrait tablet (≤900px): stack, page scrolls ────────────── */
@@ -441,13 +457,14 @@
   .ph-root > * { flex-shrink: 0; }
   .ph-main { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-rows: none; grid-template-areas: none; }
   .ph-col-items, .ph-col-fn, .ph-col-pad, .ph-txn { grid-area: auto; }
-  .ph-col-pad { container-type: inline-size; }
-  .ph-pad { --k: calc((100cqw - 2 * var(--ph-kgap)) / 3); }
+  .ph-pad { container-type: inline-size; flex: none; }
+  .ph-pay, .ph-keys, .ph-enter { --k: min(calc((100cqw - 2 * var(--ph-kgap)) / 3), 84px); }
   .ph-col-items, .ph-txn { grid-column: 1 / -1; }
   .ph-table { min-height: 260px; max-height: 42vh; }
   .ph-fn-grid { max-height: 360px; }
-  .ph-txn { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .ph-txn-tender { align-items: flex-start; }
+  .ph-txn { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: none; }
+  .ph-txn-cust, .ph-txn-tender, .ph-txn-tax, .ph-txn-paid, .ph-txn-total { grid-area: auto; }
+  .ph-txn-tender { align-items: flex-start; flex-direction: column; }
   .ph-txn-total { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
   .ph-hide-sm { display: none; }
   .ph-pad-spacer { display: none; }

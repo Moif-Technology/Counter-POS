@@ -71,19 +71,19 @@ export default function POSPage() {
           {status && <div className="ph-status-line">{status}</div>}
         </section>
 
-        {/* Middle — function keys, billing */}
-        <section className="ph-col ph-col-fn">
-          <PosFunctionPanel actions={actions} />
+        {/* Middle — payment modes, numpad, ENTER, billing */}
+        <section className="ph-col ph-col-pad">
+          <PosPaymentPad onEnter={handleEnter} />
           <PosBillingButtons saving={saving} onSave={handleSave} />
         </section>
 
-        {/* Right — selected item, payment modes, numpad, ENTER */}
-        <section className="ph-col ph-col-pad">
+        {/* Right — selected item, function keys (full height) */}
+        <section className="ph-col ph-col-fn">
           <PosItemCard />
-          <PosPaymentPad onEnter={handleEnter} />
+          <PosFunctionPanel actions={actions} />
         </section>
 
-        {/* Bottom-left — customer, tax breakdown, paid / balance, total (numpad column runs past it) */}
+        {/* Bottom-left — customer, tax breakdown, paid / balance, total (function-key column runs past it) */}
         <PosTransactionPanel />
       </main>
 
