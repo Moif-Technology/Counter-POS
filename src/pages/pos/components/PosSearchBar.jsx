@@ -29,36 +29,40 @@ export default function PosSearchBar({ onEnter, onScan, scanning, sunmiScanOpen 
   const showQty  = isReturn || (qtyBuffer !== '0' && qtyBuffer !== '1' && qtyBuffer !== '-1' && qtyBuffer !== '')
 
   return (
-    <div className="ph-search" data-pos-barcode-input onClick={() => inputRef.current?.focus()}>
-      <Search size={22} className="ph-search-icon" />
-      {showQty && (
-        <span className={`ph-search-qty${isReturn ? ' is-return' : ''}`}>
-          {qtyBuffer} {isReturn ? 'RTN' : '×'}
-        </span>
-      )}
-      <input
-        ref={inputRef}
-        value={barcodeBuffer}
-        onChange={e => {
-          const state = usePosStore.getState()
-          if (state.qtyBuffer === '0' || state.qtyBuffer === '') setQtyBuffer(state.defaultQtyBuffer())
-          setBarcodeBuffer(e.target.value)
-        }}
-        onFocus={() => usePosStore.setState({ inputMode: 'barcode' })}
-        onKeyDown={e => e.key === 'Enter' && onEnter?.()}
-        placeholder="Scan barcode or type product code…"
-        aria-label="Barcode or product code"
-        style={{ opacity: scanning ? 0.6 : 1 }}
-      />
+    <div className="ph-searchrow">
+      <div className="ph-search" data-pos-barcode-input onClick={() => inputRef.current?.focus()}>
+        <Search size={22} className="ph-search-icon" />
+        {showQty && (
+          <span className={`ph-search-qty${isReturn ? ' is-return' : ''}`}>
+            {qtyBuffer} {isReturn ? 'RTN' : '×'}
+          </span>
+        )}
+        <input
+          ref={inputRef}
+          value={barcodeBuffer}
+          onChange={e => {
+            const state = usePosStore.getState()
+            if (state.qtyBuffer === '0' || state.qtyBuffer === '') setQtyBuffer(state.defaultQtyBuffer())
+            setBarcodeBuffer(e.target.value)
+          }}
+          onFocus={() => usePosStore.setState({ inputMode: 'barcode' })}
+          onKeyDown={e => e.key === 'Enter' && onEnter?.()}
+          placeholder="Scan barcode or type product code…"
+          aria-label="Barcode or product code"
+          style={{ opacity: scanning ? 0.6 : 1 }}
+        />
+      </div>
+  
+      {/* Round scan button, outside the search box at its end */}
       <button
         className="ph-search-scan"
         data-pos-skip-refocus
-        onClick={e => { e.stopPropagation(); onScan?.() }}
+        onClick={onScan}
         disabled={sunmiScanOpen || scanning}
         title="Scan with device camera / scanner"
         aria-label="Scan"
       >
-        <ScanBarcode size={26} />
+        <ScanBarcode size={24} />
       </button>
     </div>
   )

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { ScanBarcode } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
 import { calcLineTotals, getCartRowKey } from '../../../lib/cartLine'
 import { fmt3, fmtQty } from '../../../lib/utils'
@@ -31,7 +32,11 @@ export default function PosItemsTable() {
 
       <div className="ph-table-body" ref={bodyRef}>
         {cartItems.length === 0 && (
-          <div className="ph-table-empty">Scan or type a barcode to start</div>
+          <div className="ph-table-empty">
+            <span className="ph-table-empty-icon"><ScanBarcode size={30} /></span>
+            <strong>No items yet</strong>
+            <span>Scan or type a barcode to start the bill</span>
+          </div>
         )}
         {cartItems.map((row, idx) => {
           const key      = getCartRowKey(row)
