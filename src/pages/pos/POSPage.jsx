@@ -60,7 +60,7 @@ export default function POSPage() {
 
       {/*
         Left: the cart (search · lines · selected line).
-        Right: bill summary → function keys | numpad → BILLING.
+        Right: bill summary → numpad | function keys → BILLING.
       */}
       <main className="ph-main">
         <section className="ph-col ph-col-items">
@@ -77,12 +77,12 @@ export default function POSPage() {
 
         <PosTransactionPanel />
 
-        <section className="ph-col ph-col-fn">
-          <PosFunctionPanel actions={actions} />
-        </section>
-
         <section className="ph-col ph-col-pad">
           <PosPaymentPad onEnter={handleEnter} />
+        </section>
+
+        <section className="ph-col ph-col-fn">
+          <PosFunctionPanel actions={actions} />
         </section>
 
         <PosBillingButtons saving={saving} onSave={handleSave} />

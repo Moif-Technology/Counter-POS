@@ -1,6 +1,6 @@
 /* ─── POS home screen — Lite style ─────────────────────────────────
    Left: the cart (search · lines · selected line).
-   Right: bill summary → function keys | numpad → BILLING.
+   Right: bill summary → numpad | function keys → BILLING.
    Same visual language as Lite: soft-UI (neumorphic) keys on
    --surface-2, 12–14px radii, brand-tinted icon chips, pill tabs,
    gradient primary actions. Sized with clamp()/vh so 1920×1080 →
@@ -99,12 +99,12 @@
 /* ─── Main layout ─────────────────────────────────────────────── */
 .ph-main {
   display: grid;
-  /* cart (45% of the screen) | function keys | numpad */
-  grid-template-columns: 45% minmax(0, 1.35fr) minmax(0, 1fr);
+  /* cart (45% of the screen) | numpad (centre) | function keys (right) */
+  grid-template-columns: 45% minmax(0, 1fr) minmax(0, 1.35fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
   grid-template-areas:
     "items txn  txn"
-    "items fn   pad"
+    "items pad  fn"
     "items bill bill";
   gap: var(--ph-gap);
   padding: var(--ph-gap);
@@ -428,7 +428,7 @@
   /* body is fixed-height (index.css), so the page itself scrolls here */
   .ph-root { display: flex; flex-direction: column; overflow-y: auto; }
   .ph-root > * { flex-shrink: 0; }
-  /* cart · summary · (function keys | numpad) · billing */
+  /* cart · summary · (numpad | function keys) · billing */
   .ph-main { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-rows: none; grid-template-areas: none; }
   .ph-col-items, .ph-col-fn, .ph-col-pad, .ph-txn, .ph-billing { grid-area: auto; }
   .ph-col-items, .ph-txn, .ph-billing { grid-column: 1 / -1; }
