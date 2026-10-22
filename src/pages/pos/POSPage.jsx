@@ -72,16 +72,16 @@ export default function POSPage() {
           <PosQtyBar status={status} />
         </section>
 
-        {/* Middle — payment modes, numpad, ENTER */}
-        <section className="ph-col ph-col-pad">
-          <PosPaymentPad onEnter={handleEnter} />
-        </section>
-
-        {/* Right — selected item, function keys, billing */}
+        {/* Middle — selected item, function keys, billing */}
         <section className="ph-col ph-col-fn">
           <PosItemCard />
           <PosFunctionPanel actions={actions} />
           <PosBillingButtons saving={saving} onSave={handleSave} />
+        </section>
+
+        {/* Right — payment modes, numpad, ENTER */}
+        <section className="ph-col ph-col-pad">
+          <PosPaymentPad onEnter={handleEnter} />
         </section>
       </main>
 

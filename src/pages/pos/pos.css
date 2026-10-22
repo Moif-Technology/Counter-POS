@@ -75,7 +75,8 @@
 /* ─── Main three columns ───────────────────────────────────────── */
 .ph-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(210px, 14.6vw, 290px) clamp(270px, 24vw, 470px);
+  /* items | function keys | numpad (right) */
+  grid-template-columns: minmax(0, 1fr) clamp(270px, 24vw, 470px) clamp(210px, 14.6vw, 290px);
   gap: var(--ph-gap);
   padding: var(--ph-gap);
   min-height: 0;
@@ -336,7 +337,7 @@
 
 /* ─── Narrower terminals (≤1180px) ─────────────────────────────── */
 @media (max-width: 1180px) {
-  .ph-main { grid-template-columns: minmax(0, 1fr) clamp(200px, 19vw, 230px) clamp(290px, 29vw, 330px); }
+  .ph-main { grid-template-columns: minmax(0, 1fr) clamp(290px, 29vw, 330px) clamp(200px, 19vw, 230px); }
   .ph-fn { padding: 0 8px; gap: 6px; font-size: 13px; }
   .ph-col-barcode { display: none; }
   .ph-table-row { grid-template-columns: 8% minmax(0, 1fr) 10% 13% 14%; }
@@ -349,7 +350,7 @@
   /* body is fixed-height (index.css), so the page itself scrolls here */
   .ph-root { display: flex; flex-direction: column; overflow-y: auto; }
   .ph-root > * { flex-shrink: 0; }
-  .ph-main { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
+  .ph-main { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
   .ph-col-items { grid-column: 1 / -1; }
   .ph-table { min-height: 260px; max-height: 42vh; }
   .ph-fn-grid { max-height: 360px; }
