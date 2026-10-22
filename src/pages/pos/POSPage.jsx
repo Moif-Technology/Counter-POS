@@ -10,7 +10,6 @@ import { usePosActions } from './hooks/usePosActions'
 import PosTopBar from './components/PosTopBar'
 import PosSearchBar from './components/PosSearchBar'
 import PosItemsTable from './components/PosItemsTable'
-import PosQtyBar from './components/PosQtyBar'
 import PosPaymentPad from './components/PosPaymentPad'
 import PosItemCard from './components/PosItemCard'
 import PosFunctionPanel from './components/PosFunctionPanel'
@@ -60,7 +59,7 @@ export default function POSPage() {
       <PosTopBar onOpenLite={handleOpenLite} />
 
       <main className="ph-main">
-        {/* Left — search, cart lines, qty */}
+        {/* Left — search, cart lines */}
         <section className="ph-col ph-col-items">
           <PosSearchBar
             onEnter={handleEnter}
@@ -69,7 +68,7 @@ export default function POSPage() {
             sunmiScanOpen={sunmiScanOpen}
           />
           <PosItemsTable />
-          <PosQtyBar status={status} />
+          {status && <div className="ph-status-line">{status}</div>}
         </section>
 
         {/* Middle — function keys, selected item, billing */}
