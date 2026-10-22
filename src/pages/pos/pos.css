@@ -202,21 +202,12 @@
 .ph-status-line { flex-shrink: 0; font-size: 12px; color: var(--text-3); padding: 0 4px; }
 
 /* ─── Payment pad (like Lite keypad + payment modes) ───────────── */
-/* Tiles + keys + ENTER form one centred block. The pad is a size container;
-   --k (key side) = the smaller of (pad width ÷ 3) and
-   (pad height left after the tiles and ENTER ÷ 4); the block is 3 keys wide. */
+/* Tiles, keys and ENTER fill the whole column: keys share the width (3 across)
+   and the height left between the tiles and ENTER (4 rows). */
 .ph-pad {
-  container-type: size;
   flex: 1; min-height: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: var(--ph-gap);
-}
-.ph-pay, .ph-keys, .ph-enter {
-  --k: min(
-    calc((100cqw - 2 * var(--ph-kgap)) / 3),
-    calc((100cqh - 2 * var(--ph-gap) - 2 * var(--ph-tile-h) - var(--ph-pay-gap) - var(--ph-enter-h) - 3 * var(--ph-kgap)) / 4)
-  );
-  width: calc(3 * var(--k) + 2 * var(--ph-kgap));
+  display: flex; flex-direction: column;
+  gap: var(--ph-kgap);
 }
 .ph-pay { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ph-pay-gap); }
 .ph-pay-tile {
@@ -230,10 +221,9 @@
   box-shadow: var(--ph-pressed);   /* selected mode stays "pressed in" */
 }
 .ph-pad-spacer { display: none; }
-/* Square keys (side --k, set on .ph-pad) */
 .ph-keys {
-  display: grid; justify-content: center;
-  grid-template-columns: repeat(3, var(--k)); grid-auto-rows: var(--k);
+  flex: 1; min-height: calc(4 * 44px + 3 * var(--ph-kgap));
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(44px, 1fr));
   gap: var(--ph-kgap);
 }
 .ph-key {
@@ -441,8 +431,8 @@
   .ph-main { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-rows: none; grid-template-areas: none; }
   .ph-col-items, .ph-col-fn, .ph-col-pad, .ph-txn, .ph-billing { grid-area: auto; }
   .ph-col-items, .ph-txn, .ph-billing { grid-column: 1 / -1; }
-  .ph-pad { container-type: inline-size; flex: none; }
-  .ph-pay, .ph-keys, .ph-enter { --k: min(calc((100cqw - 2 * var(--ph-kgap)) / 3), 84px); }
+  .ph-pad { flex: none; }
+  .ph-keys { flex: none; grid-template-rows: repeat(4, 72px); }
   .ph-table { min-height: 260px; max-height: 42vh; }
   .ph-fn-grid { max-height: 360px; }
   .ph-hide-sm { display: none; }
