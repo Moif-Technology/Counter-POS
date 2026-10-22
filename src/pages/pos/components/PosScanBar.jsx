@@ -10,13 +10,14 @@ export default function PosScanBar({ scanning, sunmiScanOpen, onEnter, onSunmiSc
   return (
     <>
       <div className="pos-topbar">
-        <CustomerSearch />
+        <div className="pos-topbar-customer"><CustomerSearch /></div>
 
-        <div style={{ flex: 1, minWidth: 0, opacity: scanning ? 0.72 : 1 }}>
+        <div className="pos-topbar-barcode" style={{ flex: 1, minWidth: 0, opacity: scanning ? 0.72 : 1 }}>
           <BarcodeInput onEnter={onEnter} />
         </div>
 
         <button
+          className="pos-scan-btn"
           data-pos-skip-refocus
           disabled={sunmiScanOpen || scanning}
           onClick={onSunmiScan}
@@ -34,7 +35,7 @@ export default function PosScanBar({ scanning, sunmiScanOpen, onEnter, onSunmiSc
           }}
         >
           <ScanLine size={16} />
-          {sunmiScanOpen ? 'Scanning' : 'Scan'}
+          <span className="pos-scan-label">{sunmiScanOpen ? 'Scanning' : 'Scan'}</span>
         </button>
       </div>
 

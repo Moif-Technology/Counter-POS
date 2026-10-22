@@ -103,7 +103,7 @@ export default function BarcodeInput({ onEnter }) {
       <div
         onClick={() => { usePosStore.setState({ inputMode: 'barcode' }); barcodeRef.current?.focus() }}
         style={{
-          flex: 1, display: 'flex', alignItems: 'center', gap: 9,
+          flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 9,
           background: barcodeActive ? 'var(--surface)' : 'var(--surface-2)',
           border: `1.5px solid ${barcodeActive ? 'var(--brand)' : 'var(--border)'}`,
           borderRadius: 'var(--r-md)', padding: '0 12px', height: 42, cursor: 'text',
@@ -143,7 +143,7 @@ export default function BarcodeInput({ onEnter }) {
           onKeyDown={e => e.key === 'Enter' && onEnter?.()}
           placeholder="Scan barcode or type product code…"
           style={{
-            flex: 1, background: 'none', border: 'none', outline: 'none',
+            flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none',
             fontSize: 13.5, fontWeight: 500, color: 'var(--text-1)',
             fontFamily: 'inherit',
           }}

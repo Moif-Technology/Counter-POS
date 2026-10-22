@@ -188,7 +188,7 @@ export function SideNav() {
 
   return (
     <>
-    <div style={{
+    <div className="pos-sidenav" style={{
       display: 'flex', flexDirection: 'column',
       height: '100%', overflowY: 'auto', overflowX: 'hidden',
       padding: '6px 0',

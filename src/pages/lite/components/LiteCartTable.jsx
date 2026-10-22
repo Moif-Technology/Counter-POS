@@ -124,7 +124,7 @@ export default function LiteCartTable({
             <th style={{ ...thStyle, position: 'sticky', top: 0, zIndex: 3, background: 'var(--surface, #fff)', paddingLeft: 'clamp(10px, 1.6vw, 16px)' }}>#</th>
             <th style={{ ...thStyle, textAlign: 'left', position: 'sticky', top: 0, zIndex: 3, background: 'var(--surface, #fff)' }}>Item</th>
             <th style={{ ...thStyle, position: 'sticky', top: 0, zIndex: 3, background: 'var(--surface, #fff)' }}>Qty</th>
-            <th style={{ ...thStyle, color: 'var(--text-3)', fontWeight: 500, position: 'sticky', top: 0, zIndex: 3, background: 'var(--surface, #fff)' }}>Price</th>
+            <th className="lite-col-price" style={{ ...thStyle, color: 'var(--text-3)', fontWeight: 500, position: 'sticky', top: 0, zIndex: 3, background: 'var(--surface, #fff)' }}>Price</th>
             <th style={{ ...thStyle, color: 'var(--text-1)', fontWeight: 700, position: 'sticky', top: 0, zIndex: 3, background: 'var(--surface, #fff)' }}>Total</th>
             <th style={{ ...thStyle, position: 'sticky', top: 0, zIndex: 3, background: 'var(--surface, #fff)', paddingRight: 'clamp(10px, 1.6vw, 16px)' }}></th>
           </tr>
@@ -193,7 +193,7 @@ export default function LiteCartTable({
                     <button className="lite-btn" disabled={selectMode} onClick={() => onAdjustQty(rowKey, 1)} style={qtyBtnStyle}>+</button>
                   </div>
                 </td>
-                <td style={{ ...tdStyle, padding: '6px 6px', color: 'var(--text-3)' }}>{fmtMoney(i.unitPriceGross ?? i.unitPrice)}</td>
+                <td className="lite-col-price" style={{ ...tdStyle, padding: '6px 6px', color: 'var(--text-3)' }}>{fmtMoney(i.unitPriceGross ?? i.unitPrice)}</td>
                 <td style={{ ...tdStyle, padding: '6px 6px', fontWeight: 700, color: 'var(--text-1)' }}>{fmtMoney(i.lineTotal)}</td>
                 <td style={{ ...tdStyle, padding: '6px 4px', paddingRight: 'clamp(10px, 1.6vw, 16px)' }}>
                   {selectMode ? (

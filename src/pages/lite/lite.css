@@ -33,7 +33,7 @@
    viewport and the product list gets the full height it needs. */
 .lite-mobile-tabs { display: none; }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   .lite-body { flex-direction: column; }
   .lite-panel-left, .lite-panel-center, .lite-panel-right {
     width: 100% !important; flex: 1 1 auto !important;
@@ -334,18 +334,26 @@ grid-template-columns: repeat(7, minmax(0, 1fr));
     padding: 6px;
   }
 
+  /* Seven buttons don't fit a phone width: keep them readable and let
+     the row scroll sideways instead of shrinking the labels. */
   .lite-quick-actions {
-    gap: 4px;
+    gap: 6px;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 76px;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
+  .lite-quick-actions::-webkit-scrollbar { display: none; }
 
   .lite-quick-action {
-    min-height: 58px;
+    min-height: 60px;
 
-    padding: 6px 2px;
+    padding: 6px 4px;
 
     gap: 4px;
 
-    border-radius: 8px;
+    border-radius: 9px;
   }
 
   .lite-quick-action-icon {
@@ -354,7 +362,12 @@ grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 
   .lite-quick-action-label {
-    font-size: 8px;
+    font-size: 10px;
   }
 }
 
+
+/* Narrow phones — drop the Price column so item names have room (Total stays). */
+@media (max-width: 480px) {
+  .lite-col-price { display: none; }
+}

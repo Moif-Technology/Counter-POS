@@ -119,8 +119,9 @@ export default function BillSummary() {
         </div>
       </div>
 
-      {/* ── Net total strip (always visible) ─────── */}
+      {/* ── Net total strip (always visible — sticks to the bottom when the summary scrolls) ─────── */}
       <div style={{
+        position: 'sticky', bottom: 0, zIndex: 1,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '10px 14px',
         background: 'var(--brand-bg)',

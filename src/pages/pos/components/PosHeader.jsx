@@ -93,8 +93,8 @@ export default function PosHeader({ onOpenLite }) {
         <span style={{ fontSize: 14, fontWeight: 800, color: '#fff', letterSpacing: 0.3, whiteSpace: 'nowrap' }}>
           {shopName || 'Counter POS'}
         </span>
-        <ChevronRight size={13} color="rgba(255,255,255,0.35)" />
-        <button style={{
+        <span className="header-hide-phone"><ChevronRight size={13} color="rgba(255,255,255,0.35)" /></span>
+        <button className="header-hide-phone" style={{
           display: 'flex', alignItems: 'center', gap: 5,
           background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.28)',
           borderRadius: 7, padding: '5px 10px',
@@ -109,7 +109,7 @@ export default function PosHeader({ onOpenLite }) {
       </div>
 
       {/* Center — counter / date / time */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 0 }}>
+      <div className="header-hide-phone" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 0 }}>
         <HeaderChip icon={Monitor}  label={`Counter ${counterNo}`} dropdown />
         <span className="header-hide-sm"><HeaderChip icon={Calendar} label={dateStr} /></span>
         <HeaderChip icon={Clock}    label={timeStr} />
@@ -149,12 +149,12 @@ export default function PosHeader({ onOpenLite }) {
         <div className="header-hide-md" style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.18)' }} />
         <span className="header-hide-md"><HeaderIconBtn icon={Search} /></span>
         <span className="header-hide-md"><HeaderIconBtn icon={Maximize2} /></span>
-        <HeaderIconBtn icon={Bell} badge={3} />
+        <span className="header-hide-phone"><HeaderIconBtn icon={Bell} badge={3} /></span>
 
         <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.18)' }} />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }} title={`Logged in: ${cashierName}${cashier?.roleName ? ` (${cashier.roleName})` : ''}`}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.15, maxWidth: 140, minWidth: 0 }}>
+          <div className="header-hide-phone" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.15, maxWidth: 140, minWidth: 0 }}>
             <span style={{ fontSize: 12, color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: '100%', textOverflow: 'ellipsis' }}>
               {cashierName}
             </span>

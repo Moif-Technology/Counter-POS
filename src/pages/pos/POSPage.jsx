@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePosStore } from '../../store/posStore'
 import { focusBarcodeScan, shouldSkipBarcodeRefocus } from '../../lib/posFocus'
@@ -10,6 +10,7 @@ import PosHeader from './components/PosHeader'
 import PosScanBar from './components/PosScanBar'
 import PosSaveButtons from './components/PosSaveButtons'
 import PosFooter from './components/PosFooter'
+import PosMobileTabs from './components/PosMobileTabs'
 import ItemsGrid from './components/ItemsGrid'
 import NumPad from './components/NumPad'
 import BillSummary from './components/BillSummary'
@@ -19,6 +20,7 @@ import { SideNav, FeatureGrid } from './components/FunctionButtons'
 export default function POSPage() {
   const navigate = useNavigate()
   const clearAll = usePosStore(s => s.clearAll)
+  const [mobileTab, setMobileTab] = useState('items') // 'items' | 'pay' — only used ≤640px
 
   const { fetchNextBillNo } = usePosSession()
   const { scanning, sunmiScanOpen, handleEnter, handleSunmiScan } = useBarcodeEntry()
@@ -46,7 +48,7 @@ export default function POSPage() {
   }, [])
 
   return (
-    <div className="pos-root" onPointerDown={handleMainScreenPointerDown}>
+    <div className="pos-root" data-mtab={mobileTab} onPointerDown={handleMainScreenPointerDown}>
 
       <PosHeader onOpenLite={handleOpenLite} />
 
@@ -93,6 +95,7 @@ export default function POSPage() {
       </div>
 
       <PosFooter />
+      <PosMobileTabs activeTab={mobileTab} onChange={setMobileTab} />
     </div>
   )
 }

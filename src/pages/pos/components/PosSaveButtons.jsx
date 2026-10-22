@@ -3,7 +3,7 @@ import { Save, Printer } from 'lucide-react'
 /** Save / Bill & Print at the bottom of the POS right panel. */
 export default function PosSaveButtons({ saving, onSave }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '8px 8px 10px', flexShrink: 0 }}>
+    <div className="pos-save-zone" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '8px 8px 10px', flexShrink: 0 }}>
       <button
         disabled={saving}
         onClick={() => onSave(false)}
