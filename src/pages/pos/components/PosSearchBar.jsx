@@ -53,7 +53,7 @@ export default function PosSearchBar({ onEnter, onScan, scanning, sunmiScanOpen 
         />
       </div>
   
-      {/* Scan button, outside the search box at its end */}
+      {/* Round scan button, outside the search box at its end */}
       <button
         className="ph-search-scan"
         data-pos-skip-refocus
@@ -62,8 +62,7 @@ export default function PosSearchBar({ onEnter, onScan, scanning, sunmiScanOpen 
         title="Scan with device camera / scanner"
         aria-label="Scan"
       >
-        <ScanBarcode size={20} />
-        <span>Scan</span>
+        <ScanBarcode size={24} />
       </button>
     </div>
   )

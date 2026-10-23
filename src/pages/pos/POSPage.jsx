@@ -15,7 +15,6 @@ import PosItemCard from './components/PosItemCard'
 import PosFunctionPanel from './components/PosFunctionPanel'
 import PosBillingButtons from './components/PosBillingButtons'
 import PosTransactionPanel from './components/PosTransactionPanel'
-import PosTotalCard from './components/PosTotalCard'
 import PosStatusBar from './components/PosStatusBar'
 import './pos.css'
 
@@ -60,9 +59,8 @@ export default function POSPage() {
       <PosTopBar onOpenLite={handleOpenLite} />
 
       {/*
-        Left:   the cart (search · lines · selected line).
-        Middle: customer + bill summary → payment tiles · numpad · ENTER.
-        Right:  TOTAL → function keys → BILLING.
+        Left: the cart (search · lines · selected line).
+        Right: bill summary → numpad | function keys → BILLING.
       */}
       <main className="ph-main">
         <section className="ph-col ph-col-items">
@@ -82,8 +80,6 @@ export default function POSPage() {
         <section className="ph-col ph-col-pad">
           <PosPaymentPad onEnter={handleEnter} />
         </section>
-
-        <PosTotalCard />
 
         <section className="ph-col ph-col-fn">
           <PosFunctionPanel actions={actions} />
