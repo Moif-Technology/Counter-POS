@@ -218,13 +218,16 @@
   height: var(--ph-tile-h);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   font-size: clamp(11.5px, 0.8vw, 13.5px); font-weight: 600; color: #3f3f46;
-  /* same raised soft-UI look as the number keys (shared .ph-key rule) */
+  /* same raised soft-UI shape as the number keys, in a cool grey instead of rose */
+  background: #eef0f4; border-color: #e3e6ec;
+  box-shadow: 4px 4px 10px rgba(30, 41, 59, 0.12), -4px -4px 10px #ffffff;
 }
 .ph-pay-tile svg { color: var(--brand); }
+.ph-pay-tile:active { box-shadow: inset 3px 3px 7px rgba(30, 41, 59, 0.14), inset -3px -3px 7px #ffffff; }
 /* selected payment mode stays "pressed in", maroon outline and label */
 .ph-pay-tile.is-active {
   border-color: var(--brand); color: var(--brand); font-weight: 800;
-  box-shadow: var(--ph-pressed);
+  box-shadow: inset 3px 3px 7px rgba(30, 41, 59, 0.14), inset -3px -3px 7px #ffffff;
 }
 .ph-pad-spacer { display: none; }
 .ph-keys {
