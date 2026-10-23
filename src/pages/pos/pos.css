@@ -236,15 +236,17 @@
   height: var(--ph-tile-h);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   font-size: clamp(11.5px, 0.8vw, 13.5px); font-weight: 600; color: #3f3f46;
+  /* same raised soft-UI shape as the number keys, in a cool grey instead of rose */
+  background: #eef0f4; border-color: #e3e6ec;
+  box-shadow: 4px 4px 10px rgba(30, 41, 59, 0.12), -4px -4px 10px #ffffff;
 }
-/* Simple and minimal: flat white tiles and keys, thin grey border, no shadows */
-.ph-pad .ph-key, .ph-pad .ph-pay-tile { background: #fff; border: 1px solid #e4e4e7; box-shadow: none; }
-.ph-pad .ph-key:hover, .ph-pad .ph-pay-tile:hover { border-color: #d4d4d8; }
-.ph-pad .ph-key:active, .ph-pad .ph-pay-tile:active { background: #f4f4f5; box-shadow: none; }
-.ph-pay-tile svg { color: #71717a; }
-/* selected payment mode: maroon outline, icon and label */
-.ph-pad .ph-pay-tile.is-active { border: 1.5px solid var(--brand); color: var(--brand); font-weight: 800; }
-.ph-pay-tile.is-active svg { color: var(--brand); }
+.ph-pay-tile svg { color: var(--brand); }
+.ph-pay-tile:active { box-shadow: inset 3px 3px 7px rgba(30, 41, 59, 0.14), inset -3px -3px 7px #ffffff; }
+/* selected payment mode stays "pressed in", maroon outline and label */
+.ph-pay-tile.is-active {
+  border-color: var(--brand); color: var(--brand); font-weight: 800;
+  box-shadow: inset 3px 3px 7px rgba(30, 41, 59, 0.14), inset -3px -3px 7px #ffffff;
+}
 .ph-pad-spacer { display: none; }
 .ph-keys {
   flex: 1; min-height: calc(4 * 44px + 3 * var(--ph-kgap));
@@ -253,18 +255,18 @@
 }
 .ph-key {
   width: 100%; height: 100%;
-  font-size: clamp(18px, 1.6vw, 26px); font-weight: 600; color: #18181b;
+  font-size: clamp(18px, 1.6vw, 26px); font-weight: 700; color: var(--text-1);
   font-variant-numeric: tabular-nums;
 }
 .ph-enter {
   height: var(--ph-enter-h); flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; gap: 10px;
-  /* the one solid key: flat maroon, no shadow */
-  background: var(--brand); color: #fff; border: none; border-radius: var(--ph-radius);
+  background: var(--ph-gradient); color: #fff; border: none; border-radius: 14px;
+  box-shadow: var(--ph-brand-raised);
   font-size: clamp(13.5px, 0.95vw, 16px); font-weight: 800; letter-spacing: 1px; cursor: pointer;
-  transition: background 0.1s, transform 0.07s;
+  transition: box-shadow 0.1s, transform 0.07s;
 }
-.ph-enter:active { background: var(--brand-2); transform: scale(0.98); }
+.ph-enter:active { box-shadow: var(--ph-brand-pressed); transform: scale(0.98); }
 
 /* ─── Selected line strip (under the cart) ──────────────────────── */
 .ph-itemcard {
