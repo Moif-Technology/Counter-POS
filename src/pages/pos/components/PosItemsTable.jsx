@@ -5,9 +5,9 @@ import { usePosStore } from '../../../store/posStore'
 import { calcLineTotals, getCartRowKey } from '../../../lib/cartLine'
 import { fmt3, fmtQty } from '../../../lib/utils'
 import { closeAndFocusBarcode } from '../../../lib/posFocus'
-import ItemDetailModal from '../../../modals/ItemDetailModal'
+import LineActionsModal from '../../../modals/LineActionsModal'
 
-/** Cart lines: No. · Barcode · Description · Qty · Price · Total · delete. Tap selects, double-tap shows details. */
+/** Cart lines: No. · Barcode · Description · Qty · Price · Total · delete. Tap selects, double-tap opens the line actions. */
 export default function PosItemsTable() {
   const cartItems      = usePosStore(s => s.cartItems)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
@@ -70,7 +70,7 @@ export default function PosItemsTable() {
       </div>
 
       {detailItem && (
-        <ItemDetailModal
+        <LineActionsModal
           item={cartItems.find(i => getCartRowKey(i) === getCartRowKey(detailItem)) || detailItem}
           onClose={closeAndFocusBarcode(() => setDetailItem(null))}
         />
