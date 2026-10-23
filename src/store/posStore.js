@@ -459,6 +459,17 @@ export const usePosStore = create((set, get) => ({
     get().recalc(newItems)
   },
 
+  /** Remove several cart lines at once (row keys), renumber and recalc. */
+  removeItems: (keys) => {
+    const drop = new Set(keys)
+    if (!drop.size) return
+    const newItems = get().cartItems
+      .filter(i => !drop.has(getCartRowKey(i)))
+      .map((i, idx) => ({ ...i, slNo: idx + 1 }))
+    set({ cartItems: newItems, selectedRowKey: null })
+    get().recalc(newItems)
+  },
+
   clearAll: () => {
     set({
       cartItems: [], selectedRowKey: null,

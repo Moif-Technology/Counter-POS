@@ -1,21 +1,36 @@
 import { useEffect, useRef, useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Check, X } from 'lucide-react'
 import BrandLogo from '../../../components/common/BrandLogo'
 import { usePosStore } from '../../../store/posStore'
 import { calcLineTotals, getCartRowKey } from '../../../lib/cartLine'
 import { fmt3, fmtQty } from '../../../lib/utils'
 import { closeAndFocusBarcode } from '../../../lib/posFocus'
+import { useEscapeKey } from '../../../hooks/useEscapeKey'
 import LineActionsModal from '../../../modals/LineActionsModal'
 import QtyWheelModal from '../../../modals/QtyWheelModal'
 
-/** Cart lines: No. · Barcode · Description · Qty · Price · Total · delete. Tap selects, tap the qty to change it, double-tap opens the line actions. */
+const LONG_PRESS_MS = 500
+
+/**
+ * Cart lines: No. · Barcode · Description · Qty · Price · Total · delete.
+ * Tap selects, tap the qty to change it, double-tap opens the line actions.
+ * Hold a line to enter select mode: the bins become checkboxes and one
+ * Delete button removes every ticked line.
+ */
 export default function PosItemsTable() {
   const cartItems      = usePosStore(s => s.cartItems)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
   const removeItem     = usePosStore(s => s.removeItem)
+  const removeItems    = usePosStore(s => s.removeItems)
   const [lineMenu, setLineMenu] = useState(null)   // { row, x, y } — radial menu at the double-tap point
   const [qtyItem, setQtyItem] = useState(null)
+  const [checked, setChecked] = useState(null)     // Set of row keys while in select mode, else null
   const bodyRef = useRef(null)
+  const press = useRef({ timer: 0, fired: false })
+
+  const selectMode = checked !== null && cartItems.length > 0   // an empty cart ends select mode
+  const allKeys = cartItems.map(getCartRowKey)
+  const allChecked = selectMode && allKeys.length > 0 && allKeys.every(k => checked.has(k))
 
   // Keep the newest line in view as items are scanned.
   useEffect(() => {
@@ -23,8 +38,39 @@ export default function PosItemsTable() {
     if (el) el.scrollTop = el.scrollHeight
   }, [cartItems.length])
 
+  useEscapeKey(() => setChecked(null), selectMode)
+
+  const toggle = (key) => setChecked(prev => {
+    const next = new Set(prev)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    return next
+  })
+
+  // Long press: start select mode with that line ticked.
+  const startPress = (key) => {
+    clearTimeout(press.current.timer)
+    press.current.fired = false
+    press.current.timer = setTimeout(() => {
+      press.current.fired = true
+      setChecked(prev => new Set(prev ?? []).add(key))
+    }, LONG_PRESS_MS)
+  }
+  const cancelPress = () => clearTimeout(press.current.timer)
+
+  const handleRowClick = (key) => {
+    if (press.current.fired) { press.current.fired = false; return }   // the click that ends a long press
+    if (selectMode) toggle(key)
+    else usePosStore.setState({ selectedRowKey: key })
+  }
+
+  const deleteChecked = () => {
+    removeItems([...checked])
+    setChecked(null)
+  }
+
   return (
-    <div className="ph-table">
+    <div className={`ph-table${selectMode ? ' is-selecting' : ''}`}>
       <div className="ph-table-row ph-table-head">
         <span>No.</span>
         <span className="ph-col-barcode">Barcode</span>
@@ -32,8 +78,28 @@ export default function PosItemsTable() {
         <span className="ph-num">Qty</span>
         <span className="ph-num">Price</span>
         <span className="ph-num">Total</span>
-        <span />
+        {selectMode ? (
+          <button
+            className={`ph-row-check${allChecked ? ' is-on' : ''}`}
+            aria-label={allChecked ? 'Untick all lines' : 'Tick all lines'}
+            onClick={() => setChecked(allChecked ? new Set() : new Set(allKeys))}
+          >
+            {allChecked && <Check size={14} strokeWidth={3} />}
+          </button>
+        ) : <span />}
       </div>
+
+      {selectMode && (
+        <div className="ph-select-bar">
+          <span><b>{checked.size}</b> selected</span>
+          <button className="ph-select-cancel" onClick={() => setChecked(null)}>
+            <X size={15} /> Cancel
+          </button>
+          <button className="ph-select-delete" onClick={deleteChecked} disabled={!checked.size}>
+            <Trash2 size={15} /> Delete{checked.size ? ` (${checked.size})` : ''}
+          </button>
+        </div>
+      )}
 
       <div className="ph-table-body" ref={bodyRef}>
         {cartItems.length === 0 && (
@@ -45,12 +111,18 @@ export default function PosItemsTable() {
           const key      = getCartRowKey(row)
           const selected = key === selectedRowKey
           const isReturn = Number(row.qty) < 0
+          const isTicked = selectMode && checked.has(key)
           return (
             <div
               key={key}
-              className={`ph-table-row${selected ? ' is-selected' : ''}${isReturn ? ' is-return' : ''}`}
-              onClick={() => usePosStore.setState({ selectedRowKey: key })}
-              onDoubleClick={(e) => setLineMenu({ row, x: e.clientX, y: e.clientY })}
+              className={`ph-table-row${selected && !selectMode ? ' is-selected' : ''}${isTicked ? ' is-ticked' : ''}${isReturn ? ' is-return' : ''}`}
+              onClick={() => handleRowClick(key)}
+              onDoubleClick={(e) => { if (!selectMode) setLineMenu({ row, x: e.clientX, y: e.clientY }) }}
+              onPointerDown={() => startPress(key)}
+              onPointerUp={cancelPress}
+              onPointerLeave={cancelPress}
+              onPointerCancel={cancelPress}
+              onContextMenu={(e) => e.preventDefault()}   // touch screens: no context menu on hold
             >
               <span><span className="ph-sl">{row.slNo ?? idx + 1}</span></span>
               <span className="ph-col-barcode ph-ellipsis">{row.barcode ?? row.productCode ?? '—'}</span>
@@ -59,6 +131,7 @@ export default function PosItemsTable() {
                 <button
                   className="ph-qty-tap"
                   aria-label={`Change qty of ${row.description}`}
+                  disabled={selectMode}
                   onClick={(e) => { e.stopPropagation(); usePosStore.setState({ selectedRowKey: key }); setQtyItem(row) }}
                   onDoubleClick={(e) => e.stopPropagation()}
                 >
@@ -67,14 +140,21 @@ export default function PosItemsTable() {
               </span>
               <span className="ph-num">{fmt3(row.unitPriceGross ?? row.unitPrice)}</span>
               <span className="ph-num">{fmt3(calcLineTotals(row).lineTotal)}</span>
-              <button
-                className="ph-row-del"
-                aria-label={`Delete ${row.description}`}
-                onClick={(e) => { e.stopPropagation(); removeItem(key) }}
-                onDoubleClick={(e) => e.stopPropagation()}
-              >
-                <Trash2 size={16} />
-              </button>
+              {selectMode ? (
+                <span className={`ph-row-check${isTicked ? ' is-on' : ''}`} aria-hidden>
+                  {isTicked && <Check size={14} strokeWidth={3} />}
+                </span>
+              ) : (
+                <button
+                  className="ph-row-del"
+                  aria-label={`Delete ${row.description}`}
+                  onClick={(e) => { e.stopPropagation(); removeItem(key) }}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
             </div>
           )
         })}

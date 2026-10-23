@@ -204,6 +204,30 @@
 }
 .ph-row-del:hover { background: var(--brand-bg); color: var(--brand); }
 .ph-row-del:active { transform: scale(0.92); }
+
+/* Select mode (hold a line): checkboxes in place of the bins, one Delete for all ticked lines */
+.ph-table.is-selecting .ph-table-body .ph-table-row { -webkit-user-select: none; user-select: none; }
+.ph-row-check {
+  justify-self: end; width: 22px; height: 22px; margin-right: 4px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid #d4d4d8; border-radius: 6px; background: #fff; color: #fff; cursor: pointer;
+}
+.ph-row-check.is-on { background: var(--brand); border-color: var(--brand); }
+.ph-table-row.is-ticked, .ph-table-body .ph-table-row.is-ticked:hover { background: #fcf8f9; }
+.ph-select-bar {
+  flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px 6px 14px; border-bottom: 1px solid var(--border); background: #fafafa;
+  font-size: 13px; color: #52525b;
+}
+.ph-select-bar > span { flex: 1; }
+.ph-select-bar b { color: #18181b; }
+.ph-select-cancel, .ph-select-delete {
+  display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px;
+  border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700;
+}
+.ph-select-cancel { border: 1px solid #e4e4e7; background: #fff; color: #3f3f46; }
+.ph-select-delete { border: none; background: #dc2626; color: #fff; }
+.ph-select-delete:disabled { opacity: 0.45; cursor: not-allowed; }
 .ph-table-head {
   flex-shrink: 0; cursor: default;
   min-height: clamp(30px, 3.6vh, 38px);
