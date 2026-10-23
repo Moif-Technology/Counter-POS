@@ -68,7 +68,6 @@ export default function POSPage() {
           <PosSearchBar
             onEnter={handleEnter}
             onScan={handleSunmiScan}
-            onAction={actions.run}
             status={status}
             scanning={scanning}
             sunmiScanOpen={sunmiScanOpen}
