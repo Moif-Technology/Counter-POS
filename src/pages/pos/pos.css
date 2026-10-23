@@ -165,11 +165,12 @@
   border-left: 3px solid transparent;
   cursor: pointer; user-select: none;
 }
-.ph-table-body .ph-table-row:hover { background: var(--surface-2); }
+.ph-table-body .ph-table-row:hover { background: #fafafa; }
 .ph-table-row.is-return { color: var(--brand); }
+/* Selected line: a very light tint (not the rose) + the maroon bar on the left */
 .ph-table-row.is-selected,
 .ph-table-body .ph-table-row.is-selected:hover {
-  background: var(--brand-bg); border-left-color: var(--brand); font-weight: 700;
+  background: #fcf8f9; border-left-color: var(--brand); font-weight: 700;
 }
 .ph-sl {
   display: inline-flex; align-items: center; justify-content: center;
