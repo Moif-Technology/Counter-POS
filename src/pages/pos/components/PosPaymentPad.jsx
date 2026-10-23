@@ -1,15 +1,15 @@
 import { useState } from 'react'
-import { CircleDot, CreditCard, UserRound, LayoutGrid, CornerDownLeft } from 'lucide-react'
+import { Banknote, CreditCard, UserRound, LayoutGrid, CornerDownLeft, Delete } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
 import CreditCustomerModal from '../../../modals/CreditCustomerModal'
 import MultiPaymentModal from '../../../modals/MultiPaymentModal'
 import { closeAndFocusBarcode } from '../../../lib/posFocus'
 import { posNotifyWarning } from '../../../lib/posNotify'
-import { applyPosNumpadKey, usePosNumpadKeyboard } from '../../../lib/posNumpadKeys'
+import { applyPosNumpadKey, applyPosNumpadBackspace, usePosNumpadKeyboard } from '../../../lib/posNumpadKeys'
 import { PM, isCashTenderMode } from '../../../lib/paymentModes'
 
 const PAY_TILES = [
-  { key: PM.CASH,         label: 'Cash',        icon: CircleDot },
+  { key: PM.CASH,         label: 'Cash',        icon: Banknote },
   { key: PM.CREDITCARD,   label: 'Credit Card', icon: CreditCard },
   { key: PM.CREDIT,       label: 'Credit',      icon: UserRound },
   { key: PM.MULTIPAYMENT, label: 'Multi Pay',   icon: LayoutGrid },
@@ -54,12 +54,11 @@ export default function PosPaymentPad({ onEnter }) {
         ))}
       </div>
 
-      <div className="ph-pad-spacer" />
-
       <div className="ph-keys">
         {KEYS.map(k => (
           <button key={k} className="ph-key" onClick={() => applyPosNumpadKey(k)}>{k}</button>
         ))}
+        <button className="ph-key is-back" onClick={applyPosNumpadBackspace} aria-label="Backspace"><Delete size={22} /></button>
       </div>
 
       <button className="ph-enter" onClick={onEnter}>

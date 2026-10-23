@@ -2,14 +2,16 @@ import { useShallow } from 'zustand/react/shallow'
 import { usePosStore } from '../../../store/posStore'
 import { fmt3 } from '../../../lib/utils'
 import { PM } from '../../../lib/paymentModes'
+import { UserRound, ChevronRight } from 'lucide-react'
 import CustomerSearch from './CustomerSearch'
 
 const MODE_LABEL = { [PM.CASH]: 'CASH', [PM.CREDITCARD]: 'CARD', [PM.CREDIT]: 'CREDIT', [PM.MULTIPAYMENT]: 'MULTI PAY' }
 
 /**
- * Bill summary card (top of the right side):
- *   customer          [special-bill label] · payment mode · lines
- *   [Sub total] [Discount] [Tax] [Round off] [  TOTAL  ]
+ * Bill summary card (top of the middle column):
+ *   (icon) Customer / name     [special-bill label] · payment mode · lines ›
+ *   [Sub total] [Discount] [Tax] [Round off]
+ * The TOTAL has its own card — see PosTotalCard.
  */
 export default function PosTransactionPanel() {
   const s = usePosStore(useShallow(st => ({
@@ -19,9 +21,6 @@ export default function PosTransactionPanel() {
     discountAmt:   st.discountAmt,
     taxAmt:        st.taxAmt,
     roundOff:      st.roundOff,
-    netAmount:     st.netAmount,
-    paidAmount:    st.paidAmount,
-    balanceAmount: st.balanceAmount,
     returnMode:    st.returnMode,
     recalledHold:  st.recalledHoldSalesId,
     recalledDelivery: st.recalledDeliverySalesId,
@@ -44,13 +43,14 @@ export default function PosTransactionPanel() {
   return (
     <section className={`ph-txn${s.returnMode ? ' is-return' : ''}`} aria-label="Bill summary">
       <div className="ph-txn-head">
+        <span className="ph-txn-avatar"><UserRound size={16} /></span>
         <div className="ph-txn-cust">
+          <span className="ph-txn-cust-label">Customer{s.customerCode ? ` · ${s.customerCode}` : ''}</span>
           <CustomerSearch variant="plain" />
-          {s.customerCode && <span className="ph-label">{s.customerCode}</span>}
         </div>
         {title && <span className="ph-txn-title">{title}</span>}
         <span className="ph-txn-mode">{MODE_LABEL[s.paymentMode] ?? s.paymentMode}</span>
-        <span className="ph-txn-count">{s.itemCount} {s.itemCount === 1 ? 'line' : 'lines'}</span>
+        <span className="ph-txn-count">{s.itemCount} {s.itemCount === 1 ? 'line' : 'lines'} <ChevronRight size={14} /></span>
       </div>
 
       <div className="ph-txn-boxes">
@@ -60,14 +60,6 @@ export default function PosTransactionPanel() {
             <b>{fmt3(st.value)}</b>
           </div>
         ))}
-        <div className="ph-txn-total">
-          <span>TOTAL</span>
-          <strong>{fmt3(s.netAmount)}</strong>
-          <div className="ph-txn-paid">
-            <span>Paid <b>{fmt3(s.paidAmount)}</b></span>
-            <span>Bal <b>{fmt3(s.balanceAmount)}</b></span>
-          </div>
-        </div>
       </div>
     </section>
   )
