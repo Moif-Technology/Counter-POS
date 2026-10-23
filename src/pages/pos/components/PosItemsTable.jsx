@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Trash2 } from 'lucide-react'
 import BrandLogo from '../../../components/common/BrandLogo'
 import { usePosStore } from '../../../store/posStore'
 import { calcLineTotals, getCartRowKey } from '../../../lib/cartLine'
@@ -6,10 +7,11 @@ import { fmt3, fmtQty } from '../../../lib/utils'
 import { closeAndFocusBarcode } from '../../../lib/posFocus'
 import ItemDetailModal from '../../../modals/ItemDetailModal'
 
-/** Cart lines: No. · Barcode · Description · Qty · Price · Total. Tap selects, double-tap shows details. */
+/** Cart lines: No. · Barcode · Description · Qty · Price · Total · delete. Tap selects, double-tap shows details. */
 export default function PosItemsTable() {
   const cartItems      = usePosStore(s => s.cartItems)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
+  const removeItem     = usePosStore(s => s.removeItem)
   const [detailItem, setDetailItem] = useState(null)
   const bodyRef = useRef(null)
 
@@ -28,6 +30,7 @@ export default function PosItemsTable() {
         <span className="ph-num">Qty</span>
         <span className="ph-num">Price</span>
         <span className="ph-num">Total</span>
+        <span />
       </div>
 
       <div className="ph-table-body" ref={bodyRef}>
@@ -53,6 +56,14 @@ export default function PosItemsTable() {
               <span className="ph-num">{fmtQty(row.qty)}</span>
               <span className="ph-num">{fmt3(row.unitPriceGross ?? row.unitPrice)}</span>
               <span className="ph-num">{fmt3(calcLineTotals(row).lineTotal)}</span>
+              <button
+                className="ph-row-del"
+                aria-label={`Delete ${row.description}`}
+                onClick={(e) => { e.stopPropagation(); removeItem(key) }}
+                onDoubleClick={(e) => e.stopPropagation()}
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
           )
         })}
