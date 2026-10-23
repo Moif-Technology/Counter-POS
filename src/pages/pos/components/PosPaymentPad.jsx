@@ -15,8 +15,8 @@ const PAY_TILES = [
   { key: PM.MULTIPAYMENT, label: 'Multi Pay',   icon: LayoutGrid },
 ]
 
-// Bottom row: 0 · . · C (clear)
-const KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0', '.', 'C']
+// Bottom row: . · 0 · C (clear) — 0 in the centre, under 2
+const KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'C']
 
 /** Payment mode tiles, numpad and ENTER (middle column). */
 export default function PosPaymentPad({ onEnter }) {
