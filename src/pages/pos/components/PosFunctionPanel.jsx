@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Hash, Monitor, Search, Pause, FileText, Printer, Tag,
+  Hash, Undo2, Monitor, Search, Pause, FileText, Printer, Tag,
   Package, ScanBarcode, BarChart2, Wallet, Receipt,
   MessageSquare, Truck, Save, CircleDollarSign, Lock, Ban, User, TrendingUp,
 } from 'lucide-react'
@@ -13,10 +13,11 @@ import { usePosStore } from '../../../store/posStore'
 const TABS = [
   {
     key: 'Page 1',
-    // Clear All, Return, Price Change and Repeat live under the cart (action bar / item strip);
+    // Clear All, Price Change and Repeat live under the cart (action bar / item strip);
     // Clear Line is the bin on each cart line.
     buttons: [
       { label: 'Qty',            icon: Hash,    text: 'Qty', toggle: true },
+      { label: 'Return',         icon: Undo2,   accent: true, toggle: true },   // return mode on/off
       { label: 'Groups',         icon: Monitor },
       { label: 'Product Lookup', icon: Search },
       { label: 'Hold',           icon: Pause },
