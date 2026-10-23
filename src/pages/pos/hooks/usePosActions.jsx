@@ -360,7 +360,7 @@ export function usePosActions({ onSave }) {
     openGroup,
     modals,
     holdLoading,
-    isActive: (label) => (label === 'Return' ? returnMode : label === 'Qty' ? qtyEntry : label === 'Cust Display' ? cdOpen : false),
+    isActive: (label) => (label === 'Return' ? returnMode : label === 'Qty' ? qtyEntry && !returnMode : label === 'Cust Display' ? cdOpen : false),
     hasCart: cartItems.length > 0,
     hasRow: !!selectedRowKey,
   }

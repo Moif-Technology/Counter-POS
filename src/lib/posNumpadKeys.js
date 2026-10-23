@@ -45,10 +45,16 @@ export function applyPosNumpadBackspace() {
  * box, that number becomes the qty straight away.
  */
 export function togglePosQtyMode() {
-  const state = usePosStore.getState()
-  if (state.inputMode === 'qty') {
+  let state = usePosStore.getState()
+  if (state.inputMode === 'qty' && !state.returnMode) {
     finishPosQtyEntry()
     return
+  }
+  // Qty is for sales only: leave return mode (and any return qty being typed) first.
+  if (state.returnMode) {
+    state.toggleReturn()
+    usePosStore.setState({ inputMode: 'barcode', qtyBuffer: '1' })
+    state = usePosStore.getState()
   }
   const val = state.barcodeBuffer.trim()
   const isReturn = state.isReturnContext()
@@ -64,9 +70,9 @@ export function togglePosQtyMode() {
 }
 
 /**
- * Return key — works like Qty. Off → return mode on and start typing the
- * return qty (ENTER finishes, the next scans are returned with it).
- * On → return mode off, back to sale.
+ * Return key — works like Qty, but kept separate from it. Off → return mode on
+ * and start typing the return qty (any sale qty being typed is dropped; ENTER
+ * finishes, the next scan is returned with it). On → return mode off, back to sale.
  */
 export function togglePosReturnMode() {
   const state = usePosStore.getState()
