@@ -2,9 +2,14 @@ import { useEffect } from 'react'
 import { usePosStore } from '../store/posStore'
 import { focusBarcodeScan } from './posFocus'
 
-/** Apply one numpad key to the active POS buffer (qty or barcode). */
+/** Apply one numpad key to the active POS buffer (qty or barcode). 'C' clears that buffer. */
 export function applyPosNumpadKey(key) {
   const state = usePosStore.getState()
+  if (key === 'C') {
+    if (state.inputMode === 'qty') usePosStore.setState({ qtyBuffer: '' })
+    else state.setBarcodeBuffer('')
+    return
+  }
   if (state.inputMode === 'qty') {
     const p = state.qtyBuffer
     let next

@@ -286,6 +286,8 @@
   font-size: clamp(18px, 1.6vw, 26px); font-weight: 700; color: var(--text-1);
   font-variant-numeric: tabular-nums;
 }
+/* C (clear): same key, red label */
+.ph-key.is-clear { color: #dc2626; }
 .ph-enter {
   height: var(--ph-enter-h); flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; gap: 10px;

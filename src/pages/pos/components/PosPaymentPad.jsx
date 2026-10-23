@@ -15,7 +15,8 @@ const PAY_TILES = [
   { key: PM.MULTIPAYMENT, label: 'Multi Pay',   icon: LayoutGrid },
 ]
 
-const KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0', '.', '00']
+// Bottom row: 0 · . · C (clear)
+const KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0', '.', 'C']
 
 /** Payment mode tiles, numpad and ENTER (middle column). */
 export default function PosPaymentPad({ onEnter }) {
@@ -58,7 +59,14 @@ export default function PosPaymentPad({ onEnter }) {
 
       <div className="ph-keys">
         {KEYS.map(k => (
-          <button key={k} className="ph-key" onClick={() => applyPosNumpadKey(k)}>{k}</button>
+          <button
+            key={k}
+            className={`ph-key${k === 'C' ? ' is-clear' : ''}`}
+            onClick={() => applyPosNumpadKey(k)}
+            aria-label={k === 'C' ? 'Clear' : undefined}
+          >
+            {k}
+          </button>
         ))}
       </div>
 
