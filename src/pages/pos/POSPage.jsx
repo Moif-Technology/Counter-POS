@@ -21,6 +21,7 @@ import './pos.css'
 export default function POSPage() {
   const navigate   = useNavigate()
   const clearAll   = usePosStore(s => s.clearAll)
+  const returnMode = usePosStore(s => s.returnMode)
 
   const { fetchNextBillNo } = usePosSession()
   const { scanning, sunmiScanOpen, handleEnter, handleSunmiScan } = useBarcodeEntry()
@@ -51,7 +52,8 @@ export default function POSPage() {
   // Shown inside the search box, so it never moves the cart or the other panels.
   const status = saving ? 'Saving… please wait'
     : scanning ? 'Searching…'
-    : ''   // return mode shows its own tappable pill in the search box
+    : returnMode ? 'Return mode'
+    : ''
 
   return (
     <div className="ph-root" onPointerDown={handleMainScreenPointerDown}>
@@ -66,6 +68,7 @@ export default function POSPage() {
           <PosSearchBar
             onEnter={handleEnter}
             onScan={handleSunmiScan}
+            onAction={actions.run}
             status={status}
             scanning={scanning}
             sunmiScanOpen={sunmiScanOpen}
