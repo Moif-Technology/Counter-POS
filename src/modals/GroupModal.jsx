@@ -78,7 +78,7 @@ export default function GroupModal({ onClose, onSelect, initialGroup = null }) {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-4)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
               </svg>
-              <input
+              <input data-system-keyboard
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search group…"

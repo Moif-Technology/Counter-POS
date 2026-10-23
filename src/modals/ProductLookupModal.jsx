@@ -150,7 +150,7 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
         <div style={{ flex: 3, position: 'relative' }}>
           {field('Name / Barcode / Code',
             <div style={{ position: 'relative' }}>
-              <input
+              <input data-system-keyboard
                 ref={queryRef}
                 value={query}
                 onChange={handleQueryChange}
@@ -176,7 +176,7 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
         {/* Max Price filter */}
         <div style={{ flex: 1 }}>
           {field('Max Price',
-            <input
+            <input data-system-keyboard
               value={price}
               onChange={handlePriceChange}
               onKeyDown={e => e.key === 'Enter' && fireNow(query, price)}

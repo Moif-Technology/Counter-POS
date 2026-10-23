@@ -234,7 +234,7 @@ export default function CustomerSearch({ variant = 'button', dropUp = false }) {
             background: 'var(--surface-2)',
           }}>
             <Search size={13} color="var(--text-3)" style={{ flexShrink: 0 }} />
-            <input
+            <input data-system-keyboard
               ref={inputRef}
               value={query}
               onChange={e => handleQueryChange(e.target.value)}

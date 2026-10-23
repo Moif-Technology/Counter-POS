@@ -114,7 +114,7 @@ export default function CashierChangeModal({ onClose }) {
               <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 6 }}>
                 Security PIN / Password <span style={{ fontWeight: 400, color: 'var(--text-4)' }}>(Type any PIN)</span>
               </label>
-              <input
+              <input data-system-keyboard
                 type="password"
                 value={pin}
                 onChange={e => setPin(e.target.value)}

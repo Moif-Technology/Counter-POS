@@ -73,28 +73,28 @@ export default function CashInOutViewerModal({ onClose, reportFn = null }) {
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
               <Calendar size={11} /> From
             </label>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+            <input data-system-keyboard type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
               style={{ width: '100%', height: 38, borderRadius: 8, border: '1.5px solid var(--border)', fontSize: 12, padding: '0 8px', boxSizing: 'border-box' }} />
           </div>
           <div>
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
               <Calendar size={11} /> To
             </label>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            <input data-system-keyboard type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
               style={{ width: '100%', height: 38, borderRadius: 8, border: '1.5px solid var(--border)', fontSize: 12, padding: '0 8px', boxSizing: 'border-box' }} />
           </div>
           <div>
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', marginBottom: 4, display: 'block' }}>
               Counter
             </label>
-            <input type="number" min={1} value={counterNo} onChange={e => setCounterNo(e.target.value)}
+            <input data-system-keyboard type="number" min={1} value={counterNo} onChange={e => setCounterNo(e.target.value)}
               style={{ width: '100%', height: 38, borderRadius: 8, border: '1.5px solid var(--border)', fontSize: 12, padding: '0 8px', boxSizing: 'border-box', textAlign: 'center' }} />
           </div>
           <div>
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', marginBottom: 4, display: 'block' }}>
               Counter Close No
             </label>
-            <input type="text" value={closeNo} onChange={e => setCloseNo(e.target.value)}
+            <input data-system-keyboard type="text" value={closeNo} onChange={e => setCloseNo(e.target.value)}
               placeholder="e.g. Z-C1-0003 or PENDING"
               style={{ width: '100%', height: 38, borderRadius: 8, border: '1.5px solid var(--border)', fontSize: 12, padding: '0 10px', boxSizing: 'border-box' }} />
           </div>

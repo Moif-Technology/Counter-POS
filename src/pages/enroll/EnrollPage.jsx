@@ -166,7 +166,7 @@ export default function EnrollPage() {
             ].map(({ key, label: lbl, type, placeholder }) => (
               <div key={key} style={{ marginBottom: 14 }}>
                 <label style={labelStyle}>{lbl.toUpperCase()}</label>
-                <input
+                <input data-system-keyboard
                   type={type}
                   value={creds[key]}
                   onChange={credField(key)}
@@ -322,7 +322,7 @@ export default function EnrollPage() {
 
             <div style={{ marginBottom: 14 }}>
               <label style={labelStyle}>TERMINAL LABEL (OPTIONAL)</label>
-              <input
+              <input data-system-keyboard
                 type="text"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
