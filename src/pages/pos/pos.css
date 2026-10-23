@@ -23,6 +23,8 @@
   --ph-enter-h: clamp(46px, 5.8vh, 60px);
 
   height: 100vh; height: 100dvh;
+  /* touch screens: no double-tap zoom or grey tap flash anywhere on the POS (scrolling still works) */
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
   display: grid;
   grid-template-columns: minmax(0, 1fr);   /* never wider than the screen */
   grid-template-rows: auto minmax(0, 1fr) auto;   /* top bar · main · status bar */
