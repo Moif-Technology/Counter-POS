@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RotateCcw, BadgePercent, Pencil, Trash2 } from 'lucide-react'
+import { Repeat2, BadgePercent, Pencil, Trash2 } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
 import { findCartItemByKey, getCartRowKey } from '../../../lib/cartLine'
 import { fmt3 } from '../../../lib/utils'
@@ -10,34 +10,26 @@ import DiscountModal from '../../../modals/DiscountModal'
 
 // `confirm` actions are sensitive: the cashier must confirm before they run.
 const ACTIONS = [
-  { key: 'return',   label: 'Return',        icon: RotateCcw,    confirm: true },
+  { key: 'repeat',   label: 'Repeat',        icon: Repeat2 },
   { key: 'discount', label: 'Add Discount',  icon: BadgePercent },
   { key: 'price',    label: 'Edit Price',    icon: Pencil,       confirm: true },
   { key: 'clear',    label: 'Delete All',    icon: Trash2,       danger: true },   // clears at once, like Clear All
 ]
 
 /**
- * Actions bar at the foot of the cart: Return · Add Discount · Edit Price · Delete All.
+ * Actions bar at the foot of the cart: Repeat · Add Discount · Edit Price · Delete All.
  * The first three act on the line shown in the item strip (the selected line, or the last one).
- * Return and Edit Price ask for confirmation first; Delete All clears the bill at once.
+ * Edit Price asks for confirmation first; Delete All clears the bill at once.
  */
 export default function PosLineActionBar({ disabled }) {
   const cartItems      = usePosStore(s => s.cartItems)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
-  const updateLine     = usePosStore(s => s.updateLine)
   const [popup, setPopup] = useState(null)   // { key, rowKey }
 
   const line = findCartItemByKey(cartItems, selectedRowKey) ?? cartItems[cartItems.length - 1]
 
-  const ask = (key) => {
+  const ask = () => {
     const name = line.description
-    if (key === 'return') {
-      return posConfirm({
-        title: 'Return this item?',
-        message: `${name} will be added as a return (qty ${-(Math.abs(Number(line.qty)) || 1)}).`,
-        confirmLabel: 'Return', cancelLabel: 'Cancel', danger: true,
-      })
-    }
     return posConfirm({
       title: 'Override the price?',
       message: `Change the selling price of ${name} (now ${fmt3(line.unitPriceGross ?? line.unitPrice)}).`,
@@ -48,14 +40,13 @@ export default function PosLineActionBar({ disabled }) {
   const run = async (action) => {
     const rowKey = getCartRowKey(line)
     usePosStore.setState({ selectedRowKey: rowKey })
-    if (action.confirm && !(await ask(action.key))) return
+    if (action.confirm && !(await ask())) return
     if (action.key === 'clear') {
       usePosStore.getState().clearAll()
       return
     }
-    if (action.key === 'return') {
-      updateLine(rowKey, { qty: -(Math.abs(Number(line.qty)) || 1) })
-      usePosStore.setState({ returnMode: true })
+    if (action.key === 'repeat') {
+      usePosStore.getState().repeatLine(rowKey)
       return
     }
     setPopup({ key: action.key, rowKey })
