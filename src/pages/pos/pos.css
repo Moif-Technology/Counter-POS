@@ -135,10 +135,28 @@
 }
 .ph-search input::placeholder { color: var(--text-4); }
 .ph-search-qty {
-  flex-shrink: 0; padding: 2px 9px; border-radius: 99px;
+  flex-shrink: 0; cursor: pointer; user-select: none; padding: 2px 9px; border-radius: 99px;
   background: var(--brand-bg); border: 1px solid var(--brand-border);
   color: var(--brand); font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums;
 }
+/* Mode menu (double-tap the qty / RTN chip) */
+.ph-search { position: relative; }
+.ph-mode-backdrop { position: fixed; inset: 0; z-index: 900; }
+.ph-mode-menu {
+  position: absolute; left: 40px; top: calc(100% + 6px); z-index: 901; min-width: 190px;
+  display: flex; flex-direction: column; padding: 6px; border-radius: 12px;
+  background: #fff; border: 1px solid #e4e4e7; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+}
+.ph-mode-item {
+  display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px;
+  border: none; border-radius: 8px; background: none; cursor: pointer;
+  font-family: inherit; font-size: 13.5px; font-weight: 600; color: #3f3f46; text-align: left;
+}
+.ph-mode-item svg { color: #a1a1aa; }
+.ph-mode-item:hover { background: #f4f4f5; }
+.ph-mode-item.is-current { color: var(--brand); font-weight: 800; }
+.ph-mode-item.is-current svg { color: var(--brand); }
+
 .ph-search-scan {
   flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   width: clamp(42px, 5.4vh, 54px); height: clamp(42px, 5.4vh, 54px); border-radius: 50%;

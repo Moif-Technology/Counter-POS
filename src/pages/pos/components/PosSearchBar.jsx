@@ -1,12 +1,22 @@
-import { useEffect, useRef } from 'react'
-import { Search, ScanBarcode } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Search, ScanBarcode, ShoppingCart, Undo2, Tag, Package, PackageSearch } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
 
 /**
  * Barcode / product-code entry. Enter adds the item (or applies a cash
  * tender amount at Billing). The barcode icon opens the device scanner.
+ * Double-tap the qty / RTN chip to switch what the search box does.
  */
-export default function PosSearchBar({ onEnter, onScan, scanning, sunmiScanOpen }) {
+
+// Search box modes. Sale/Return change how scanned items are added; the rest open their popup.
+const MODES = [
+  { key: 'sale',   label: 'Sale',           icon: ShoppingCart },
+  { key: 'return', label: 'Return',         icon: Undo2 },
+  { key: 'Price Enquiry',  label: 'Price Enquiry',  icon: Tag },
+  { key: 'Packet Scan',    label: 'Packet Scan',    icon: Package },
+  { key: 'Product Lookup', label: 'Product Lookup', icon: PackageSearch },
+]
+export default function PosSearchBar({ onEnter, onScan, onAction, scanning, sunmiScanOpen }) {
   const barcodeBuffer    = usePosStore(s => s.barcodeBuffer)
   const qtyBuffer        = usePosStore(s => s.qtyBuffer)
   const returnMode       = usePosStore(s => s.returnMode)
@@ -14,6 +24,7 @@ export default function PosSearchBar({ onEnter, onScan, scanning, sunmiScanOpen 
   const setQtyBuffer     = usePosStore(s => s.setQtyBuffer)
   const barcodeFocusTick = usePosStore(s => s.barcodeFocusTick)
   const inputRef = useRef(null)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => { inputRef.current?.focus() }, [])
 
@@ -28,12 +39,28 @@ export default function PosSearchBar({ onEnter, onScan, scanning, sunmiScanOpen 
   const isReturn = returnMode || parseFloat(qtyBuffer) < 0
   const showQty  = isReturn || (qtyBuffer !== '0' && qtyBuffer !== '1' && qtyBuffer !== '-1' && qtyBuffer !== '')
 
+  const pickMode = (key) => {
+    setMenuOpen(false)
+    if (key === 'sale' || key === 'return') {
+      if ((key === 'return') !== returnMode) usePosStore.getState().toggleReturn()
+      inputRef.current?.focus()
+      return
+    }
+    onAction?.(key)
+  }
+
   return (
     <div className="ph-searchrow">
+      {menuOpen && <div className="ph-mode-backdrop" data-pos-overlay onPointerDown={() => setMenuOpen(false)} />}
       <div className="ph-search" data-pos-barcode-input onClick={() => inputRef.current?.focus()}>
         <Search size={22} className="ph-search-icon" />
         {showQty && (
-          <span className={`ph-search-qty${isReturn ? ' is-return' : ''}`}>
+          <span
+            className={`ph-search-qty${isReturn ? ' is-return' : ''}`}
+            role="button"
+            title="Double-tap to switch mode"
+            onDoubleClick={(e) => { e.stopPropagation(); setMenuOpen(true) }}
+          >
             {qtyBuffer} {isReturn ? 'RTN' : '×'}
           </span>
         )}
@@ -51,6 +78,19 @@ export default function PosSearchBar({ onEnter, onScan, scanning, sunmiScanOpen 
           aria-label="Barcode or product code"
           style={{ opacity: scanning ? 0.6 : 1 }}
         />
+
+        {menuOpen && (
+          <div className="ph-mode-menu" role="menu" data-pos-overlay>
+            {MODES.map(({ key, label, icon: Icon }) => {
+              const current = (key === 'return' && returnMode) || (key === 'sale' && !returnMode)
+              return (
+                <button key={key} role="menuitem" className={`ph-mode-item${current ? ' is-current' : ''}`} onClick={() => pickMode(key)}>
+                  <Icon size={16} /> {label}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
   
       {/* Round scan button, outside the search box at its end */}
