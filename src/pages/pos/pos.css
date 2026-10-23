@@ -79,6 +79,7 @@
   transition: border-color 0.12s, color 0.12s, background 0.12s;
 }
 .ph-top-lite:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-bg); }
+.ph-top-fullscreen { width: 34px; padding: 0; justify-content: center; }   /* icon-only, same box as Lite */
 
 /* Logged-in user — avatar initial + name over role */
 .ph-top-userwrap { position: relative; display: flex; min-width: 0; border-left: 1px solid var(--border); padding-left: clamp(8px, 1vw, 16px); }

@@ -3,6 +3,7 @@ import { Zap, ChevronDown, LogOut, Power, FilePlus } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
 import { LITE_VERSION_ENABLED } from '../../../config/appConfig'
 import BrandLogo from '../../../components/common/BrandLogo'
+import PosFullscreenButton from './PosFullscreenButton'
 
 // User menu: same actions as the Log Out tab keys (run by label).
 const USER_MENU = [
@@ -31,6 +32,7 @@ export default function PosTopBar({ onOpenLite, onAction }) {
       </div>
 
       <div className="ph-top-right">
+        <PosFullscreenButton />
         {LITE_VERSION_ENABLED && (
           <button className="ph-top-lite" data-pos-skip-refocus onClick={onOpenLite} title="Switch to Lite mode">
             <Zap size={14} /> Lite
