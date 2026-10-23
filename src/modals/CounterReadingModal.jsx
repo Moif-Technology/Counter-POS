@@ -273,18 +273,20 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
             flex: 1, minWidth: 260, borderRight: '1px solid var(--border)',
             display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {/* 2-column grid so the whole summary fits on a 768-high terminal; big totals span both columns */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 6, alignContent: 'start' }}>
 
               {loading && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 120, color: 'var(--text-4)', fontSize: 12 }}>
+                <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 120, color: 'var(--text-4)', fontSize: 12 }}>
                   Loading...
                 </div>
               )}
 
               {!loading && summaryRows.map(row => (
                 <div key={row.label} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: row.large ? '8px 10px' : '5px 10px',
+                  gridColumn: row.large ? '1 / -1' : 'auto',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, minWidth: 0,
+                  padding: row.large ? '8px 10px' : '6px 10px',
                   borderRadius: 8,
                   background: row.accent === 'brand'
                     ? 'var(--brand-bg)'
@@ -299,11 +301,10 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
                     ? '1px solid var(--green-border)'
                     : row.accent === 'red'
                     ? '1px solid var(--red-border)'
-                    : '1px solid transparent',
-                  marginBlock: row.large ? 4 : 0,
+                    : '1px solid var(--border)',
                 }}>
                   <span style={{
-                    fontSize: row.large ? 11 : 10, fontWeight: 700,
+                    fontSize: row.large ? 11 : 10, fontWeight: 700, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     color: row.accent === 'brand' ? 'var(--brand)' : row.accent === 'green' ? 'var(--green)' : row.accent === 'red' ? 'var(--red)' : 'var(--text-2)',
                   }}>
                     {row.label}
@@ -320,8 +321,8 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
 
               {/* Bill count summary */}
               {!loading && summary && (
-                <div style={{ marginTop: 8, padding: '10px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Bill Count Summary</p>
+                <div style={{ gridColumn: '1 / -1', marginTop: 2, padding: '8px 10px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', columnGap: 16 }}>
+                  <p style={{ gridColumn: '1 / -1', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Bill Count Summary</p>
                   {billRows.map(([l, v]) => (
                     <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px solid var(--border)' }}>
                       <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>{l}</span>
@@ -329,7 +330,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
                     </div>
                   ))}
                   {summary.creditReceiptCount > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', marginTop: 4 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
                       <span style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 600 }}>Credit Receipts</span>
                       <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 800, fontFamily: 'inherit' }}>{summary.creditReceiptCount}</span>
                     </div>
@@ -346,7 +347,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
               )}
 
               {!loading && summary?.cashInOutList?.length > 0 && (
-                <div style={{ marginTop: 8, padding: '10px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                <div style={{ gridColumn: '1 / -1', marginTop: 2, padding: '10px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
                   <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     Cash In / Out ({summary.cashInOutList.length})
                   </p>
