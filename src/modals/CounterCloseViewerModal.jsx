@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { X, Archive, Calendar, RefreshCw, Loader2 } from 'lucide-react'
+import { X, Archive, RefreshCw, Loader2 } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
 import { fmt3 } from '../lib/utils'
 import Modal from '../components/common/Modal'
+import DateRangePicker from '../components/common/DateRangePicker'
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10)
@@ -229,20 +230,12 @@ export default function CounterCloseViewerModal({ onClose, historyFn = null, clo
 
       <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'end' }}>
-          <div>
-            <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-              <Calendar size={11} /> From
-            </label>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-              style={{ width: '100%', height: 38, borderRadius: 8, border: '1.5px solid var(--border)', fontSize: 12, padding: '0 8px', boxSizing: 'border-box' }} />
-          </div>
-          <div>
-            <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-              <Calendar size={11} /> To
-            </label>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-              style={{ width: '100%', height: 38, borderRadius: 8, border: '1.5px solid var(--border)', fontSize: 12, padding: '0 8px', boxSizing: 'border-box' }} />
-          </div>
+          <DateRangePicker
+            from={dateFrom}
+            to={dateTo}
+            onChange={(f, t) => { setDateFrom(f); setDateTo(t) }}
+            style={{ gridColumn: 'span 2' }}
+          />
           <button onClick={loadCloses} style={{
             height: 38, padding: '0 14px', borderRadius: 8,
             border: '1.5px solid var(--brand-border)', background: 'var(--brand-bg)',

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { X, Receipt, Calendar, User, Search, RefreshCw, Loader2, ChevronDown, Printer } from 'lucide-react'
+import { X, Receipt, User, Search, RefreshCw, Loader2, ChevronDown, Printer } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
 import { fmtMoney } from '../lib/currencyFormat'
@@ -10,6 +10,7 @@ import { posNotifyError } from '../lib/posNotify'
 
 import { isMultiPaymentMode, normalizePaymentMode } from '../lib/paymentModes'
 import Modal from '../components/common/Modal'
+import DateRangePicker from '../components/common/DateRangePicker'
 
 function isMultiPayment(mode) {
   return isMultiPaymentMode(mode)
@@ -515,20 +516,12 @@ export default function SalesViewerModal({
             onSelect={setCustomerId}
             searchFn={customerSearchFn}
           />
-          <div>
-            <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-              <Calendar size={11} /> From
-            </label>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-              style={{ width: '100%', height: 38, borderRadius: 8, border: '1.5px solid var(--border)', fontSize: 12, padding: '0 8px', boxSizing: 'border-box' }} />
-          </div>
-          <div>
-            <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-              <Calendar size={11} /> To
-            </label>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-              style={{ width: '100%', height: 38, borderRadius: 8, border: '1.5px solid var(--border)', fontSize: 12, padding: '0 8px', boxSizing: 'border-box' }} />
-          </div>
+          <DateRangePicker
+            from={dateFrom}
+            to={dateTo}
+            onChange={(f, t) => { setDateFrom(f); setDateTo(t) }}
+            style={{ gridColumn: 'span 2' }}
+          />
           <button onClick={loadBills} style={{
             height: 38, padding: '0 14px', borderRadius: 8,
             border: '1.5px solid var(--brand-border)', background: 'var(--brand-bg)',

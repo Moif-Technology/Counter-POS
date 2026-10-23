@@ -1,0 +1,75 @@
+/* DateRangePicker — "From → To" field + range calendar popover */
+.ui-drp { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ui-drp-label {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 700; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.4px;
+}
+.ui-drp-field {
+  height: 38px; width: 100%; box-sizing: border-box; padding: 0 10px 0 12px;
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  border: 1.5px solid var(--border); border-radius: 8px; background: var(--surface);
+  font-family: inherit; text-align: left; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.12s, background 0.12s;
+}
+.ui-drp-field:hover { border-color: var(--brand-border); }
+.ui-drp-field.is-open { border-color: var(--brand); background: var(--brand-bg); }
+.ui-drp-date { font-size: 13px; font-weight: 700; color: var(--text-1); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ui-drp-arrow { flex-shrink: 0; color: var(--text-4); }
+.ui-drp-icon { flex-shrink: 0; margin-left: auto; color: var(--brand); }
+
+/* Popover: presets on the left, month on the right */
+.ui-drp-pop {
+  position: fixed; z-index: 5000; display: flex;
+  background: #fff; border: 1px solid #f1e6e9; border-radius: 14px; overflow: hidden;
+  box-shadow: 0 16px 40px rgba(120, 8, 41, 0.16), 0 2px 8px rgba(0, 0, 0, 0.06);
+  animation: ui-drp-in 0.14s ease-out;
+}
+@keyframes ui-drp-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+.ui-drp-presets {
+  display: flex; flex-direction: column; gap: 4px; width: 132px; padding: 12px 8px;
+  background: #fcf8f9; border-right: 1px solid #f1e6e9;
+}
+.ui-drp-preset {
+  height: 34px; padding: 0 10px; border: none; border-radius: 8px; background: none; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; font-weight: 600; color: #3f3f46; text-align: left;
+}
+.ui-drp-preset:hover { background: var(--brand-bg); color: var(--brand); }
+.ui-drp-preset.is-on { background: var(--brand); color: #fff; }
+
+.ui-drp-cal { width: 280px; padding: 12px 14px 10px; }
+.ui-drp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.ui-drp-head b { font-size: 14px; font-weight: 800; color: var(--text-1); }
+.ui-drp-nav {
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid #ececee; border-radius: 8px; background: #fff; color: var(--text-2); cursor: pointer;
+}
+.ui-drp-nav:hover { border-color: var(--brand-border); color: var(--brand); }
+
+.ui-drp-grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 2px; }
+.ui-drp-dow { height: 26px; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; color: var(--text-4); }
+.ui-drp-day {
+  position: relative; height: 34px; padding: 0; border: none; background: none; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-1); font-variant-numeric: tabular-nums;
+}
+.ui-drp-day:hover:not(.is-edge) { color: var(--brand); }
+/* the band between the two ends */
+.ui-drp-day.is-in { background: var(--brand-bg); color: var(--brand); }
+.ui-drp-day.is-lo { background: linear-gradient(to right, transparent 50%, var(--brand-bg) 50%); }
+.ui-drp-day.is-hi { background: linear-gradient(to left, transparent 50%, var(--brand-bg) 50%); }
+/* the two ends: solid maroon circles */
+.ui-drp-day.is-edge { color: #fff; z-index: 0; }
+.ui-drp-day.is-edge::before {
+  content: ''; position: absolute; inset: 1px 3px; z-index: -1; border-radius: 10px; background: var(--brand);
+}
+.ui-drp-day.is-today:not(.is-edge)::after {
+  content: ''; position: absolute; left: 50%; bottom: 4px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--brand);
+}
+.ui-drp-hint { margin: 8px 0 0; font-size: 11.5px; color: var(--text-3); text-align: center; }
+.ui-drp-hint b { color: var(--brand); }
+
+@media (max-width: 600px) {
+  .ui-drp-pop { flex-direction: column; }
+  .ui-drp-presets { width: auto; flex-direction: row; flex-wrap: wrap; border-right: none; border-bottom: 1px solid #f1e6e9; }
+  .ui-drp-preset { height: 30px; }
+}

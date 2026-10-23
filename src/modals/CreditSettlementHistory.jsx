@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Loader2, History, Calendar, User, Search, X, ChevronDown, Printer } from 'lucide-react'
+import { Loader2, History, User, Search, X, ChevronDown, Printer } from 'lucide-react'
 import { normalizePaymentMode, PM } from '../lib/paymentModes'
 import { api } from '../lib/api'
 import { fmt3 } from '../lib/utils'
 import { usePosStore } from '../store/posStore'
+import DateRangePicker from '../components/common/DateRangePicker'
 import { printCreditReceiptVoucher } from '../lib/printCreditReceiptVoucher'
 
 function fmtDateTime(d) {
@@ -229,20 +230,12 @@ export function CreditSettlementHistoryList({ accessToken, onSelectReceipt, hist
           onSelect={setCustomerId}
           searchFn={customerSearchFn}
         />
-        <div>
-          <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-            <Calendar size={11} /> From
-          </label>
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-            style={{ width: '100%', height: 38, borderRadius: 8, border: '1.5px solid var(--border)', fontSize: 12, padding: '0 8px', boxSizing: 'border-box' }} />
-        </div>
-        <div>
-          <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-            <Calendar size={11} /> To
-          </label>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-            style={{ width: '100%', height: 38, borderRadius: 8, border: '1.5px solid var(--border)', fontSize: 12, padding: '0 8px', boxSizing: 'border-box' }} />
-        </div>
+        <DateRangePicker
+          from={dateFrom}
+          to={dateTo}
+          onChange={(f, t) => { setDateFrom(f); setDateTo(t) }}
+          style={{ gridColumn: 'span 2' }}
+        />
       </div>
 
       <button onClick={loadHistory} style={{
