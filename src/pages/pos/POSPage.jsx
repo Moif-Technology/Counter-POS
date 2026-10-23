@@ -57,7 +57,7 @@ export default function POSPage() {
 
   return (
     <div className="ph-root" onPointerDown={handleMainScreenPointerDown}>
-      <PosTopBar onOpenLite={handleOpenLite} onLogout={() => actions.run('Log Out')} />
+      <PosTopBar onOpenLite={handleOpenLite} onAction={actions.run} />
 
       {/*
         Left: the cart (search · lines · selected line).

@@ -1,11 +1,18 @@
 import { useState } from 'react'
-import { Zap, ChevronDown, LogOut } from 'lucide-react'
+import { Zap, ChevronDown, LogOut, Power, FilePlus } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
 import { LITE_VERSION_ENABLED } from '../../../config/appConfig'
 import BrandLogo from '../../../components/common/BrandLogo'
 
-/** Simple top bar: logo · bill / counter · Lite · cashier (role) with a Log Out menu. The clock is in the bottom bar. */
-export default function PosTopBar({ onOpenLite, onLogout }) {
+// User menu: same actions as the Log Out tab keys (run by label).
+const USER_MENU = [
+  { label: 'Add New', icon: FilePlus },
+  { label: 'Log Out', icon: LogOut, danger: true, divider: true },
+  { label: 'Exit',    icon: Power,  danger: true },
+]
+
+/** Simple top bar: logo · bill / counter · Lite · cashier (role) with an Add New / Log Out / Exit menu. The clock is in the bottom bar. */
+export default function PosTopBar({ onOpenLite, onAction }) {
   const cashier   = usePosStore(s => s.cashier)
   const billNo    = usePosStore(s => s.billNo)
   const counterNo = usePosStore(s => s.counterNo)
@@ -49,9 +56,16 @@ export default function PosTopBar({ onOpenLite, onLogout }) {
         </button>
         {menuOpen && (
           <div className="ph-top-usermenu" role="menu" data-pos-overlay>
-            <button role="menuitem" className="ph-top-usermenu-item" onClick={() => { setMenuOpen(false); onLogout?.() }}>
-              <LogOut size={16} /> Log Out
-            </button>
+            {USER_MENU.map(({ label, icon: Icon, danger, divider }) => (
+              <button
+                key={label}
+                role="menuitem"
+                className={`ph-top-usermenu-item${danger ? ' is-danger' : ''}${divider ? ' has-divider' : ''}`}
+                onClick={() => { setMenuOpen(false); onAction?.(label) }}
+              >
+                <Icon size={16} /> {label}
+              </button>
+            ))}
           </div>
         )}
         </div>
