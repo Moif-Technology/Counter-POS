@@ -49,9 +49,10 @@ export default function POSPage() {
     focusBarcodeScan()
   }, [])
 
-  const status = saving ? 'Saving........Please Wait...........'
-    : scanning ? 'Searching........'
-    : returnMode ? 'Return mode — scanned items are returned'
+  // Shown inside the search box, so it never moves the cart or the other panels.
+  const status = saving ? 'Saving… please wait'
+    : scanning ? 'Searching…'
+    : returnMode ? 'Return mode'
     : ''
 
   return (
@@ -68,12 +69,12 @@ export default function POSPage() {
             onEnter={handleEnter}
             onScan={handleSunmiScan}
             onAction={actions.run}
+            status={status}
             scanning={scanning}
             sunmiScanOpen={sunmiScanOpen}
           />
           <PosItemsTable />
           <PosItemCard />
-          {status && <div className="ph-status-line">{status}</div>}
         </section>
 
         <PosTransactionPanel />

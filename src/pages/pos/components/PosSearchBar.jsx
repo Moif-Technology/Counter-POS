@@ -16,7 +16,7 @@ const MODES = [
   { key: 'Packet Scan',    label: 'Packet Scan',    icon: Package },
   { key: 'Product Lookup', label: 'Product Lookup', icon: PackageSearch },
 ]
-export default function PosSearchBar({ onEnter, onScan, onAction, scanning, sunmiScanOpen }) {
+export default function PosSearchBar({ onEnter, onScan, onAction, status, scanning, sunmiScanOpen }) {
   const barcodeBuffer    = usePosStore(s => s.barcodeBuffer)
   const qtyBuffer        = usePosStore(s => s.qtyBuffer)
   const returnMode       = usePosStore(s => s.returnMode)
@@ -84,6 +84,7 @@ export default function PosSearchBar({ onEnter, onScan, onAction, scanning, sunm
           aria-label="Barcode or product code"
           style={{ opacity: scanning ? 0.6 : 1 }}
         />
+        {status && <span className="ph-search-status" aria-live="polite">{status}</span>}
 
         {menuOpen && (
           <div className="ph-mode-menu" role="menu" data-pos-overlay>
