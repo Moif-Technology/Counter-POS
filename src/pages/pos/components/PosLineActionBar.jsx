@@ -3,7 +3,7 @@ import { RotateCcw, BadgePercent, Pencil, Trash2 } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
 import { findCartItemByKey, getCartRowKey } from '../../../lib/cartLine'
 import { fmt3 } from '../../../lib/utils'
-import { posConfirm, posConfirmDelete } from '../../../lib/posNotify'
+import { posConfirm } from '../../../lib/posNotify'
 import { closeAndFocusBarcode } from '../../../lib/posFocus'
 import PriceChangeModal from '../../../modals/PriceChangeModal'
 import DiscountModal from '../../../modals/DiscountModal'
@@ -13,13 +13,13 @@ const ACTIONS = [
   { key: 'return',   label: 'Return',        icon: RotateCcw,    confirm: true },
   { key: 'discount', label: 'Add Discount',  icon: BadgePercent },
   { key: 'price',    label: 'Edit Price',    icon: Pencil,       confirm: true },
-  { key: 'clear',    label: 'Delete All',    icon: Trash2,       confirm: true, danger: true },
+  { key: 'clear',    label: 'Delete All',    icon: Trash2,       danger: true },   // clears at once, like Clear All
 ]
 
 /**
  * Actions bar at the foot of the cart: Return · Add Discount · Edit Price · Delete All.
  * The first three act on the line shown in the item strip (the selected line, or the last one).
- * Return, Edit Price and Delete All ask for confirmation first.
+ * Return and Edit Price ask for confirmation first; Delete All clears the bill at once.
  */
 export default function PosLineActionBar({ disabled }) {
   const cartItems      = usePosStore(s => s.cartItems)
@@ -31,10 +31,6 @@ export default function PosLineActionBar({ disabled }) {
 
   const ask = (key) => {
     const name = line.description
-    if (key === 'clear') {
-      const n = cartItems.length
-      return posConfirmDelete({ title: 'Delete all items?', message: `Remove all ${n} ${n === 1 ? 'item' : 'items'} from this bill? This cannot be undone.`, confirmLabel: 'Delete All' })
-    }
     if (key === 'return') {
       return posConfirm({
         title: 'Return this item?',
