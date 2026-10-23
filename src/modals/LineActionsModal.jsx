@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RotateCcw, Tag, Percent, SlidersHorizontal } from 'lucide-react'
+import { RotateCcw, Tag, Percent, SlidersHorizontal, Repeat2 } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { findCartItemByKey, getCartRowKey } from '../lib/cartLine'
 import { useEscapeKey } from '../hooks/useEscapeKey'
@@ -11,17 +11,18 @@ const RADIUS  = 66   // distance of the buttons from the centre
 const MARGIN  = 105  // keep the whole wheel on screen
 const STAGGER = 70   // ms between buttons, so they sweep out one after another
 
-// Clockwise from the top
+// Clockwise from the top, evenly spaced
 const ACTIONS = [
-  { key: 'discount', label: 'Add Discount', icon: Percent,           angle: -90 },
-  { key: 'price',    label: 'Edit Price',   icon: Tag,               angle: 0 },
-  { key: 'qty',      label: 'Edit Qty',     icon: SlidersHorizontal, angle: 90 },
-  { key: 'return',   label: 'Return',       icon: RotateCcw,         angle: 180 },
-]
+  { key: 'discount', label: 'Add Discount', icon: Percent },
+  { key: 'price',    label: 'Edit Price',   icon: Tag },
+  { key: 'qty',      label: 'Edit Qty',     icon: SlidersHorizontal },
+  { key: 'repeat',   label: 'Repeat',       icon: Repeat2 },
+  { key: 'return',   label: 'Return',       icon: RotateCcw },
+].map((a, i, all) => ({ ...a, angle: -90 + (360 / all.length) * i }))
 
 /**
  * Radial line menu — opens where the cart row was double-tapped:
- * Add Discount (top) · Edit Price (right) · Edit Qty (bottom) · Return (left).
+ * Add Discount (top) · Edit Price · Edit Qty · Repeat · Return, clockwise.
  */
 export default function LineActionsModal({ item, x, y, onClose }) {
   const cartItems  = usePosStore(s => s.cartItems)
@@ -35,6 +36,12 @@ export default function LineActionsModal({ item, x, y, onClose }) {
 
   const run = (key) => {
     usePosStore.setState({ selectedRowKey: rowKey })
+    if (key === 'repeat') {
+      // Add this line to the bill once more (the Repeat key always repeats the last line).
+      usePosStore.getState().addItem(liveItem)
+      onClose()
+      return
+    }
     if (key === 'return') {
       // The line becomes a return (negative qty), as the old line popup did.
       const absQty = Math.abs(Number(liveItem.qty)) || 1

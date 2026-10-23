@@ -488,7 +488,7 @@
 .ph-radial-btn svg { color: var(--brand); }
 /* Each button starts collapsed at the centre, rotated back along the arc, then
  * sweeps clockwise out to its slot; the inline animation-delay staggers them
- * (Add Discount → Edit Price → Edit Qty → Return). */
+ * (Add Discount → Edit Price → Edit Qty → Repeat → Return). */
 @keyframes ph-radial-sweep-in {
   from { transform: translate(-50%, -50%) rotate(-130deg) scale(0.3); opacity: 0; }
   55%  { opacity: 1; }
