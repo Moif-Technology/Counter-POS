@@ -213,27 +213,19 @@
   display: flex; flex-direction: column;
   gap: var(--ph-kgap);
 }
-/* Payment modes — neumorphic: tiles share the panel's soft grey and are
-   shaped only by a light (top-left) and a dark (bottom-right) shadow. */
-.ph-pay {
-  --neu-bg: #eceef2;
-  --neu-raised:  6px 6px 12px #cdd0d6, -6px -6px 12px #ffffff;
-  --neu-pressed: inset 4px 4px 8px #cdd0d6, inset -4px -4px 8px #ffffff;
-  display: grid; grid-template-columns: 1fr 1fr; gap: clamp(10px, 1vw, 14px);
-  padding: clamp(10px, 1vw, 14px); border-radius: 16px; background: var(--neu-bg);
-}
+.ph-pay { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ph-pay-gap); }
 .ph-pay-tile {
   height: var(--ph-tile-h);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  font-size: clamp(11.5px, 0.8vw, 13.5px); font-weight: 600; color: #52525b;
-  background: var(--neu-bg); border: none; border-radius: 14px; box-shadow: var(--neu-raised);
-  transition: box-shadow 0.15s, color 0.15s;
+  font-size: clamp(11.5px, 0.8vw, 13.5px); font-weight: 600; color: #3f3f46;
+  /* same raised soft-UI look as the number keys (shared .ph-key rule) */
 }
-.ph-pay-tile svg { color: #71717a; transition: color 0.15s; }
-.ph-pay-tile:active { box-shadow: var(--neu-pressed); transform: none; }
-/* selected payment mode stays pressed in, in maroon */
-.ph-pay-tile.is-active { box-shadow: var(--neu-pressed); color: var(--brand); font-weight: 800; }
-.ph-pay-tile.is-active svg { color: var(--brand); }
+.ph-pay-tile svg { color: var(--brand); }
+/* selected payment mode stays "pressed in", maroon outline and label */
+.ph-pay-tile.is-active {
+  border-color: var(--brand); color: var(--brand); font-weight: 800;
+  box-shadow: var(--ph-pressed);
+}
 .ph-pad-spacer { display: none; }
 .ph-keys {
   flex: 1; min-height: calc(4 * 44px + 3 * var(--ph-kgap));
