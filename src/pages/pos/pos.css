@@ -378,45 +378,77 @@
 }
 .ph-qty-tap:hover { border-color: var(--brand); color: var(--brand); }
 
-/* Qty wheel popup */
-.ph-qtyw { display: flex; flex-direction: column; gap: 14px; padding: 18px 20px 20px; }
-.ph-qtyw-entry { display: flex; align-items: center; gap: 10px; }
-.ph-qtyw-input {
-  flex: 1; min-width: 0; height: 52px; text-align: center;
-  border: 1.5px solid #e4e4e7; border-radius: 12px; outline: none;
-  font-family: inherit; font-size: 26px; font-weight: 800; color: #18181b; font-variant-numeric: tabular-nums;
+/* Qty wheel popup: NEW QTY wheel | numpad */
+.ph-qtyw { display: grid; grid-template-columns: 1fr 1fr; }
+.ph-qtyw-left {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 18px 20px 20px; border-right: 1px solid #ededf0;
 }
-.ph-qtyw-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-glow); }
-.ph-qtyw-step {
-  width: 52px; height: 52px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-  border-radius: 50%; border: 1px solid #ededf0; background: #f7f7f8; color: var(--brand); cursor: pointer;
-}
-.ph-qtyw-step:active { transform: scale(0.94); }
-.ph-qtyw-foot { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
-.ph-qtyw-btn {
-  height: 48px; border-radius: 12px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 800;
-  border: 1px solid #e4e4e7; background: #f7f7f8; color: #3f3f46;
-}
-.ph-qtyw-btn.is-primary { border: none; background: var(--ph-gradient); color: #fff; box-shadow: var(--ph-brand-raised); }
-.ph-qtyw-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* ─── Line actions popup (double-tap a cart row) ───────────────── */
-.ph-line-meta { display: flex; gap: 18px; padding: 12px 20px 0; font-size: 12.5px; color: #71717a; }
-.ph-line-meta b { color: #18181b; font-weight: 800; font-variant-numeric: tabular-nums; }
-.ph-line-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 18px 16px 22px; }
-.ph-line-action {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  border: none; background: none; padding: 0; cursor: pointer;
-  font-size: 12px; font-weight: 600; color: #3f3f46; text-align: center; font-family: inherit;
-}
-.ph-line-circle {
-  width: 68px; height: 68px; border-radius: 50%;
+.ph-qtyw-label { font-size: 12px; font-weight: 800; letter-spacing: 0.6px; color: #52525b; }
+.ph-qtyw-wheel { position: relative; width: 100%; }
+.ph-qtyw-typed {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  min-width: min(132px, 80%); height: 44px; padding: 0 10px; border-radius: 10px; background: #ececec;
   display: flex; align-items: center; justify-content: center;
-  background: #f7f7f8; border: 1px solid #ededf0; color: var(--brand);
-  transition: background 0.1s, border-color 0.1s, transform 0.07s, color 0.1s;
+  font-size: 26px; font-weight: 800; color: #18181b; font-variant-numeric: tabular-nums; pointer-events: none;
 }
-.ph-line-action:hover .ph-line-circle { border-color: var(--brand); }
-.ph-line-action:active .ph-line-circle { transform: scale(0.94); background: var(--ph-gradient); color: #fff; }
+.ph-qtyw-current { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+.ph-qtyw-current span { font-size: 13px; font-weight: 700; color: #18181b; white-space: nowrap; }
+.ph-qtyw-current b {
+  min-width: 116px; height: 40px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid #e4e4e7; border-radius: 10px; font-size: 15px; font-weight: 700; color: #18181b; font-variant-numeric: tabular-nums;
+}
+.ph-qtyw-right { display: flex; flex-direction: column; gap: 12px; padding: 16px 14px 18px; }
+.ph-qtyw-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ph-qtyw-key {
+  height: 38px; border-radius: 99px; cursor: pointer; font-family: inherit;
+  border: 1px solid #ededf0; background: #fff; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  font-size: 15px; font-weight: 800; color: #18181b; font-variant-numeric: tabular-nums;
+  transition: transform 0.07s, background 0.1s;
+}
+.ph-qtyw-key:active { transform: scale(0.95); background: #f4f4f5; }
+.ph-qtyw-foot { display: grid; grid-template-columns: 1.15fr 1fr; gap: 8px; }
+.ph-qtyw-btn { height: 46px; border-radius: 12px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 800; }
+.ph-qtyw-btn.is-primary { border: none; background: var(--ph-gradient); color: #fff; box-shadow: var(--ph-brand-raised); }
+.ph-qtyw-btn.is-cancel { border: 1px solid #fbd5d5; background: #fff5f5; color: #dc2626; }
+.ph-qtyw-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+@media (max-width: 600px) {
+  .ph-qtyw { grid-template-columns: 1fr; }
+  .ph-qtyw-left { border-right: none; border-bottom: 1px solid #ededf0; }
+}
+
+/* ─── Radial line menu (double-tap a cart row) ─────────────────── */
+.ph-radial-overlay { position: fixed; inset: 0; z-index: 1000; }
+.ph-radial {
+  position: fixed; width: 0; height: 0;
+  animation: ph-radial-in 0.16s ease-out;
+}
+/* soft maroon glow disc behind the buttons */
+.ph-radial::before {
+  content: ''; position: absolute; left: -132px; top: -132px; width: 264px; height: 264px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(120, 8, 41, 0.42) 0%, rgba(120, 8, 41, 0.22) 45%, rgba(120, 8, 41, 0.06) 68%, transparent 72%);
+  pointer-events: none;
+}
+.ph-radial-dot {
+  position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.ph-radial-dot::after { content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--brand); }
+.ph-radial-btn {
+  position: absolute; width: 74px; height: 74px; margin: -37px 0 0 -37px; padding: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  border-radius: 50%; border: 2px solid transparent; background: #fff; cursor: pointer; font-family: inherit;
+  box-shadow: 0 6px 16px rgba(60, 0, 20, 0.22);
+  transition: transform 0.08s, border-color 0.1s;
+}
+.ph-radial-btn:hover { border-color: var(--brand); }
+.ph-radial-btn:active { transform: scale(0.93); }
+.ph-radial-chip {
+  width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  background: var(--ph-gradient); color: #fff;
+}
+.ph-radial-label { font-size: 10.5px; font-weight: 800; line-height: 1.1; color: #18181b; text-align: center; max-width: 62px; }
+@keyframes ph-radial-in { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 /* ─── Status bar ───────────────────────────────────────────────── */
 .ph-status {

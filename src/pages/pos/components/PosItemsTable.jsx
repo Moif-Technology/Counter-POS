@@ -13,7 +13,7 @@ export default function PosItemsTable() {
   const cartItems      = usePosStore(s => s.cartItems)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
   const removeItem     = usePosStore(s => s.removeItem)
-  const [detailItem, setDetailItem] = useState(null)
+  const [lineMenu, setLineMenu] = useState(null)   // { row, x, y } — radial menu at the double-tap point
   const [qtyItem, setQtyItem] = useState(null)
   const bodyRef = useRef(null)
 
@@ -50,7 +50,7 @@ export default function PosItemsTable() {
               key={key}
               className={`ph-table-row${selected ? ' is-selected' : ''}${isReturn ? ' is-return' : ''}`}
               onClick={() => usePosStore.setState({ selectedRowKey: key })}
-              onDoubleClick={() => setDetailItem(row)}
+              onDoubleClick={(e) => setLineMenu({ row, x: e.clientX, y: e.clientY })}
             >
               <span><span className="ph-sl">{row.slNo ?? idx + 1}</span></span>
               <span className="ph-col-barcode ph-ellipsis">{row.barcode ?? row.productCode ?? '—'}</span>
@@ -83,10 +83,12 @@ export default function PosItemsTable() {
       {qtyItem && (
         <QtyWheelModal item={qtyItem} onClose={closeAndFocusBarcode(() => setQtyItem(null))} />
       )}
-      {detailItem && (
+      {lineMenu && (
         <LineActionsModal
-          item={cartItems.find(i => getCartRowKey(i) === getCartRowKey(detailItem)) || detailItem}
-          onClose={closeAndFocusBarcode(() => setDetailItem(null))}
+          item={lineMenu.row}
+          x={lineMenu.x}
+          y={lineMenu.y}
+          onClose={closeAndFocusBarcode(() => setLineMenu(null))}
         />
       )}
     </div>

@@ -2,24 +2,27 @@ import { useState } from 'react'
 import { RotateCcw, Tag, Percent, SlidersHorizontal } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { findCartItemByKey, getCartRowKey } from '../lib/cartLine'
-import { fmt3, fmtQty } from '../lib/utils'
-import Modal from '../components/common/Modal'
+import { useEscapeKey } from '../hooks/useEscapeKey'
 import PriceChangeModal from './PriceChangeModal'
 import DiscountModal from './DiscountModal'
-import QtyChangeModal from './QtyChangeModal'
+import QtyWheelModal from './QtyWheelModal'
 
+const RADIUS = 84   // distance of the buttons from the centre
+const MARGIN = 130  // keep the whole wheel on screen
+
+// Clockwise from the top
 const ACTIONS = [
-  { key: 'return',   label: 'Return',       icon: RotateCcw },
-  { key: 'price',    label: 'Price Change', icon: Tag },
-  { key: 'discount', label: 'Discount',     icon: Percent },
-  { key: 'qty',      label: 'Qty Change',   icon: SlidersHorizontal },
+  { key: 'discount', label: 'Add Discount', icon: Percent,           angle: -90 },
+  { key: 'price',    label: 'Edit Price',   icon: Tag,               angle: 0 },
+  { key: 'qty',      label: 'Edit Qty',     icon: SlidersHorizontal, angle: 90 },
+  { key: 'return',   label: 'Return',       icon: RotateCcw,         angle: 180 },
 ]
 
 /**
- * Cart line actions (double-tap a row): four round buttons —
- * Return · Price Change · Discount · Qty Change — for that line.
+ * Radial line menu — opens where the cart row was double-tapped:
+ * Add Discount (top) · Edit Price (right) · Edit Qty (bottom) · Return (left).
  */
-export default function LineActionsModal({ item, onClose }) {
+export default function LineActionsModal({ item, x, y, onClose }) {
   const cartItems  = usePosStore(s => s.cartItems)
   const updateLine = usePosStore(s => s.updateLine)
   const [child, setChild] = useState(null)
@@ -27,10 +30,12 @@ export default function LineActionsModal({ item, onClose }) {
   const rowKey   = getCartRowKey(item)
   const liveItem = findCartItemByKey(cartItems, rowKey) || item
 
+  useEscapeKey(onClose, !child)
+
   const run = (key) => {
     usePosStore.setState({ selectedRowKey: rowKey })
     if (key === 'return') {
-      // Same as the old line popup: the line becomes a return (negative qty).
+      // The line becomes a return (negative qty), as the old line popup did.
       const absQty = Math.abs(Number(liveItem.qty)) || 1
       updateLine(rowKey, { qty: -absQty })
       usePosStore.setState({ returnMode: true })
@@ -42,22 +47,32 @@ export default function LineActionsModal({ item, onClose }) {
 
   if (child === 'price')    return <PriceChangeModal rowKey={rowKey} onClose={onClose} />
   if (child === 'discount') return <DiscountModal rowKey={rowKey} onClose={onClose} />
-  if (child === 'qty')      return <QtyChangeModal onClose={onClose} />
+  if (child === 'qty')      return <QtyWheelModal item={liveItem} onClose={onClose} />
 
+  const cx = Math.min(Math.max(x ?? window.innerWidth / 2, MARGIN), window.innerWidth - MARGIN)
+  const cy = Math.min(Math.max(y ?? window.innerHeight / 2, MARGIN), window.innerHeight - MARGIN)
+
+  // Rendered in place (inside the POS screen) so it picks up the screen's colour variables.
   return (
-    <Modal onClose={onClose} kicker={`Line ${liveItem.slNo ?? ''}`} title={liveItem.description} width={460}>
-      <div className="ph-line-meta">
-        <span>Qty <b>{fmtQty(liveItem.qty)}</b></span>
-        <span>Price <b>{fmt3(liveItem.unitPriceGross ?? liveItem.unitPrice)}</b></span>
+    <div className="ph-radial-overlay" data-pos-overlay onPointerDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="ph-radial" style={{ left: cx, top: cy }} role="menu" aria-label={`Actions for ${liveItem.description}`}>
+        <span className="ph-radial-dot" />
+        {ACTIONS.map(({ key, label, icon: Icon, angle }) => {
+          const rad = (angle * Math.PI) / 180
+          return (
+            <button
+              key={key}
+              role="menuitem"
+              className="ph-radial-btn"
+              style={{ left: Math.cos(rad) * RADIUS, top: Math.sin(rad) * RADIUS }}
+              onClick={() => run(key)}
+            >
+              <span className="ph-radial-chip"><Icon size={16} strokeWidth={2.2} /></span>
+              <span className="ph-radial-label">{label}</span>
+            </button>
+          )
+        })}
       </div>
-      <div className="ph-line-actions">
-        {ACTIONS.map(({ key, label, icon: Icon }) => (
-          <button key={key} className="ph-line-action" onClick={() => run(key)}>
-            <span className="ph-line-circle"><Icon size={26} strokeWidth={1.8} /></span>
-            <span>{label}</span>
-          </button>
-        ))}
-      </div>
-    </Modal>
+    </div>
   )
 }

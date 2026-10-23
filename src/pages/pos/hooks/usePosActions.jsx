@@ -21,7 +21,7 @@ import BillReprintModal from '../../../modals/BillReprintModal'
 import PrivilegeCustomerModal from '../../../modals/PrivilegeCustomerModal'
 import PriceEnquiryModal from '../../../modals/PriceEnquiryModal'
 import PriceChangeModal from '../../../modals/PriceChangeModal'
-import QtyChangeModal from '../../../modals/QtyChangeModal'
+import QtyWheelModal from '../../../modals/QtyWheelModal'
 import PacketScanModal from '../../../modals/PacketScanModal'
 import CashInOutModal from '../../../modals/CashInOutModal'
 import ReportsModal from '../../../modals/ReportsModal'
@@ -334,7 +334,7 @@ export function usePosActions({ onSave }) {
       {modal === 'privilege'    && <PrivilegeCustomerModal onClose={done()} onApply={done()} />}
       {modal === 'priceEnquiry' && <PriceEnquiryModal onClose={done()} />}
       {modal === 'priceChange'  && <PriceChangeModal onClose={done()} />}
-      {modal === 'qtyChange'    && <QtyChangeModal onClose={done()} />}
+      {modal === 'qtyChange'    && <QtyWheelModal onClose={done()} />}
       {modal === 'packetScan'   && <PacketScanModal onClose={done()} />}
       {modal === 'cashInOut'    && <CashInOutModal onClose={done()} />}
       {modal === 'reports'      && <ReportsModal onClose={done()} onSelect={() => {}} />}
