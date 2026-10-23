@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Trash2, Hash, Monitor, Undo2, Search, Pause, FileText, Printer, RotateCw, Tag,
+  Trash2, Hash, Monitor, Search, Pause, FileText, Printer, Tag,
   Package, ScanBarcode, BarChart2, Wallet, Receipt,
   MessageSquare, Truck, Save, CircleDollarSign, Lock, Ban, User, TrendingUp,
   LogOut, Power, FilePlus,
@@ -14,19 +14,16 @@ import { usePosStore } from '../../../store/posStore'
 const TABS = [
   {
     key: 'Page 1',
+    // Clear All, Return, Price Change and Repeat live under the cart (action bar / item strip).
     buttons: [
-      { label: 'Clear All',      icon: Trash2,  accent: true },
       { label: 'Clear Line',     icon: Trash2,  accent: true },
       { label: 'Qty',            icon: Hash,    text: 'Qty', toggle: true },
       { label: 'Groups',         icon: Monitor },
-      { label: 'Return',         icon: Undo2,   accent: true, toggle: true },
       { label: 'Product Lookup', icon: Search },
       { label: 'Hold',           icon: Pause },
       { label: 'Recall Hold',    icon: FileText },
       { label: 'Bill Print',     icon: Printer },
       { label: 'Bill Reprint',   icon: Printer },
-      { label: 'Repeat',         icon: RotateCw },
-      { label: 'Price Change',   icon: Tag },
       { label: 'Qty Change',     icon: Tag, text: 'Qty Chan' },
     ],
   },
