@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CircleDot, CreditCard, UserRound, LayoutGrid, CornerDownLeft } from 'lucide-react'
+import { Banknote, CreditCard, UserRound, LayoutGrid, CornerDownLeft } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
 import CreditCustomerModal from '../../../modals/CreditCustomerModal'
 import MultiPaymentModal from '../../../modals/MultiPaymentModal'
@@ -9,7 +9,7 @@ import { applyPosNumpadKey, usePosNumpadKeyboard } from '../../../lib/posNumpadK
 import { PM, isCashTenderMode } from '../../../lib/paymentModes'
 
 const PAY_TILES = [
-  { key: PM.CASH,         label: 'Cash',        icon: CircleDot },
+  { key: PM.CASH,         label: 'Cash',        icon: Banknote },
   { key: PM.CREDITCARD,   label: 'Credit Card', icon: CreditCard },
   { key: PM.CREDIT,       label: 'Credit',      icon: UserRound },
   { key: PM.MULTIPAYMENT, label: 'Multi Pay',   icon: LayoutGrid },
