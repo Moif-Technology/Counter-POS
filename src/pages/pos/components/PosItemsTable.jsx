@@ -13,7 +13,7 @@ const LONG_PRESS_MS = 500
 
 /**
  * Cart lines: No. · Barcode · Description · Qty · Price · Total · delete.
- * Tap selects, tap the qty to change it, double-tap opens the line actions.
+ * Tap a line to select it and open its actions menu; tap the qty to change it.
  * Hold a line to enter select mode: the bins become checkboxes and one
  * Delete button removes every ticked line.
  */
@@ -22,7 +22,7 @@ export default function PosItemsTable() {
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
   const removeItem     = usePosStore(s => s.removeItem)
   const removeItems    = usePosStore(s => s.removeItems)
-  const [lineMenu, setLineMenu] = useState(null)   // { row, x, y } — radial menu at the double-tap point
+  const [lineMenu, setLineMenu] = useState(null)   // { row, x, anchor } — actions menu under the tapped row
   const [qtyItem, setQtyItem] = useState(null)
   const [checked, setChecked] = useState(null)     // Set of row keys while in select mode, else null
   const bodyRef = useRef(null)
@@ -58,10 +58,11 @@ export default function PosItemsTable() {
   }
   const cancelPress = () => clearTimeout(press.current.timer)
 
-  const handleRowClick = (key) => {
+  const handleRowClick = (e, row, key) => {
     if (press.current.fired) { press.current.fired = false; return }   // the click that ends a long press
-    if (selectMode) toggle(key)
-    else usePosStore.setState({ selectedRowKey: key })
+    if (selectMode) { toggle(key); return }
+    usePosStore.setState({ selectedRowKey: key })
+    setLineMenu({ row, x: e.clientX, anchor: e.currentTarget.getBoundingClientRect() })
   }
 
   const deleteChecked = () => {
@@ -116,8 +117,7 @@ export default function PosItemsTable() {
             <div
               key={key}
               className={`ph-table-row${selected && !selectMode ? ' is-selected' : ''}${isTicked ? ' is-ticked' : ''}${isReturn ? ' is-return' : ''}`}
-              onClick={() => handleRowClick(key)}
-              onDoubleClick={(e) => { if (!selectMode) setLineMenu({ row, x: e.clientX, y: e.clientY }) }}
+              onClick={(e) => handleRowClick(e, row, key)}
               onPointerDown={() => startPress(key)}
               onPointerUp={cancelPress}
               onPointerLeave={cancelPress}
@@ -133,7 +133,7 @@ export default function PosItemsTable() {
                   aria-label={`Change qty of ${row.description}`}
                   disabled={selectMode}
                   onClick={(e) => { e.stopPropagation(); usePosStore.setState({ selectedRowKey: key }); setQtyItem(row) }}
-                  onDoubleClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
                 >
                   {fmtQty(row.qty)}
                 </button>
@@ -149,7 +149,6 @@ export default function PosItemsTable() {
                   className="ph-row-del"
                   aria-label={`Delete ${row.description}`}
                   onClick={(e) => { e.stopPropagation(); removeItem(key) }}
-                  onDoubleClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
                   <Trash2 size={16} />
@@ -167,7 +166,7 @@ export default function PosItemsTable() {
         <LineActionsModal
           item={lineMenu.row}
           x={lineMenu.x}
-          y={lineMenu.y}
+          anchor={lineMenu.anchor}
           onClose={closeAndFocusBarcode(() => setLineMenu(null))}
         />
       )}
