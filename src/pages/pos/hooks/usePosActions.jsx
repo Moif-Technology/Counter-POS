@@ -7,7 +7,7 @@ import { api } from '../../../lib/api'
 import { enrichCartItemsForSave } from '../../../lib/cartLine'
 import { isGroupBrowseMode } from '../../../lib/groupUtils'
 import { closeAndFocusBarcode } from '../../../lib/posFocus'
-import { togglePosQtyMode } from '../../../lib/posNumpadKeys'
+import { togglePosQtyMode, togglePosReturnMode } from '../../../lib/posNumpadKeys'
 import { posAskPrintCopies, posConfirm, posNotifyError, posNotifyInfo, posNotifySuccess, posNotifyWarning } from '../../../lib/posNotify'
 import { holdDataFromPosState, printHoldReceipt } from '../../../lib/printHoldReceipt'
 import { deliveryDataFromPosState, printDeliveryReceipt } from '../../../lib/printDeliveryReceipt'
@@ -254,7 +254,7 @@ export function usePosActions({ onSave }) {
     },
     'Qty':            () => togglePosQtyMode(),
     'Groups':         open('group'),
-    'Return':         () => usePosStore.getState().toggleReturn(),
+    'Return':         () => togglePosReturnMode(),
     'Product Lookup': open('lookup'),
     'Hold':           () => doHoldBill(),
     'Recall Hold':    open('recall'),

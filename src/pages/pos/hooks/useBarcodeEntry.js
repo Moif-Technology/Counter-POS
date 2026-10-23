@@ -131,6 +131,8 @@ export function useBarcodeEntry() {
         vatPer:    product.vatPer ?? 0,
       })
       resetAfterLineScan()
+      // Like Qty: a typed return qty is for one scan; later scans return 1 each.
+      if (usePosStore.getState().returnMode) usePosStore.setState({ qtyBuffer: '-1' })
       added = true
     } catch (err) {
       posNotifyError(err.message ?? 'Product not found', { title: 'Scan', onClose: clearScanAndRefocus })

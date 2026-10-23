@@ -57,7 +57,7 @@ export default function PosSearchBar({ onEnter, onScan, onAction, status, scanni
         <Search size={22} className="ph-search-icon" />
         {qtyEntry && (
           <span className={`ph-search-qty is-editing${isReturn ? ' is-return' : ''}`} aria-live="polite">
-            Qty: {qtyBuffer.replace('-', '') || '_'}
+            {isReturn ? 'Return' : 'Qty'}: {qtyBuffer.replace('-', '') || '_'}
           </span>
         )}
         {showQty && !qtyEntry && (
