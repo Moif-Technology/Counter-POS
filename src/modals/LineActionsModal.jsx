@@ -7,8 +7,8 @@ import PriceChangeModal from './PriceChangeModal'
 import DiscountModal from './DiscountModal'
 import QtyWheelModal from './QtyWheelModal'
 
-const RADIUS  = 76   // distance of the buttons from the centre
-const MARGIN  = 120  // keep the whole wheel on screen
+const RADIUS  = 66   // distance of the buttons from the centre
+const MARGIN  = 105  // keep the whole wheel on screen
 const STAGGER = 70   // ms between buttons, so they sweep out one after another
 
 // Clockwise from the top
@@ -73,7 +73,7 @@ export default function LineActionsModal({ item, x, y, onClose }) {
               }}
               onClick={() => run(key)}
             >
-              <Icon size={18} strokeWidth={2} />
+              <Icon size={16} strokeWidth={2} />
               <span>{label}</span>
             </button>
           )
