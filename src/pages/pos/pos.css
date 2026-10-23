@@ -254,8 +254,7 @@
 
 .ph-fnpanel {
   flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
-  /* light rose panel so the white function keys stand apart from the rose numpad */
-  background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px;
+  background: var(--surface); border: 1px solid #ececee; border-radius: 14px;
   box-shadow: 0 4px 14px rgba(0,0,0,0.06);
 }
 /* Tabs as pill chips (like the Lite group chips) */
@@ -279,30 +278,22 @@
   grid-template-rows: repeat(5, minmax(58px, 1fr)); grid-auto-rows: minmax(58px, 1fr);
   gap: clamp(7px, 0.8vh, 10px); padding: clamp(8px, 1.1vh, 12px) 10px 10px;
 }
-/* Function key box: icon chip on top, label centred underneath */
+/* Function key: plain light-grey box, maroon line icon, small grey label (no rose) */
 .ph-fn {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(6px, 0.9vh, 10px);
   padding: 6px; min-width: 0;
-  font-size: clamp(11px, 0.78vw, 13.5px); font-weight: 700; color: var(--text-1); text-align: center;
-  /* a different shade from the numpad keys: white box, deeper rose outline */
-  background: var(--surface); border-color: var(--border-2);
-  box-shadow: 0 2px 6px rgba(120, 8, 41, 0.08);
+  font-size: clamp(10.5px, 0.72vw, 12.5px); font-weight: 500; color: #3f3f46; text-align: center;
+  background: #f7f7f8; border-color: #ededf0; box-shadow: none;
 }
-.ph-fn svg {
-  flex-shrink: 0; box-sizing: content-box;
-  width: clamp(15px, 1.1vw, 20px); height: clamp(15px, 1.1vw, 20px);
-  padding: clamp(5px, 0.45vw, 7px); border-radius: 9px;
-  background: var(--brand-tint); color: var(--brand);
-}
+.ph-fn svg { flex-shrink: 0; width: clamp(20px, 1.6vw, 26px); height: clamp(20px, 1.6vw, 26px); color: var(--brand); }
 /* Labels may wrap to two lines ("Product Lookup", "Privilege Customer"). */
 .ph-fn span {
   overflow: hidden; line-height: 1.15;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
-.ph-fn:hover { border-color: var(--brand); }
-.ph-fn.is-accent { color: var(--brand); }
-.ph-fn.is-active { background: var(--brand-bg); border-color: var(--brand); color: var(--brand); box-shadow: var(--ph-pressed); }
-.ph-fn.is-active svg { background: var(--brand); color: #fff; }
+.ph-fn:hover { background: #f1f1f3; border-color: #e2e2e6; }
+.ph-fn:active { background: #ebebee; box-shadow: none; }
+.ph-fn.is-active { background: #fff; border-color: var(--brand); color: var(--brand); font-weight: 700; box-shadow: none; }
 .ph-fn:disabled { opacity: 0.6; cursor: wait; }
 
 /* Groups tab: group name boxes, scroll when there are many */
@@ -386,7 +377,7 @@
   .ph-tabs { gap: 4px; padding: 8px 8px 4px; }
   .ph-tab { padding: 5px 6px; font-size: 10.5px; }
   .ph-fn { gap: 4px; padding: 4px; font-size: 11px; }
-  .ph-fn svg { width: 14px; height: 14px; padding: 4px; }
+  .ph-fn svg { width: 20px; height: 20px; }
   .ph-col-barcode { display: none; }
   .ph-table-row { grid-template-columns: 9% minmax(0, 1fr) 10% 13% 14%; }
   .ph-txn-stat b { font-size: 13px; }

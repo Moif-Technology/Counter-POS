@@ -26,8 +26,8 @@ const TABS = [
       { label: 'Bill Print',     icon: Printer },
       { label: 'Bill Reprint',   icon: Printer },
       { label: 'Repeat',         icon: RotateCw },
-      { label: 'Price Change',   icon: Tag, text: 'Price Chan' },
-      { label: 'Qty Change',     icon: Tag, text: 'Qty Chan', accent: true },
+      { label: 'Price Change',   icon: Tag },
+      { label: 'Qty Change',     icon: Tag, text: 'Qty Chan' },
     ],
   },
   {
@@ -80,7 +80,7 @@ function ActionButton({ btn, actions }) {
       onClick={() => actions.run(btn.label)}
       disabled={busy}
     >
-      <Icon size={20} />
+      <Icon size={24} strokeWidth={1.8} />
       <span>{busy ? 'Holding…' : (btn.text ?? btn.label)}</span>
     </button>
   )
