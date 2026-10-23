@@ -49,6 +49,7 @@ export default function DiscountEntryPanel({
 
   const NumBtn = ({ label, keyVal, flex = 1, style = {}, onClick }) => (
     <button
+      className={style.background ? undefined : 'ui-key'}   // number keys: home keypad look
       type="button"
       onClick={onClick ?? (() => onKey(keyVal ?? label))}
       onMouseDown={press}

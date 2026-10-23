@@ -185,7 +185,7 @@ export default function GroupModal({ onClose, onSelect, initialGroup = null }) {
                 {row.map(k => (
                   <button
                     key={k}
-                    onClick={() => pressNum(k)}
+                    className="ui-key" onClick={() => pressNum(k)}
                     style={{
                       flex: 1, height: 38, borderRadius: 8,
                       border: '1.5px solid var(--border)', background: 'var(--surface)',
@@ -205,7 +205,7 @@ export default function GroupModal({ onClose, onSelect, initialGroup = null }) {
 
             <div style={{ display: 'flex', gap: 4 }}>
               <button
-                onClick={() => pressNum('.')}
+                className="ui-key" onClick={() => pressNum('.')}
                 style={{
                   flex: 1, height: 38, borderRadius: 8,
                   border: '1.5px solid var(--border)', background: 'var(--surface)',
@@ -220,7 +220,7 @@ export default function GroupModal({ onClose, onSelect, initialGroup = null }) {
                 onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
               >.</button>
               <button
-                onClick={() => pressNum('0')}
+                className="ui-key" onClick={() => pressNum('0')}
                 style={{
                   flex: 2, height: 38, borderRadius: 8,
                   border: '1.5px solid var(--border)', background: 'var(--surface)',
@@ -235,7 +235,7 @@ export default function GroupModal({ onClose, onSelect, initialGroup = null }) {
                 onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
               >0</button>
               <button
-                onClick={() => pressNum('C')}
+                className="ui-key" onClick={() => pressNum('C')}
                 style={{
                   flex: 1, height: 38, borderRadius: 8,
                   border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',

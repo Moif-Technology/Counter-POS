@@ -131,6 +131,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
 
   const NumBtn = ({ label, keyVal, flex = 1, style = {}, onClick }) => (
     <button
+      className={style.background ? undefined : 'ui-key'}   // number keys: home keypad look
       onClick={onClick ?? (() => handleKey(keyVal ?? label))}
       onMouseDown={press} onMouseUp={release}
       style={{

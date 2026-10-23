@@ -100,6 +100,7 @@ export default function PriceEnquiryModal({ onClose, searchFn = null }) {
   const numBtn = (k, opts = {}) => (
     <button
       key={k}
+      className={opts.bg ? undefined : 'ui-key'}   // number keys: home keypad look
       onClick={() => pressKey(k)}
       style={{
         flex: opts.flex || 1, height: 42, borderRadius: 8,

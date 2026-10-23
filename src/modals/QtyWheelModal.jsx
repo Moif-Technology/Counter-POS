@@ -66,7 +66,7 @@ export default function QtyWheelModal({ item, onClose }) {
         <div className="ph-qtyw-right">
           <div className="ph-qtyw-keys">
             {KEYS.map(k => (
-              <button key={k} type="button" className="ph-qtyw-key" onClick={() => type(k)}>{k}</button>
+              <button key={k} type="button" className={`ph-qtyw-key ui-key${k === 'C' ? ' is-clear' : ''}`} onClick={() => type(k)}>{k}</button>
             ))}
           </div>
           <div className="ph-qtyw-foot">

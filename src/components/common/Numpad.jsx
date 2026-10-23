@@ -1,4 +1,4 @@
-import { Delete, XCircle } from 'lucide-react'
+import { Delete } from 'lucide-react'
 import { useUiVariant } from './uiVariant'
 import { NEU_RAISED, neuPress, neuRelease } from './neumorphic'
 
@@ -15,7 +15,9 @@ import { NEU_RAISED, neuPress, neuRelease } from './neumorphic'
  *   fontSize     — number digit font size             (default 16)
  *   extraRows    — array of rows appended below the standard grid
  *                  each row: [{ label, flex, style, onClick }]
- *   variant      — 'classic' | 'neumorphic'  (default: from UiVariantProvider)
+ *   variant      — 'classic' | 'neumorphic'  (default: from UiVariantProvider);
+ *                  only affects the extra rows — number keys always use the
+ *                  home keypad look (.ui-key, styles/keys.css)
  *
  * Pair with applyAmountKey (lib/posNumpadKeys) to update a string value:
  *   <Numpad onKey={k => setQty(v => applyAmountKey(v, k))} />
@@ -87,9 +89,14 @@ export default function Numpad({
 
 function KeyLabel({ label, fontSize }) {
   if (label === '⌫') return <Delete size={Math.round(fontSize * 0.9)} />
-  if (label === 'C') return <XCircle size={Math.round(fontSize * 0.9)} />
   return label
 }
+
+/** Number keys share the home keypad look; C and ⌫ get a red label. */
+const keyClass = (label, extra) => extra ? undefined
+  : label === 'C' ? 'ui-key is-clear'
+  : label === '⌫' ? 'ui-key is-back'
+  : 'ui-key'
 
 // ── Classic: white keys with border, brand tint on hover ────────────────────
 const CLASSIC_ACCENT = {
@@ -97,17 +104,17 @@ const CLASSIC_ACCENT = {
   red:   { background: 'var(--red-bg)',   borderColor: 'var(--red-border)',   color: 'var(--red)' },
 }
 
-function ClassicBtn({ label, keyVal, flex = 1, accent, style = {}, btnHeight, fontSize, onKey, onClick }) {
+function ClassicBtn({ label, keyVal, flex = 1, accent, style = {}, extra, btnHeight, fontSize, onKey, onClick }) {
   const accentStyle = accent ? CLASSIC_ACCENT[accent] : {}
   const merged = {
     ...accentStyle,
-    ...(label === 'C' && !style.fontSize ? { fontSize: fontSize * 0.75 } : {}),
     ...style,
   }
   const hasCustomBg = !!merged.background
 
   return (
     <button
+      className={keyClass(label, extra)}
       onClick={onClick ?? (() => onKey?.(keyVal ?? label))}
       style={{
         flex, height: btnHeight, borderRadius: 8,
@@ -148,6 +155,7 @@ function NeuBtn({ label, keyVal, flex = 1, accent, style = {}, extra, btnHeight,
 
   return (
     <button
+      className={keyClass(label, extra)}
       onClick={onClick ?? (() => onKey?.(keyVal ?? label))}
       onMouseDown={press}
       onMouseUp={neuRelease}

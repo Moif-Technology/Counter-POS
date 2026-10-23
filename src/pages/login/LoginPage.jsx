@@ -245,6 +245,7 @@ export default function LoginPage() {
               return (
                 <button
                   key={k}
+                  className={isAction ? 'ui-key is-clear' : 'ui-key'}   // home keypad look
                   onClick={() => pressKey(k)}
                   style={{
                     padding: '15px 0', borderRadius: 'var(--r-md)',

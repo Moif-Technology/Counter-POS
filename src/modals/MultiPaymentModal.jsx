@@ -232,6 +232,8 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
   const NumBtn = ({ label, onClick, style = {} }) => (
     <button
       type="button"
+      // number keys: home keypad look (⌫ is the icon label → red); C / ADD keep their colours
+      className={style.background ? undefined : label === 'C' ? 'ui-key is-clear' : typeof label === 'string' ? 'ui-key' : 'ui-key is-back'}
       onClick={onClick}
       onMouseDown={press}
       onMouseUp={release}
@@ -452,11 +454,7 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
                   <NumBtn key={k} label={k} onClick={() => appendKey(k)} />
                 ))}
                 <NumBtn label={<Delete size={15} />} onClick={backspace} />
-                <NumBtn
-                  label="C"
-                  onClick={clearField}
-                  style={{ background: 'var(--surface-2)', color: 'var(--text-3)' }}
-                />
+                <NumBtn label="C" onClick={clearField} />
                 <NumBtn
                   label="ADD"
                   onClick={addRow}

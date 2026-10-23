@@ -197,6 +197,7 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
                 {row.map(k => (
                   <button
                     key={k}
+                    className="ui-key"
                     onClick={() => pressKey(k)}
                     style={numBtnStyle}
                     onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-bg)'; e.currentTarget.style.borderColor = 'var(--brand-border)'; e.currentTarget.style.color = 'var(--brand)' }}
@@ -209,19 +210,19 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
             ))}
             {/* Bottom row: 0 · ⌫ */}
             <div style={{ display: 'flex', gap: 5 }}>
-              <button onClick={() => pressKey('0')} style={{ ...numBtnStyle, flex: 2 }}
+              <button className="ui-key" onClick={() => pressKey('0')} style={{ ...numBtnStyle, flex: 2 }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-bg)'; e.currentTarget.style.borderColor = 'var(--brand-border)'; e.currentTarget.style.color = 'var(--brand)' }}
                 onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-1)' }}
                 onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)' }}
                 onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
               >0</button>
-              <button onClick={() => pressKey('.')} style={numBtnStyle}
+              <button className="ui-key" onClick={() => pressKey('.')} style={numBtnStyle}
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-bg)'; e.currentTarget.style.borderColor = 'var(--brand-border)'; e.currentTarget.style.color = 'var(--brand)' }}
                 onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-1)' }}
                 onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)' }}
                 onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
               >.</button>
-              <button onClick={() => pressKey('⌫')}
+              <button className="ui-key is-back" onClick={() => pressKey('⌫')}
                 style={{ ...numBtnStyle, background: 'var(--red-bg)', borderColor: 'var(--red-border)', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(0.93)' }}
                 onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)' }}
