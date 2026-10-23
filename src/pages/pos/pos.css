@@ -353,14 +353,15 @@
   display: flex; flex-direction: column; justify-content: center; gap: 3px; min-width: 0;
   padding: clamp(6px, 1vh, 10px) 12px; border-radius: 12px;
 }
-.ph-txn-stat { background: var(--surface-2); border: 1px solid var(--border); }
-.ph-txn-stat span { font-size: 10.5px; font-weight: 600; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ph-txn-stat b { font-size: clamp(15px, 1.1vw, 19px); font-weight: 800; color: var(--text-1); font-variant-numeric: tabular-nums; }
-.ph-txn-total { align-items: flex-end; background: var(--brand-bg); border: 1.5px solid var(--brand); }
-.ph-txn-total > span { font-size: 10.5px; font-weight: 700; color: var(--text-3); letter-spacing: 0.6px; }
-.ph-txn-total strong { font-size: clamp(26px, 2.3vw, 42px); font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; line-height: 1.05; }
-.ph-txn-paid { display: flex; gap: 10px; font-size: 11px; color: var(--text-3); white-space: nowrap; }
-.ph-txn-paid b { color: var(--text-1); font-weight: 700; font-variant-numeric: tabular-nums; }
+.ph-txn-stat { background: #f7f7f8; border: 1px solid #ededf0; }
+.ph-txn-stat span { font-size: 10.5px; font-weight: 600; color: #71717a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph-txn-stat b { font-size: clamp(15px, 1.1vw, 19px); font-weight: 800; color: #18181b; font-variant-numeric: tabular-nums; }
+/* TOTAL: maroon gradient, white figures */
+.ph-txn-total { align-items: flex-end; background: linear-gradient(135deg, #a0294c 0%, var(--brand) 55%, #5a061f 100%); color: #fff; box-shadow: 0 6px 16px rgba(120, 8, 41, 0.28); }
+.ph-txn-total > span { font-size: 10.5px; font-weight: 700; color: rgba(255,255,255,0.8); letter-spacing: 1px; }
+.ph-txn-total strong { font-size: clamp(26px, 2.3vw, 42px); font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; line-height: 1.05; }
+.ph-txn-paid { display: flex; gap: 10px; font-size: 11px; color: rgba(255,255,255,0.75); white-space: nowrap; }
+.ph-txn-paid b { color: #fff; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* Customer name trigger (plain variant of CustomerSearch) */
 .ph-cust-trigger {
