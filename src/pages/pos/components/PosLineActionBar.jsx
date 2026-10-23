@@ -1,26 +1,25 @@
 import { useState } from 'react'
-import { RotateCcw, BadgePercent, Pencil, Diff } from 'lucide-react'
+import { RotateCcw, BadgePercent, Pencil, Trash2 } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
 import { findCartItemByKey, getCartRowKey } from '../../../lib/cartLine'
 import { fmt3 } from '../../../lib/utils'
-import { posConfirm } from '../../../lib/posNotify'
+import { posConfirm, posConfirmDelete } from '../../../lib/posNotify'
 import { closeAndFocusBarcode } from '../../../lib/posFocus'
 import PriceChangeModal from '../../../modals/PriceChangeModal'
 import DiscountModal from '../../../modals/DiscountModal'
-import QtyWheelModal from '../../../modals/QtyWheelModal'
 
 // `confirm` actions are sensitive: the cashier must confirm before they run.
 const ACTIONS = [
   { key: 'return',   label: 'Return',        icon: RotateCcw,    confirm: true },
   { key: 'discount', label: 'Add Discount',  icon: BadgePercent },
   { key: 'price',    label: 'Edit Price',    icon: Pencil,       confirm: true },
-  { key: 'qty',      label: 'Edit Quantity', icon: Diff },
+  { key: 'clear',    label: 'Delete All',    icon: Trash2,       confirm: true, danger: true },
 ]
 
 /**
- * Line actions bar at the foot of the cart: Return · Add Discount · Edit Price · Edit Quantity.
- * Acts on the line shown in the item strip (the selected line, or the last one).
- * Return and Edit Price ask for confirmation first.
+ * Actions bar at the foot of the cart: Return · Add Discount · Edit Price · Delete All.
+ * The first three act on the line shown in the item strip (the selected line, or the last one).
+ * Return, Edit Price and Delete All ask for confirmation first.
  */
 export default function PosLineActionBar({ disabled }) {
   const cartItems      = usePosStore(s => s.cartItems)
@@ -32,6 +31,10 @@ export default function PosLineActionBar({ disabled }) {
 
   const ask = (key) => {
     const name = line.description
+    if (key === 'clear') {
+      const n = cartItems.length
+      return posConfirmDelete({ title: 'Delete all items?', message: `Remove all ${n} ${n === 1 ? 'item' : 'items'} from this bill? This cannot be undone.`, confirmLabel: 'Delete All' })
+    }
     if (key === 'return') {
       return posConfirm({
         title: 'Return this item?',
@@ -50,6 +53,10 @@ export default function PosLineActionBar({ disabled }) {
     const rowKey = getCartRowKey(line)
     usePosStore.setState({ selectedRowKey: rowKey })
     if (action.confirm && !(await ask(action.key))) return
+    if (action.key === 'clear') {
+      usePosStore.getState().clearAll()
+      return
+    }
     if (action.key === 'return') {
       updateLine(rowKey, { qty: -(Math.abs(Number(line.qty)) || 1) })
       usePosStore.setState({ returnMode: true })
@@ -59,7 +66,6 @@ export default function PosLineActionBar({ disabled }) {
   }
 
   const close = closeAndFocusBarcode(() => setPopup(null))
-  const popupLine = popup && findCartItemByKey(cartItems, popup.rowKey)
 
   return (
     <>
@@ -67,7 +73,12 @@ export default function PosLineActionBar({ disabled }) {
         {ACTIONS.map((action) => {
           const Icon = action.icon
           return (
-            <button key={action.key} className="ph-linebar-btn" disabled={disabled || !line} onClick={() => run(action)}>
+            <button
+              key={action.key}
+              className={`ph-linebar-btn${action.danger ? ' is-danger' : ''}`}
+              disabled={disabled || !line}
+              onClick={() => run(action)}
+            >
               <Icon size={20} strokeWidth={1.8} />
               <span>{action.label}</span>
             </button>
@@ -77,7 +88,6 @@ export default function PosLineActionBar({ disabled }) {
 
       {popup?.key === 'price'    && <PriceChangeModal rowKey={popup.rowKey} onClose={close} />}
       {popup?.key === 'discount' && <DiscountModal rowKey={popup.rowKey} onClose={close} />}
-      {popup?.key === 'qty' && popupLine && <QtyWheelModal item={popupLine} onClose={close} />}
     </>
   )
 }

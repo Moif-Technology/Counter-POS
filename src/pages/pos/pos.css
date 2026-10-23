@@ -512,6 +512,8 @@
 }
 .ph-linebar-btn:hover:not(:disabled) { background: var(--brand-bg); }
 .ph-linebar-btn:active:not(:disabled) { transform: scale(0.96); }
+.ph-linebar-btn.is-danger, .ph-linebar-btn.is-danger svg { color: #dc2626; }
+.ph-linebar-btn.is-danger:hover:not(:disabled) { background: #fef2f2; }
 .ph-linebar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ─── Status bar ───────────────────────────────────────────────── */
