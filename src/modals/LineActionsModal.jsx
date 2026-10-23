@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { RotateCcw, BadgePercent, Pencil, Repeat2, Diff } from 'lucide-react'
+import { RotateCcw, BadgePercent, Pencil, Diff } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { findCartItemByKey, getCartRowKey } from '../lib/cartLine'
 import { fmt3 } from '../lib/utils'
@@ -14,7 +14,6 @@ const ACTIONS = [
   { key: 'return',   label: 'Return',        icon: RotateCcw,    confirm: true, primary: true },
   { key: 'discount', label: 'Add Discount',  icon: BadgePercent },
   { key: 'price',    label: 'Edit Price',    icon: Pencil,       confirm: true },
-  { key: 'repeat',   label: 'Repeat Item',   icon: Repeat2 },
   { key: 'qty',      label: 'Edit Quantity', icon: Diff },
 ]
 
@@ -23,7 +22,7 @@ const EDGE = 12    // keep the menu this far from the screen edges
 
 /**
  * Line actions menu — a card that drops down from the tapped cart row:
- * Return · Add Discount · Edit Price · Repeat Item · Edit Quantity.
+ * Return · Add Discount · Edit Price · Edit Quantity (Repeat is on the item strip).
  * It closes as soon as an action is picked; Return and Edit Price ask first.
  *
  *   x      — tap position (the menu is centred on it, kept on screen)
@@ -76,9 +75,6 @@ export default function LineActionsModal({ item, x, anchor, onClose }) {
     if (action.key === 'return') {
       updateLine(rowKey, { qty: -(Math.abs(Number(liveItem.qty)) || 1) })
       usePosStore.setState({ returnMode: true })
-      onClose()
-    } else if (action.key === 'repeat') {
-      usePosStore.getState().repeatLine(rowKey)
       onClose()
     } else {
       setChild(action.key)
