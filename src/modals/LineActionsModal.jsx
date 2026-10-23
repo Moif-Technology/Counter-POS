@@ -78,9 +78,7 @@ export default function LineActionsModal({ item, x, anchor, onClose }) {
       usePosStore.setState({ returnMode: true })
       onClose()
     } else if (action.key === 'repeat') {
-      // One more unit of this line, in its own direction (a return line gets one more returned).
-      const qty = Number(liveItem.qty) || 0
-      updateLine(rowKey, { qty: qty + (qty < 0 ? -1 : 1) })
+      usePosStore.getState().repeatLine(rowKey)
       onClose()
     } else {
       setChild(action.key)
