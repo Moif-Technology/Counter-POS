@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { usePosStore } from '../store/posStore'
+import { focusBarcodeScan } from './posFocus'
 
 /** Apply one numpad key to the active POS buffer (qty or barcode). */
 export function applyPosNumpadKey(key) {
@@ -30,8 +31,18 @@ export function applyPosNumpadBackspace() {
   }
 }
 
+/**
+ * Qty key. First press: start typing a qty (the next numpad keys set it).
+ * Second press, or ENTER: finish the qty and go back to the search box, so the
+ * next scan is added at that qty. With a number already typed in the search
+ * box, that number becomes the qty straight away.
+ */
 export function togglePosQtyMode() {
   const state = usePosStore.getState()
+  if (state.inputMode === 'qty') {
+    finishPosQtyEntry()
+    return
+  }
   const val = state.barcodeBuffer.trim()
   const isReturn = state.isReturnContext()
   const n = Number(val)
@@ -39,9 +50,22 @@ export function togglePosQtyMode() {
     const signed = isReturn && n > 0 ? String(-n) : String(n)
     usePosStore.setState({ qtyBuffer: signed, inputMode: 'barcode' })
     state.setBarcodeBuffer('')
+    focusBarcodeScan()
   } else {
-    usePosStore.setState({ inputMode: 'qty' })
+    usePosStore.setState({ inputMode: 'qty', qtyBuffer: '' })   // typing replaces the old qty
   }
+}
+
+/** Leave qty entry: keep a valid typed qty (or fall back to the default) and refocus the search box. */
+export function finishPosQtyEntry() {
+  const state = usePosStore.getState()
+  const n = parseFloat(state.qtyBuffer)
+  const valid = Number.isFinite(n) && n !== 0
+  usePosStore.setState({
+    qtyBuffer: valid ? String(state.parseScanQty(state.qtyBuffer)) : state.defaultQtyBuffer(),
+    inputMode: 'barcode',
+  })
+  focusBarcodeScan()
 }
 
 function shouldIgnorePosNumpadKeyboard(e) {

@@ -58,6 +58,7 @@ export function usePosActions({ onSave }) {
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
   const qtyBuffer      = usePosStore(s => s.qtyBuffer)
   const returnMode     = usePosStore(s => s.returnMode)
+  const qtyEntry       = usePosStore(s => s.inputMode === 'qty')
   const customerDisplayEnabled = usePosStore(s => s.customerDisplayEnabled)
 
   // One popup at a time
@@ -359,7 +360,7 @@ export function usePosActions({ onSave }) {
     openGroup,
     modals,
     holdLoading,
-    isActive: (label) => (label === 'Return' ? returnMode : label === 'Cust Display' ? cdOpen : false),
+    isActive: (label) => (label === 'Return' ? returnMode : label === 'Qty' ? qtyEntry : label === 'Cust Display' ? cdOpen : false),
     hasCart: cartItems.length > 0,
     hasRow: !!selectedRowKey,
   }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePosStore } from '../../../store/posStore'
 import { api } from '../../../lib/api'
 import { focusBarcodeScan } from '../../../lib/posFocus'
+import { finishPosQtyEntry } from '../../../lib/posNumpadKeys'
 import { posConfirm, posNotifyError, posNotifySuccess } from '../../../lib/posNotify'
 import { IS_ANDROID, scanSunmiBarcode } from '../../../lib/sunmiCameraScanner'
 import {
@@ -64,6 +65,8 @@ export function useBarcodeEntry() {
     const state = usePosStore.getState()
     const { barcodeBuffer, qtyBuffer, accessToken } = state
     const term = barcodeBuffer.trim()
+    // ENTER while typing a qty finishes the qty; the next scan uses it.
+    if (state.inputMode === 'qty' && !term) { finishPosQtyEntry(); return }
     if (!term || scanning) return
 
     const holdNo = parseLegacyHoldScan(term)

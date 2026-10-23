@@ -139,6 +139,10 @@
   background: var(--brand-bg); border: 1px solid var(--brand-border);
   color: var(--brand); font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums;
 }
+/* Qty key pressed: the chip shows the qty being typed */
+.ph-search-qty.is-editing { background: var(--brand); border-color: var(--brand); color: #fff; animation: ph-qty-pulse 1.2s ease-in-out infinite; }
+@keyframes ph-qty-pulse { 50% { opacity: 0.7; } }
+
 /* Mode menu (double-tap the qty / RTN chip) */
 .ph-search { position: relative; }
 .ph-mode-backdrop { position: fixed; inset: 0; z-index: 900; }

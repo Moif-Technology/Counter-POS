@@ -17,7 +17,7 @@ const TABS = [
     buttons: [
       { label: 'Clear All',      icon: Trash2,  accent: true },
       { label: 'Clear Line',     icon: Trash2,  accent: true },
-      { label: 'Qty',            icon: Hash,    text: 'Qty' },
+      { label: 'Qty',            icon: Hash,    text: 'Qty', toggle: true },
       { label: 'Groups',         icon: Monitor },
       { label: 'Return',         icon: Undo2,   accent: true, toggle: true },
       { label: 'Product Lookup', icon: Search },

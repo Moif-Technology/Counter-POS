@@ -20,6 +20,7 @@ export default function PosSearchBar({ onEnter, onScan, onAction, scanning, sunm
   const barcodeBuffer    = usePosStore(s => s.barcodeBuffer)
   const qtyBuffer        = usePosStore(s => s.qtyBuffer)
   const returnMode       = usePosStore(s => s.returnMode)
+  const qtyEntry         = usePosStore(s => s.inputMode === 'qty')
   const setBarcodeBuffer = usePosStore(s => s.setBarcodeBuffer)
   const setQtyBuffer     = usePosStore(s => s.setQtyBuffer)
   const barcodeFocusTick = usePosStore(s => s.barcodeFocusTick)
@@ -54,7 +55,12 @@ export default function PosSearchBar({ onEnter, onScan, onAction, scanning, sunm
       {menuOpen && <div className="ph-mode-backdrop" data-pos-overlay onPointerDown={() => setMenuOpen(false)} />}
       <div className="ph-search" data-pos-barcode-input onClick={() => inputRef.current?.focus()}>
         <Search size={22} className="ph-search-icon" />
-        {showQty && (
+        {qtyEntry && (
+          <span className={`ph-search-qty is-editing${isReturn ? ' is-return' : ''}`} aria-live="polite">
+            Qty: {qtyBuffer.replace('-', '') || '_'}
+          </span>
+        )}
+        {showQty && !qtyEntry && (
           <span
             className={`ph-search-qty${isReturn ? ' is-return' : ''}`}
             role="button"
