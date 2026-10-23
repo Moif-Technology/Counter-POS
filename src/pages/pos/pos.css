@@ -418,36 +418,51 @@
 
 /* ─── Radial line menu (double-tap a cart row) ─────────────────── */
 .ph-radial-overlay { position: fixed; inset: 0; z-index: 1000; }
-.ph-radial {
-  position: fixed; width: 0; height: 0;
-  animation: ph-radial-in 0.16s ease-out;
-}
-/* soft maroon glow disc behind the buttons */
-.ph-radial::before {
-  content: ''; position: absolute; left: -132px; top: -132px; width: 264px; height: 264px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(120, 8, 41, 0.42) 0%, rgba(120, 8, 41, 0.22) 45%, rgba(120, 8, 41, 0.06) 68%, transparent 72%);
+.ph-radial { position: fixed; width: 0; height: 0; }
+
+/* blurred maroon glow behind the buttons */
+.ph-radial-backdrop {
+  position: absolute; left: 0; top: 0;
+  width: 220px; height: 220px; margin: -110px 0 0 -110px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(120, 8, 41, 0.35) 0%, rgba(120, 8, 41, 0.16) 55%, rgba(120, 8, 41, 0) 100%);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
   pointer-events: none;
+  animation: ph-radial-backdrop-in 0.3s cubic-bezier(0.22, 0.68, 0, 1.2) backwards;
 }
-.ph-radial-dot {
-  position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border-radius: 50%;
-  background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+@keyframes ph-radial-backdrop-in {
+  from { opacity: 0; scale: 0.35; }
+  to   { opacity: 1; scale: 1; }
 }
-.ph-radial-dot::after { content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--brand); }
+
+.ph-radial-center {
+  position: absolute; left: 0; top: 0;
+  width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%;
+  background: var(--brand); box-shadow: 0 0 0 4px var(--brand-bg);
+}
+
+/* --tx / --ty (set inline) place each button on the circle */
 .ph-radial-btn {
-  position: absolute; width: 74px; height: 74px; margin: -37px 0 0 -37px; padding: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  border-radius: 50%; border: 2px solid transparent; background: #fff; cursor: pointer; font-family: inherit;
-  box-shadow: 0 6px 16px rgba(60, 0, 20, 0.22);
-  transition: transform 0.08s, border-color 0.1s;
+  position: absolute; left: 0; top: 0;
+  width: 64px; height: 64px; padding: 0; border-radius: 50%;
+  background: #fff; border: 1.5px solid var(--border); box-shadow: var(--shadow-lg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  font-family: inherit; font-size: 9.5px; font-weight: 800; line-height: 1.15; color: var(--text-1); text-align: center;
+  cursor: pointer;
+  transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty)));
+  animation: ph-radial-sweep-in 0.5s cubic-bezier(0.22, 0.68, 0, 1.2) backwards;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
-.ph-radial-btn:hover { border-color: var(--brand); }
-.ph-radial-btn:active { transform: scale(0.93); }
-.ph-radial-chip {
-  width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-  background: var(--ph-gradient); color: #fff;
+.ph-radial-btn svg { color: var(--brand); }
+/* Each button starts collapsed at the centre, rotated back along the arc, then
+ * sweeps clockwise out to its slot; the inline animation-delay staggers them
+ * (Add Discount → Edit Price → Edit Qty → Return). */
+@keyframes ph-radial-sweep-in {
+  from { transform: translate(-50%, -50%) rotate(-130deg) scale(0.3); opacity: 0; }
+  55%  { opacity: 1; }
+  to   { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) rotate(0deg) scale(1); opacity: 1; }
 }
-.ph-radial-label { font-size: 10.5px; font-weight: 800; line-height: 1.1; color: #18181b; text-align: center; max-width: 62px; }
-@keyframes ph-radial-in { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.ph-radial-btn:hover { background: var(--brand-bg); border-color: var(--brand); color: var(--brand); }
+.ph-radial-btn:active { scale: 0.94; }
 
 /* ─── Status bar ───────────────────────────────────────────────── */
 .ph-status {
