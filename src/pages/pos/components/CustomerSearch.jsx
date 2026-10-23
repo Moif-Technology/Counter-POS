@@ -7,7 +7,7 @@ import { fmtMoney } from '../../../lib/currencyFormat'
 import { focusBarcodeScan } from '../../../lib/posFocus'
 
 const WALK_IN_LABEL = 'Walk-in Customer'
-const PLAIN_WALK_IN  = 'CASH CUSTOMER'
+const PLAIN_WALK_IN  = 'Cash Customer'
 
 function CustomerRow({ c, onSelect }) {
   const [hov, setHov] = useState(false)
@@ -158,7 +158,7 @@ export default function CustomerSearch({ variant = 'button', dropUp = false }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         {variant === 'plain' ? (
           <button className="ph-cust-trigger" onClick={() => setOpen(o => !o)} title="Change customer">
-            {(customerName || PLAIN_WALK_IN).toUpperCase()}
+            <span className="ph-ellipsis">{customerName || PLAIN_WALK_IN}</span>
             <ChevronDown size={14} />
           </button>
         ) : (
@@ -189,7 +189,12 @@ export default function CustomerSearch({ variant = 'button', dropUp = false }) {
         </button>
         )}
 
-        {hasCustomer && (
+        {hasCustomer && variant === 'plain' && (
+          <button className="ph-cust-clear" onClick={handleClear} title="Clear customer" aria-label="Clear customer">
+            <X size={14} />
+          </button>
+        )}
+        {hasCustomer && variant !== 'plain' && (
           <button
             onClick={handleClear}
             title="Clear customer"

@@ -341,7 +341,7 @@
 }
 .ph-txn.is-return { border-color: var(--brand); }
 .ph-txn-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.ph-txn-cust { flex: 1; display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.ph-txn-cust { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
 .ph-txn-cust > div { min-width: 0; flex-shrink: 1 !important; }   /* name truncates instead of overflowing */
 .ph-txn-title { font-size: 10.5px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.6px; white-space: nowrap; }
 .ph-txn.is-return .ph-txn-title { color: var(--brand); }
@@ -371,9 +371,19 @@
 .ph-cust-trigger {
   display: flex; align-items: center; gap: 6px; min-width: 0;
   border: none; background: none; padding: 0; cursor: pointer;
-  font-size: clamp(14px, 1vw, 17px); font-weight: 800; color: var(--brand);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  font-size: clamp(14px, 1vw, 16px); font-weight: 700; color: #18181b;
+  white-space: nowrap; overflow: hidden; max-width: 100%;
 }
+.ph-cust-trigger svg { flex-shrink: 0; color: #a1a1aa; }
+.ph-cust-trigger:hover, .ph-cust-trigger:hover svg { color: var(--brand); }
+/* plain × to clear the customer: no box */
+.ph-cust-clear {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; padding: 0; border: none; border-radius: 50%;
+  background: none; color: #a1a1aa; cursor: pointer;
+}
+.ph-cust-clear:hover { background: #f4f4f5; color: #dc2626; }
+.ph-txn-cust-code { font-size: 12px; font-weight: 500; color: #a1a1aa; white-space: nowrap; }
 
 /* Qty cell: tap to open the qty wheel */
 .ph-qty-tap {

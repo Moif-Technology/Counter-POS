@@ -46,7 +46,7 @@ export default function PosTransactionPanel() {
       <div className="ph-txn-head">
         <div className="ph-txn-cust">
           <CustomerSearch variant="plain" />
-          {s.customerCode && <span className="ph-label">{s.customerCode}</span>}
+          {s.customerCode && <span className="ph-txn-cust-code">{s.customerCode}</span>}
         </div>
         {title && <span className="ph-txn-title">{title}</span>}
         <span className="ph-txn-mode">{MODE_LABEL[s.paymentMode] ?? s.paymentMode}</span>
