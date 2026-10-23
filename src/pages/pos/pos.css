@@ -280,15 +280,15 @@
 }
 /* Function key: plain light-grey box, maroon line icon, small grey label (no rose) */
 .ph-fn {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(6px, 0.9vh, 10px);
-  padding: 6px; min-width: 0;
-  font-size: clamp(10.5px, 0.72vw, 12.5px); font-weight: 500; color: #3f3f46; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(4px, 0.7vh, 8px);
+  padding: 4px 6px; min-width: 0;
+  font-size: clamp(12px, 0.9vw, 15px); font-weight: 600; color: #3f3f46; text-align: center;
   background: #f7f7f8; border-color: #ededf0; box-shadow: none;
 }
-.ph-fn svg { flex-shrink: 0; width: clamp(20px, 1.6vw, 26px); height: clamp(20px, 1.6vw, 26px); color: var(--brand); }
+.ph-fn svg { flex-shrink: 0; width: clamp(22px, 1.8vw, 30px); height: clamp(22px, 1.8vw, 30px); color: var(--brand); }
 /* Labels may wrap to two lines ("Product Lookup", "Privilege Customer"). */
 .ph-fn span {
-  overflow: hidden; line-height: 1.15;
+  overflow: hidden; line-height: 1.1;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
 .ph-fn:hover { background: #f1f1f3; border-color: #e2e2e6; }
@@ -376,8 +376,8 @@
 @media (max-width: 1180px) {
   .ph-tabs { gap: 4px; padding: 8px 8px 4px; }
   .ph-tab { padding: 5px 6px; font-size: 10.5px; }
-  .ph-fn { gap: 4px; padding: 4px; font-size: 11px; }
-  .ph-fn svg { width: 20px; height: 20px; }
+  .ph-fn { gap: 4px; padding: 4px; font-size: 12px; }
+  .ph-fn svg { width: 22px; height: 22px; }
   .ph-col-barcode { display: none; }
   .ph-table-row { grid-template-columns: 9% minmax(0, 1fr) 10% 13% 14%; }
   .ph-txn-stat b { font-size: 13px; }
