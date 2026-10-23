@@ -72,6 +72,8 @@ export default function PosSearchBar({ onEnter, onScan, onAction, status, scanni
         )}
         <input
           ref={inputRef}
+          // No on-screen keyboard: input comes from the scanner, a physical keyboard or the POS numpad.
+          inputMode="none"
           value={barcodeBuffer}
           onChange={e => {
             const state = usePosStore.getState()
