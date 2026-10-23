@@ -3,7 +3,6 @@ import {
   Trash2, Hash, Monitor, Search, Pause, FileText, Printer, Tag,
   Package, ScanBarcode, BarChart2, Wallet, Receipt,
   MessageSquare, Truck, Save, CircleDollarSign, Lock, Ban, User, TrendingUp,
-  LogOut, Power, FilePlus,
 } from 'lucide-react'
 import { usePosStore } from '../../../store/posStore'
 
@@ -50,14 +49,6 @@ const TABS = [
   },
   { key: 'Groups' },   // product group buttons
   {
-    key: 'Log Out',
-    buttons: [
-      { label: 'Log Out', icon: LogOut, accent: true },
-      { label: 'Exit',    icon: Power,  accent: true },
-      { label: 'Add New', icon: FilePlus },
-    ],
-  },
-  {
     key: 'Delivery',
     buttons: [
       { label: 'Delivery',      icon: Truck },
@@ -103,7 +94,7 @@ function GroupsPage({ actions }) {
   ))
 }
 
-/** Tabbed function keys: Page 1 / Page 2 / Groups / Log Out / Delivery. */
+/** Tabbed function keys: Page 1 / Page 2 / Groups / Delivery (Log Out, Exit, Add New are in the user menu). */
 export default function PosFunctionPanel({ actions }) {
   const [tabKey, setTabKey] = useState('Page 1')
   const customerDisplayEnabled = usePosStore(s => s.customerDisplayEnabled)
