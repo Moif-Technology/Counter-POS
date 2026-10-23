@@ -488,27 +488,27 @@
   .ph-qtyw-left { border-right: none; border-bottom: 1px solid #ededf0; }
 }
 
-/* ─── Line actions menu (tap a cart row) ──────────────────────── */
-.ph-linemenu-overlay { position: fixed; inset: 0; z-index: 1000; }
-.ph-linemenu {
-  position: fixed; width: 236px;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px;
-  background: #fff; border: 1px solid #f1e6e9; border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(120, 8, 41, 0.14), 0 2px 6px rgba(0, 0, 0, 0.05);
-  animation: ph-linemenu-in 0.14s ease-out;
+/* ─── Line actions bar (foot of the cart) ────────────────────── */
+.ph-linebar {
+  flex-shrink: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 8px; padding: 4px; border-radius: 12px;
+  background: #fcf8f9; border: 1px solid #f1e6e9;
 }
-@keyframes ph-linemenu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-.ph-linemenu-item {
-  height: 68px; padding: 6px 4px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  border: 1px solid #f1e6e9; border-radius: 10px; background: #fcf8f9; cursor: pointer;
-  font-family: inherit; font-size: 12px; font-weight: 600; color: #3f3f46; text-align: center;
-  transition: background 0.1s, border-color 0.1s, transform 0.07s;
+.ph-linebar-btn {
+  position: relative; height: clamp(50px, 6.4vh, 60px); padding: 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  border: none; border-radius: 9px; background: none; cursor: pointer;
+  font-family: inherit; font-size: clamp(11px, 0.78vw, 12.5px); font-weight: 600; color: #3f3f46; white-space: nowrap;
+  transition: background 0.1s, transform 0.07s;
 }
-.ph-linemenu-item svg { color: var(--brand); }
-.ph-linemenu-item:hover { border-color: var(--brand-border); background: var(--brand-bg); }
-.ph-linemenu-item:active { transform: scale(0.96); }
-.ph-linemenu-item.is-primary { background: var(--brand-bg); border-color: var(--brand-border); color: var(--brand); font-weight: 700; }
+.ph-linebar-btn svg { color: var(--brand); }
+/* thin divider between the buttons */
+.ph-linebar-btn + .ph-linebar-btn::before {
+  content: ''; position: absolute; left: 0; top: 22%; bottom: 22%; width: 1px; background: #ead7dd;
+}
+.ph-linebar-btn:hover:not(:disabled) { background: var(--brand-bg); }
+.ph-linebar-btn:active:not(:disabled) { transform: scale(0.96); }
+.ph-linebar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ─── Status bar ───────────────────────────────────────────────── */
 .ph-status {

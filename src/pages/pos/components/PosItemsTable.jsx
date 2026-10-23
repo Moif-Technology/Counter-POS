@@ -6,14 +6,14 @@ import { calcLineTotals, getCartRowKey } from '../../../lib/cartLine'
 import { fmt3, fmtQty } from '../../../lib/utils'
 import { closeAndFocusBarcode } from '../../../lib/posFocus'
 import { useEscapeKey } from '../../../hooks/useEscapeKey'
-import LineActionsModal from '../../../modals/LineActionsModal'
 import QtyWheelModal from '../../../modals/QtyWheelModal'
+import PosLineActionBar from './PosLineActionBar'
 
 const LONG_PRESS_MS = 500
 
 /**
  * Cart lines: No. · Barcode · Description · Qty · Price · Total · delete.
- * Tap a line to select it and open its actions menu; tap the qty to change it.
+ * Tap a line to select it, tap the qty to change it; the bar at the foot holds the line actions.
  * Hold a line to enter select mode: the bins become checkboxes and one
  * Delete button removes every ticked line.
  */
@@ -22,7 +22,6 @@ export default function PosItemsTable() {
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
   const removeItem     = usePosStore(s => s.removeItem)
   const removeItems    = usePosStore(s => s.removeItems)
-  const [lineMenu, setLineMenu] = useState(null)   // { row, x, anchor } — actions menu under the tapped row
   const [qtyItem, setQtyItem] = useState(null)
   const [checked, setChecked] = useState(null)     // Set of row keys while in select mode, else null
   const bodyRef = useRef(null)
@@ -58,11 +57,10 @@ export default function PosItemsTable() {
   }
   const cancelPress = () => clearTimeout(press.current.timer)
 
-  const handleRowClick = (e, row, key) => {
+  const handleRowClick = (key) => {
     if (press.current.fired) { press.current.fired = false; return }   // the click that ends a long press
     if (selectMode) { toggle(key); return }
     usePosStore.setState({ selectedRowKey: key })
-    setLineMenu({ row, x: e.clientX, anchor: e.currentTarget.getBoundingClientRect() })
   }
 
   const deleteChecked = () => {
@@ -117,7 +115,7 @@ export default function PosItemsTable() {
             <div
               key={key}
               className={`ph-table-row${selected && !selectMode ? ' is-selected' : ''}${isTicked ? ' is-ticked' : ''}${isReturn ? ' is-return' : ''}`}
-              onClick={(e) => handleRowClick(e, row, key)}
+              onClick={() => handleRowClick(key)}
               onPointerDown={() => startPress(key)}
               onPointerUp={cancelPress}
               onPointerLeave={cancelPress}
@@ -159,16 +157,10 @@ export default function PosItemsTable() {
         })}
       </div>
 
+      <PosLineActionBar disabled={selectMode} />
+
       {qtyItem && (
         <QtyWheelModal item={qtyItem} onClose={closeAndFocusBarcode(() => setQtyItem(null))} />
-      )}
-      {lineMenu && (
-        <LineActionsModal
-          item={lineMenu.row}
-          x={lineMenu.x}
-          anchor={lineMenu.anchor}
-          onClose={closeAndFocusBarcode(() => setLineMenu(null))}
-        />
       )}
     </div>
   )
