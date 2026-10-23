@@ -2,6 +2,8 @@ import { useEffect } from 'react'
 import { usePosStore } from '../store/posStore'
 import { focusBarcodeScan } from './posFocus'
 
+const MAX_QTY_CHARS = 6
+
 /** Apply one numpad key to the active POS buffer (qty or barcode). 'C' clears that buffer. */
 export function applyPosNumpadKey(key) {
   const state = usePosStore.getState()
@@ -15,8 +17,8 @@ export function applyPosNumpadKey(key) {
     let next
     if (key === '00') next = p === '0' ? '0' : p + '00'
     else if (key === '.' && p.includes('.')) next = p
-    else if (!state.isReturnContext() && p === '1' && key !== '.') next = key
     else next = p + key
+    if (next.replace('-', '').length > MAX_QTY_CHARS) return   // no runaway qty
     usePosStore.setState({ qtyBuffer: next })
   } else {
     state.setBarcodeBuffer(state.barcodeBuffer + key)
@@ -98,10 +100,38 @@ function shouldIgnorePosNumpadKeyboard(e) {
   return false
 }
 
-/** Physical keyboard support for main POS numpad (when not typing in another field). */
+// A barcode scanner types a few ms per key; a person needs ~80 ms or more.
+const SCAN_GAP_MS = 50
+
+/**
+ * Physical keyboard support for main POS numpad (when not typing in another field).
+ * While a qty / return qty is being typed, a burst of very fast keys is a
+ * barcode scan: the qty typed so far is kept and the burst goes to the search
+ * box, so the cashier can press Qty / Return, (type a qty,) and just scan.
+ */
 export function usePosNumpadKeyboard(onEnter, enabled = true) {
   useEffect(() => {
     if (!enabled) return undefined
+    let lastAt = -Infinity       // time of the previous key
+    let lastQtyKey = null        // previous key, if it went into the qty
+    let qtyBeforeLast = ''       // qty before that key
+
+    const typeKey = (key, at) => {
+      const state = usePosStore.getState()
+      const burst = at - lastAt < SCAN_GAP_MS
+      lastAt = at
+      if (state.inputMode === 'qty' && burst && lastQtyKey != null) {
+        // Scanner: take the previous key back out of the qty, keep the qty, start the barcode.
+        usePosStore.setState({ qtyBuffer: qtyBeforeLast })
+        finishPosQtyEntry()
+        usePosStore.getState().setBarcodeBuffer(lastQtyKey + key)
+        lastQtyKey = null
+        return
+      }
+      if (state.inputMode === 'qty') { qtyBeforeLast = state.qtyBuffer; lastQtyKey = key }
+      else lastQtyKey = null
+      applyPosNumpadKey(key)
+    }
 
     const onKeyDown = (e) => {
       if (!enabled || e.ctrlKey || e.metaKey || e.altKey) return
@@ -109,6 +139,7 @@ export function usePosNumpadKeyboard(onEnter, enabled = true) {
 
       if (e.key === 'Enter') {
         e.preventDefault()
+        lastQtyKey = null
         onEnter?.()
         return
       }
@@ -119,12 +150,12 @@ export function usePosNumpadKeyboard(onEnter, enabled = true) {
       }
       if (/^\d$/.test(e.key)) {
         e.preventDefault()
-        applyPosNumpadKey(e.key)
+        typeKey(e.key, e.timeStamp)
         return
       }
       if (e.key === '.' || e.key === 'Decimal') {
         e.preventDefault()
-        applyPosNumpadKey('.')
+        typeKey('.', e.timeStamp)
       }
     }
 
