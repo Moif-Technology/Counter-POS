@@ -339,15 +339,6 @@
 .ph-itemcard-stat { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25; }
 .ph-itemcard-stat b { font-size: clamp(13.5px, 0.95vw, 16px); font-weight: 800; color: var(--text-1); font-variant-numeric: tabular-nums; }
 .ph-itemcard-stat.is-total b { color: var(--brand); }
-/* Repeat: one more of the item shown in the strip */
-.ph-itemcard-repeat {
-  flex-shrink: 0; display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px;
-  border: 1px solid var(--brand-border); border-radius: 10px; background: var(--brand-bg); color: var(--brand);
-  font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: transform 0.07s, background 0.1s;
-}
-.ph-itemcard-repeat:hover { background: #f6e9ed; }
-.ph-itemcard-repeat:active { transform: scale(0.96); }
-.ph-itemcard-repeat:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .ph-fnpanel {
   flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
