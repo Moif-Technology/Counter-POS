@@ -107,6 +107,8 @@ function shouldIgnorePosNumpadKeyboard(e) {
   const t = e.target
   if (!(t instanceof Element)) return true
   if (t.closest('[data-pos-overlay]')) return true
+  // A popup is open: its own keys handle the keyboard, not the home screen behind it.
+  if (document.querySelector('[data-pos-overlay]')) return true
   if (t.closest('[data-pos-customer-dropdown]')) return true
   if (t.closest('[data-pos-barcode-input]')) return true
   return false
