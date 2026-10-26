@@ -5,13 +5,15 @@
 .crv-spin { animation: crv-spin 0.8s linear infinite; }
 @keyframes crv-spin { to { transform: rotate(360deg); } }
 
-.crv-cust { display: flex; align-items: stretch; border: 1px solid #ececee; border-radius: 12px; background: #fff; overflow: hidden; }
-.crv-cust-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding: 10px 14px; }
-.crv-cust span, .crv-os span, .crv-amt span { font-size: 10.5px; font-weight: 700; color: var(--text-4); letter-spacing: 0.5px; text-transform: uppercase; }
-.crv-cust-main b { font-size: 17px; font-weight: 800; color: #18181b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.crv-cust-main small { font-size: 11.5px; font-weight: 600; color: var(--text-3); }
-.crv-os { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px; padding: 10px 14px; background: #ecfdf3; min-width: 120px; }
-.crv-os b { font-size: 21px; font-weight: 800; color: #15803d; font-variant-numeric: tabular-nums; }
+.crv-cust { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid #ececee; border-radius: 14px; background: #fff; }
+.crv-cust-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.crv-code { padding: 3px 12px; border-radius: 99px; background: var(--brand-bg); color: var(--brand); font-size: 12.5px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.crv-cust-head small { font-size: 11.5px; font-weight: 700; color: var(--text-4); }
+.crv-name { font-size: 20px; font-weight: 800; color: #18181b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crv-os span, .crv-amt span { font-size: 10.5px; font-weight: 700; color: var(--text-4); letter-spacing: 0.5px; text-transform: uppercase; }
+.crv-os { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-radius: 11px; background: #ecfdf3; }
+.crv-os span { font-weight: 800; color: #15803d; }
+.crv-os b { font-size: 24px; font-weight: 800; color: #15803d; font-variant-numeric: tabular-nums; }
 .crv-os.is-due { background: #fef2f2; }
 .crv-os.is-due span, .crv-os.is-due b { color: #b91c1c; }
 
@@ -60,19 +62,7 @@
   border: 1px solid #fbd5d5; background: #fff5f5; color: #dc2626; cursor: pointer; font-family: inherit; font-weight: 800;
 }
 
-/* Confirm customer */
-.crv-confirm { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 24px 22px 18px; text-align: center; }
-.crv-confirm-code { padding: 3px 12px; border-radius: 99px; background: var(--brand-bg); color: var(--brand); font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.crv-confirm-name { font-size: 22px; font-weight: 800; color: #18181b; }
-.crv-confirm-os {
-  width: 100%; box-sizing: border-box; margin-top: 8px; display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px; border-radius: 12px; background: #ecfdf3; color: #15803d;
-}
-.crv-confirm-os span { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
-.crv-confirm-os b { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.crv-confirm-os.is-due { background: #fef2f2; color: #b91c1c; }
-.crv-confirm-btns { width: 100%; display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; margin-top: 12px; }
-.crv-confirm-btns button, .crv-range-foot button { height: 46px; border-radius: 11px; font-size: 15px; }
+.crv-range-foot button { height: 46px; border-radius: 11px; font-size: 15px; }
 
 /* Receipt Summary date range */
 .crv-range { padding: 18px; display: flex; flex-direction: column; gap: 12px; }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowLeft, FileText } from 'lucide-react'
 import CreditCustomerLookup from './CreditCustomerLookup'
-import CreditReceiptVoucher, { CustomerConfirm, ReceiptSummaryDates } from './CreditReceiptVoucher'
+import CreditReceiptVoucher, { ReceiptSummaryDates } from './CreditReceiptVoucher'
 import { printOutstandingBills, printOsBalance, printReceiptSummary } from '../lib/printCreditStatements'
 import { CreditSettlementHistoryList, CreditSettlementReceiptDetail } from './CreditSettlementHistory'
 import Modal from '../components/common/Modal'
@@ -37,7 +37,6 @@ export default function CreditSettlementModal({
   const [error, setError]         = useState(null)
   const [success, setSuccess]     = useState(null)
   const [viewReceiptId, setViewReceiptId] = useState(null)
-  const [confirmCust, setConfirmCust] = useState(null)
   const [summaryOpen, setSummaryOpen] = useState(false)
   const debounceRef = useRef(null)
   const backToList = () => { setStep('list'); setSelected(null); setBillData(null); setSuccess(null); setError(null) }
@@ -48,7 +47,7 @@ export default function CreditSettlementModal({
 
   useEffect(() => {
     const onKey = e => {
-      if (e.key !== 'Escape' || confirmCust || summaryOpen) return
+      if (e.key !== 'Escape' || summaryOpen) return
       if (step === 'receipt') { setStep('history'); setViewReceiptId(null); return }
       if (step === 'history') { setStep(selected ? 'settle' : 'list'); return }
       if (step === 'settle') { backToList(); return }
@@ -56,7 +55,7 @@ export default function CreditSettlementModal({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose, step, selected, confirmCust, summaryOpen])
+  }, [onClose, step, selected, summaryOpen])
 
   const loadCustomers = useCallback(async (q) => {
     setLoading(true)
@@ -191,7 +190,7 @@ export default function CreditSettlementModal({
             loading={loading}
             error={error}
             onSearch={q => { setSearch(q); scheduleSearch(q) }}
-            onOpen={setConfirmCust}
+            onOpen={openSettlement}
             onClose={onClose}
           />
         ) : step === 'history' ? (
@@ -229,13 +228,6 @@ export default function CreditSettlementModal({
           />
         )}
     </Modal>
-    {confirmCust && (
-      <CustomerConfirm
-        customer={confirmCust}
-        onOk={() => { const c = confirmCust; setConfirmCust(null); openSettlement(c) }}
-        onCancel={() => setConfirmCust(null)}
-      />
-    )}
     {summaryOpen && <ReceiptSummaryDates onPrint={printSummary} onClose={() => setSummaryOpen(false)} />}
     </>
   )

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   Banknote, CreditCard, AlertCircle, CheckCircle2, Printer, FileText,
   CalendarRange, ListChecks, Wallet, Loader2,
@@ -37,14 +37,14 @@ export default function CreditReceiptVoucher({
     <div className="crv">
       <div className="crv-left">
         <div className="crv-cust">
-          <div className="crv-cust-main">
-            <span>Customer</span>
-            <b>{customer?.customerName}</b>
-            <small>Code {customer?.customerCode}{billCount ? ` · ${billCount} open bill${billCount !== 1 ? 's' : ''}` : ''}</small>
+          <div className="crv-cust-head">
+            <span className="crv-code">{customer?.customerCode}</span>
+            {billCount > 0 && <small>{billCount} open bill{billCount !== 1 ? 's' : ''}</small>}
           </div>
+          <b className="crv-name">{customer?.customerName}</b>
           <div className={`crv-os${osBalance > 0 ? ' is-due' : ''}`}>
             <span>OS Balance</span>
-            <b>{loadingBills ? <Loader2 size={18} className="crv-spin" /> : fmt3(osBalance)}</b>
+            <b>{loadingBills ? <Loader2 size={20} className="crv-spin" /> : fmt3(osBalance)}</b>
           </div>
         </div>
 
@@ -92,36 +92,6 @@ export default function CreditReceiptVoucher({
         </button>
       </div>
     </div>
-  )
-}
-
-/* Customer picked from the lookup → confirm before opening the voucher. */
-export function CustomerConfirm({ customer, onOk, onCancel }) {
-  useEffect(() => {
-    const onKey = e => {
-      if (e.key !== 'Enter' && e.key !== 'Escape') return
-      e.preventDefault(); e.stopImmediatePropagation()
-      if (e.key === 'Enter') onOk(); else onCancel()
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [onOk, onCancel])
-
-  const os = Number(customer?.osAmount) || 0
-  return (
-    <Modal onClose={onCancel} closeOnEsc={false} header={false} width={360} zIndex={1100}>
-      <div className="crv-confirm">
-        <span className="crv-confirm-code">{customer?.customerCode}</span>
-        <b className="crv-confirm-name">{customer?.customerName}</b>
-        <div className={`crv-confirm-os${os > 0 ? ' is-due' : ''}`}>
-          <span>OS Balance</span><b>{fmt3(os)}</b>
-        </div>
-        <div className="crv-confirm-btns">
-          <button type="button" className="crv-cancel" onClick={onCancel}>Cancel</button>
-          <button type="button" className="crv-ok" onClick={onOk}>OK</button>
-        </div>
-      </div>
-    </Modal>
   )
 }
 
