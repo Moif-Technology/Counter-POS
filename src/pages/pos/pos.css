@@ -280,16 +280,17 @@
   height: var(--ph-tile-h);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   font-size: clamp(11.5px, 0.8vw, 13.5px); font-weight: 600; color: #3f3f46;
-  /* same raised soft-UI shape as the number keys, in an ash (greyed) tone of the primary maroon */
-  background: #f2ecee; border-color: #e7dce0;
-  box-shadow: 4px 4px 10px rgba(120, 8, 41, 0.12), -4px -4px 10px #ffffff;
+  /* white tiles, so the payment modes read apart from the ash number keys below */
+  background: #fff; border-color: #ebdfe3;
+  box-shadow: 0 3px 8px rgba(120, 8, 41, 0.10);
 }
 .ph-pay-tile svg { color: var(--brand); }
-.ph-pay-tile:active { box-shadow: inset 3px 3px 7px rgba(120, 8, 41, 0.14), inset -3px -3px 7px #ffffff; }
-/* selected payment mode stays "pressed in", maroon outline and label */
+.ph-pay-tile:hover { border-color: var(--brand-border); }
+.ph-pay-tile:active { box-shadow: inset 2px 2px 6px rgba(120, 8, 41, 0.12); }
+/* selected payment mode: light rose fill, maroon outline and label */
 .ph-pay-tile.is-active {
-  border-color: var(--brand); color: var(--brand); font-weight: 800;
-  box-shadow: inset 3px 3px 7px rgba(120, 8, 41, 0.14), inset -3px -3px 7px #ffffff;
+  background: var(--brand-bg); border: 1.5px solid var(--brand); color: var(--brand); font-weight: 800;
+  box-shadow: 0 3px 10px rgba(120, 8, 41, 0.16);
 }
 .ph-pad-spacer { display: none; }
 .ph-keys {
