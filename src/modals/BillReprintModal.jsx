@@ -125,7 +125,7 @@ export default function BillReprintModal({ onClose }) {
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>
               {docLabel} No
             </label>
-            <input className="ui-input" data-active={(focus === 'docNo') ? 'true' : undefined}
+            <input
               ref={docNoRef}
               value={docNo}
               onChange={e => setDocNo(e.target.value.replace(/\D/g, ''))}

@@ -2,7 +2,6 @@
 @import "tailwindcss";
 @import "./styles/colors.css";
 @import "./styles/keys.css";
-@import "./styles/inputs.css";
 
 /* Screen layouts live with their pages:
      POS home  → pages/pos/pos.css

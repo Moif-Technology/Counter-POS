@@ -215,7 +215,7 @@ export default function CreditSettlementModal({
         {step === 'list' ? (
           <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 380 }}>
             <div style={{ flex: 1, padding: 14, display: 'flex', flexDirection: 'column', gap: 10, overflow: 'hidden' }}>
-              <input className="ui-input"
+              <input
                 value={search}
                 onChange={e => { setSearch(e.target.value); scheduleSearch(e.target.value) }}
                 placeholder="Search code or name…"

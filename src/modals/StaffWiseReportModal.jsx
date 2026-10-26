@@ -22,7 +22,8 @@ export default function StaffWiseReportModal({ onClose, reportFn = null }) {
     try {
       const doReport = reportFn ?? (() => api.counterPos.staffWiseReport(counterNo, accessToken))
       const data = await doReport()
-      setRows(data)
+      // Accept a plain list or a list wrapped in an object; anything else = no rows (never crash).
+      setRows(Array.isArray(data) ? data : (Array.isArray(data?.rows) ? data.rows : Array.isArray(data?.data) ? data.data : []))
     } catch (err) {
       setError(err.message ?? 'Failed to load report')
     } finally {

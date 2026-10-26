@@ -215,7 +215,7 @@ export default function LiteRecallModal({ heldBills, onClose, onRecall, onCancel
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 160 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Comments</span>
-          <input className="ui-input"
+          <input
             readOnly
             value={selectedComment}
             placeholder={selected ? 'No comment on this hold' : 'Select a hold bill'}
@@ -244,7 +244,7 @@ export default function LiteRecallModal({ heldBills, onClose, onRecall, onCancel
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: 90 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Hold No</span>
-          <input className="ui-input"
+          <input
             ref={holdInputRef}
             value={holdNoInput}
             onChange={e => {

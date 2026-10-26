@@ -136,7 +136,7 @@ export default function CreditCustomerModal({ onClose, onApply }) {
             ].map(f => (
               <div key={f.key}>
                 <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--brand)', display: 'block', marginBottom: 3 }}>{f.label}</label>
-                <input className="ui-input" data-active={(focus === f.key) ? 'true' : undefined}
+                <input
                   value={f.value}
                   onFocus={() => setFocus(f.key)}
                   onChange={e => handleFieldChange(f.setter, e.target.value)}

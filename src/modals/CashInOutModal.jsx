@@ -225,7 +225,7 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
                 <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>
                   Type Description :
                 </span>
-                <input className="ui-input"
+                <input
                   ref={descRef}
                   value={typeDesc}
                   onChange={e => setTypeDesc(e.target.value)}

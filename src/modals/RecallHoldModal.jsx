@@ -380,7 +380,7 @@ export default function RecallHoldModal({ onClose, onRecall }) {
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 180 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Comments</span>
-          <input className="ui-input"
+          <input
             readOnly
             value={selectedComment}
             placeholder={selected ? 'No comment on this hold' : 'Select a hold bill'}
@@ -421,7 +421,7 @@ export default function RecallHoldModal({ onClose, onRecall }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: 100 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Hold No</span>
-          <input className="ui-input"
+          <input
             ref={holdInputRef}
             value={holdNoInput}
             onChange={e => {

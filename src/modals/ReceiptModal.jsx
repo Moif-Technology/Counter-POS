@@ -109,7 +109,7 @@ export default function ReceiptModal({ onClose }) {
             {/* Bill No */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <label style={labelStyle}>Bill No</label>
-              <input className="ui-input" data-active={(focus === 'billNo') ? 'true' : undefined}
+              <input
                 ref={billRef}
                 value={billNo}
                 onChange={e => setBillNo(e.target.value)}
@@ -122,7 +122,7 @@ export default function ReceiptModal({ onClose }) {
             {/* Customer Name */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <label style={labelStyle}>Customer Name</label>
-              <input className="ui-input" data-active={(focus === 'custName') ? 'true' : undefined}
+              <input
                 ref={custRef}
                 value={customerName}
                 onChange={e => setCustomerName(e.target.value)}

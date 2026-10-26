@@ -108,7 +108,7 @@ export default function SalesManModal({ onClose, onApply }) {
             {/* Staff Code */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <label style={labelStyle}>Staff Code</label>
-              <input className="ui-input" data-active={(focus === 'code') ? 'true' : undefined}
+              <input
                 ref={codeRef}
                 value={staffCode}
                 onChange={e => setStaffCode(e.target.value)}
@@ -122,7 +122,7 @@ export default function SalesManModal({ onClose, onApply }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <label style={labelStyle}>Staff Name</label>
               <div style={{ display: 'flex', gap: 6 }}>
-                <input className="ui-input" data-active={(focus === 'name') ? 'true' : undefined}
+                <input
                   ref={nameRef}
                   value={staffName}
                   onChange={e => setStaffName(e.target.value)}

@@ -258,7 +258,7 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
             <ScanLine size={16} color="var(--text-3)" />
-            <input className="ui-input" data-system-keyboard
+            <input data-system-keyboard
               ref={scanInputRef}
               value={scanInput}
               onChange={e => setScanInput(e.target.value)}
@@ -406,7 +406,7 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
                           Paid
                         </span>
                         {r.paymentMode === 'CASH' ? (
-                          <input className="ui-input" data-system-keyboard
+                          <input data-system-keyboard
                             value={r.paidAmount}
                             onChange={e => patchRow(r.salesId, { paidAmount: e.target.value })}
                             style={{
