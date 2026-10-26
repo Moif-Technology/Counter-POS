@@ -1,608 +1,177 @@
-import { useMemo, useState } from 'react'
-import { Layers, Delete, AlertCircle } from 'lucide-react'
-import Modal, { ModalHeader } from '../components/common/Modal'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Layers, ScanBarcode, Ticket, CreditCard, Banknote, Globe, CornerDownLeft } from 'lucide-react'
+import Modal from '../components/common/Modal'
+import Numpad from '../components/common/Numpad'
 import { usePosStore } from '../store/posStore'
-import { SPLIT_PAY_MODES, PM } from '../lib/paymentModes'
-import { fmtMoney, moneyInputRegex, moneyPlaceholder, roundMoney } from '../lib/currencyFormat'
+import { PM } from '../lib/paymentModes'
+import { fmtMoney, moneyInputRegex, roundMoney } from '../lib/currencyFormat'
+import './MultiPaymentModal.css'
 
-let rowSeq = 1
+const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0 }
 
-function num(v, d = 0) {
-  const n = Number(v)
-  return Number.isFinite(n) ? n : d
+/** Existing splits → field values (amounts per mode, voucher number). */
+function fieldsFromSplits(splits) {
+  const f = { voucherNo: '', voucher: '', card: '', online: '', cash: '' }
+  for (const s of Array.isArray(splits) ? splits : []) {
+    const amt = num(s.amount)
+    if (s.payMode === 'VOUCHER') { f.voucher = String(roundMoney(num(f.voucher) + amt)); if (s.refNo) f.voucherNo = s.refNo }
+    else if (s.payMode === PM.CREDITCARD) f.card = String(roundMoney(num(f.card) + amt))
+    else if (s.payMode === 'ONLINE') f.online = String(roundMoney(num(f.online) + amt))
+    else f.cash = String(roundMoney(num(f.cash) + amt))
+  }
+  return f
 }
 
-function rowsToSplits(list) {
-  return list.map(r => ({
-    payMode: r.payMode,
-    amount: roundMoney(r.amount),
-    tip: roundMoney(r.tip),
-    refNo: r.refNo ?? '',
-  }))
-}
-
-function hydrateRowsFromSplits(splits) {
-  if (!Array.isArray(splits) || !splits.length) return []
-  return splits.map((s, i) => ({
-    id: rowSeq++,
-    payerNo: i + 1,
-    payMode: s.payMode ?? PM.CASH,
-    amount: num(s.amount, 0),
-    tip: num(s.tip, 0),
-    refNo: s.refNo ?? '',
-  }))
-}
-
-const PAY_MODES = SPLIT_PAY_MODES.map(m => ({
-  ...m,
-  color: m.key === PM.CASH || m.key === PM.CREDITCARD ? 'var(--brand)' : m.key === 'ONLINE' ? 'var(--blue)' : 'var(--text-2)',
-  bg: m.key === PM.CASH || m.key === PM.CREDITCARD ? 'var(--brand-bg)' : m.key === 'ONLINE' ? 'var(--blue-bg)' : 'var(--surface-2)',
-  border: m.key === PM.CASH || m.key === PM.CREDITCARD ? 'var(--brand-border)' : m.key === 'ONLINE' ? 'var(--blue-border)' : 'var(--border)',
-}))
-
-const NUM_ROWS = [
-  ['7', '8', '9'],
-  ['4', '5', '6'],
-  ['1', '2', '3'],
-  ['0', '.', '00'],
-]
-
+/**
+ * Multi Pay — pay one bill with a gift voucher, a credit card and cash:
+ *   Bill Amount · Scan Gift Voucher · Gift Voucher · Credit Card · Cash Paid · Balance Amount
+ * with a keypad and Enter / Cancel. Cash may be more than what is left: the
+ * extra is change. Saves splits (VOUCHER / CREDITCARD / CASH) that add up to
+ * the bill, exactly as before.
+ *
+ * Props: billAmount (default: the bill total), initialSplits, onConfirm(splits)
+ * for standalone use (Delivery Settlement); otherwise the POS bill is updated.
+ */
 export default function MultiPaymentModal({ onClose, billAmount, initialSplits, onConfirm }) {
-
-  const storeNet = usePosStore(s => s.netAmount)
-  const netAmount = billAmount != null ? Number(billAmount) : storeNet
+  const storeNet  = usePosStore(s => s.netAmount)
+  const bill      = roundMoney(billAmount != null ? num(billAmount) : storeNet)
   const standalone = typeof onConfirm === 'function'
 
-  const setPaymentMode = usePosStore(s => s.setPaymentMode)
-  const setPayment = usePosStore(s => s.setPayment)
-  const setPaymentSplits = usePosStore(s => s.setPaymentSplits)
-
-  const [rows, setRows] = useState(() =>
-    hydrateRowsFromSplits(initialSplits ?? (standalone ? [] : usePosStore.getState().paymentSplits)),
-  )
-  const [selectedId, setSelectedId] = useState(null)
-  const [payMode, setPayMode] = useState(PM.CASH)
-  const [amount, setAmount] = useState('')
-  const [tip, setTip] = useState('')
-  const [ref, setRef] = useState('')
-  const [focusField, setFocusField] = useState('amount')
+  const [f, setF] = useState(() => fieldsFromSplits(initialSplits ?? (standalone ? [] : usePosStore.getState().paymentSplits)))
+  const [focus, setFocus] = useState('voucherNo')
   const [error, setError] = useState('')
+  const refs = { voucherNo: useRef(), voucher: useRef(), card: useRef(), online: useRef(), cash: useRef() }
 
-  const syncSplitsToStore = (list) => {
-    if (standalone) return
-    if (!list.length) {
-      setPaymentSplits(null)
-      return
-    }
-    setPaymentSplits(rowsToSplits(list))
+  // Cursor starts in Scan Gift Voucher, so a scan (or typing) goes straight in.
+  useEffect(() => { refs.voucherNo.current?.focus() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hasOnline = num(f.online) > 0   // only shown when an earlier split used Online
+
+  const FIELDS = [
+    { key: 'voucherNo', label: 'Scan Gift Voucher', icon: ScanBarcode, text: true, placeholder: 'Scan or type voucher no.' },
+    { key: 'voucher',   label: 'Gift Voucher',      icon: Ticket },
+    { key: 'card',      label: 'Credit Card',       icon: CreditCard },
+    ...(hasOnline ? [{ key: 'online', label: 'Online', icon: Globe }] : []),
+    { key: 'cash',      label: 'Cash Paid',         icon: Banknote },
+  ]
+
+  const nonCash = roundMoney(num(f.voucher) + num(f.card) + num(f.online))
+  const tendered = roundMoney(nonCash + num(f.cash))
+  const balance = roundMoney(bill - tendered)          // > 0 still due, < 0 change
+  const covered = balance <= 0.009
+  const tooMuchNonCash = nonCash > bill + 0.009
+
+  const setField = (key, value) => { setError(''); setF(prev => ({ ...prev, [key]: value })) }
+
+  const typeMoney = (key, value) => {
+    if (value === '' || moneyInputRegex().test(value)) setField(key, value)
   }
 
-  const updateRows = (updater) => {
-    setRows(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater
-      syncSplitsToStore(next)
-      return next
-    })
+  // Keypad types into the focused field (C clears it, ⌫ deletes one character)
+  const pressKey = (k) => {
+    const cur = f[focus] ?? ''
+    if (k === 'C') { setField(focus, ''); return }
+    if (k === '⌫') { setField(focus, cur.slice(0, -1)); return }
+    if (FIELDS.find(x => x.key === focus)?.text) setField(focus, cur + k)
+    else typeMoney(focus, cur + k)
+    refs[focus].current?.focus()
   }
 
-  const billTotal = useMemo(
-    () => roundMoney(rows.reduce((a, r) => a + num(r.amount, 0), 0)),
-    [rows],
-  )
-  const tipTotal = useMemo(
-    () => roundMoney(rows.reduce((a, r) => a + num(r.tip, 0), 0)),
-    [rows],
-  )
-  const remaining = useMemo(
-    () => roundMoney(num(netAmount, 0) - billTotal),
-    [netAmount, billTotal],
-  )
-  const grandTotal = useMemo(() => roundMoney(billTotal + tipTotal), [billTotal, tipTotal])
-  const balanced = Math.abs(remaining) <= 0.02
-  const canDone = rows.length > 0 && balanced
-
-  const setFieldValue = (field, value) => {
-    if (field === 'amount') setAmount(value)
-    else if (field === 'tip') setTip(value)
-    else setRef(value)
+  /** Fill Cash Paid with what is still due. */
+  const exactCash = () => {
+    const due = roundMoney(bill - nonCash)
+    if (due > 0) { setField('cash', fmtMoney(due)); setFocus('cash'); refs.cash.current?.focus() }
   }
 
-  const getFieldValue = (field) => {
-    if (field === 'amount') return amount
-    if (field === 'tip') return tip
-    return ref
+  const goNext = (key) => {
+    const i = FIELDS.findIndex(x => x.key === key)
+    const next = FIELDS[i + 1]
+    if (next) { setFocus(next.key); refs[next.key].current?.focus(); refs[next.key].current?.select?.() }
+    else confirm()
   }
 
-  const appendKey = (key) => {
+  const confirm = () => {
     setError('')
-    if (focusField === 'ref') {
-      setRef(v => v + key)
-      return
-    }
-    const cur = getFieldValue(focusField)
-    const next = cur + key
-    if (!moneyInputRegex().test(next)) return
-    setFieldValue(focusField, next)
-  }
+    if (tendered <= 0) { setError('Enter the voucher, card or cash amount.'); return }
+    if (num(f.voucher) > 0 && !f.voucherNo.trim()) { setError('Scan or type the gift voucher number.'); setFocus('voucherNo'); refs.voucherNo.current?.focus(); return }
+    if (tooMuchNonCash) { setError(`Voucher + card can't be more than the bill (${fmtMoney(bill)}).`); return }
+    if (!covered) { setError(`Short by ${fmtMoney(balance)} — add cash or card.`); return }
 
-  const backspace = () => {
-    setError('')
-    if (focusField === 'ref') {
-      setRef(v => v.slice(0, -1))
-      return
-    }
-    setFieldValue(focusField, getFieldValue(focusField).slice(0, -1))
-  }
+    const cashPart = roundMoney(bill - nonCash)          // cash kept on the bill; the rest is change
+    const splits = [
+      num(f.voucher) > 0 && { payMode: 'VOUCHER',     amount: roundMoney(num(f.voucher)), tip: 0, refNo: f.voucherNo.trim() },
+      num(f.card)    > 0 && { payMode: PM.CREDITCARD, amount: roundMoney(num(f.card)),    tip: 0, refNo: '' },
+      num(f.online)  > 0 && { payMode: 'ONLINE',      amount: roundMoney(num(f.online)),  tip: 0, refNo: '' },
+      cashPart       > 0 && { payMode: PM.CASH,       amount: cashPart,                   tip: 0, refNo: '' },
+    ].filter(Boolean)
 
-  const clearField = () => {
-    setError('')
-    setFieldValue(focusField, '')
-  }
-
-  const useRemaining = () => {
-    setError('')
-    if (remaining <= 0) {
-      setError('No remaining balance to apply.')
-      return
-    }
-    setAmount(fmtMoney(remaining))
-    setFocusField('amount')
-  }
-
-  const addRow = () => {
-    setError('')
-    if (remaining <= 0.01) {
-      setError('Split balance is 0.00 — cannot add more rows.')
-      return
-    }
-
-    const amt = num(amount, 0)
-    const tipAmt = num(tip, 0)
-    const refVal = ref.trim()
-
-    if (amt <= 0) {
-      setError('Enter split amount.')
-      setFocusField('amount')
-      return
-    }
-    if (amt > remaining + 0.01) {
-      setError(`Amount exceeds remaining balance (${fmtMoney(remaining)}).`)
-      setFocusField('amount')
-      return
-    }
-
-    const id = rowSeq++
-    updateRows(prev => [...prev, {
-      id,
-      payerNo: prev.length + 1,
-      payMode,
-      amount: amt,
-      tip: tipAmt,
-      refNo: refVal,
-    }])
-    setSelectedId(id)
-    setAmount('')
-    setTip('')
-    setRef('')
-    setFocusField('amount')
-  }
-
-  const removeSelected = () => {
-    setError('')
-    if (selectedId == null) return
-    updateRows(prev => prev
-      .filter(r => r.id !== selectedId)
-      .map((r, i) => ({ ...r, payerNo: i + 1 })))
-    setSelectedId(null)
-  }
-
-  const clearAll = () => {
-    setError('')
-    updateRows([])
-    setSelectedId(null)
-  }
-
-  const done = () => {
-    setError('')
-    if (!rows.length) {
-      setError('Add split rows first.')
-      return
-    }
-    if (!balanced) {
-      setError(`Split not completed. Balance: ${fmtMoney(remaining)}`)
-      return
-    }
-
-    const splits = rowsToSplits(rows)
-    if (standalone) {
-      onConfirm(splits)
-      onClose?.()
-      return
-    }
-
-    setPaymentMode(PM.MULTIPAYMENT)
-    setPaymentSplits(splits)
-    setPayment(num(netAmount, 0))
+    if (standalone) { onConfirm(splits); onClose?.(); return }
+    const st = usePosStore.getState()
+    st.setPaymentMode(PM.MULTIPAYMENT)
+    st.setPaymentSplits(splits)
+    st.setPayment(tendered)                               // paid = everything handed over → balance = change
     onClose?.()
   }
 
-  const press = e => { e.currentTarget.style.transform = 'scale(0.93)' }
-  const release = e => { e.currentTarget.style.transform = 'scale(1)' }
-
-  const NumBtn = ({ label, onClick, style = {} }) => (
-    <button
-      type="button"
-      // number keys: home keypad look (⌫ is the icon label → red); C / ADD keep their colours
-      className={style.background ? undefined : label === 'C' ? 'ui-key is-clear' : typeof label === 'string' ? 'ui-key' : 'ui-key is-back'}
-      onClick={onClick}
-      onMouseDown={press}
-      onMouseUp={release}
-      style={{
-        height: 44, width: '100%',
-        borderRadius: 10,
-        border: '1.5px solid var(--border)',
-        background: '#fff',
-        color: 'var(--text-1)',
-        fontSize: typeof label === 'string' && label.length > 2 ? 11 : 16,
-        fontWeight: 700,
-        cursor: 'pointer',
-        fontFamily: typeof label === 'string' && label !== 'C' && label !== 'ADD'
-          ? 'inherit'
-          : 'inherit',
-        transition: 'all 0.1s',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        ...style,
-      }}
-      onMouseEnter={e => {
-        if (!style.background) {
-          e.currentTarget.style.background = 'var(--brand-bg)'
-          e.currentTarget.style.borderColor = 'var(--brand-border)'
-          e.currentTarget.style.color = 'var(--brand)'
-        } else {
-          e.currentTarget.style.filter = 'brightness(0.94)'
-        }
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.filter = 'brightness(1)'
-        if (!style.background) {
-          e.currentTarget.style.background = '#fff'
-          e.currentTarget.style.borderColor = 'var(--border)'
-          e.currentTarget.style.color = 'var(--text-1)'
-        }
-      }}
-    >
-      {label}
-    </button>
-  )
-
-  const fieldRow = (label, field, value, mono = true) => {
-    const focused = focusField === field
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{
-          width: 58, flexShrink: 0, textAlign: 'right',
-          fontSize: 11, fontWeight: 700, color: 'var(--text-2)',
-        }}>
-          {label}
-        </span>
-        <div
-          onClick={() => setFocusField(field)}
-          style={{
-            flex: 1, height: 38, borderRadius: 8, boxSizing: 'border-box',
-            border: `1.5px solid ${focused ? 'var(--brand-border)' : 'var(--border)'}`,
-            background: focused ? 'var(--brand-bg)' : '#fff',
-            display: 'flex', alignItems: 'center', padding: '0 12px',
-            fontSize: mono ? 15 : 12,
-            fontWeight: mono ? 800 : 600,
-            color: value ? 'var(--text-1)' : 'var(--text-4)',
-            fontFamily: mono ? 'inherit' : 'inherit',
-            cursor: 'text',
-          }}
-        >
-          {value || (field === 'ref' ? 'Reference…' : moneyPlaceholder())}
-        </div>
-      </div>
-    )
-  }
-
-  const actionBtn = (label, onClick, variant = 'default') => {
-    const styles = {
-      default: {
-        background: '#fff',
-        border: '1.5px solid var(--border)',
-        color: 'var(--text-2)',
-      },
-      danger: {
-        background: 'var(--red-bg)',
-        border: '1.5px solid var(--red-border)',
-        color: 'var(--red)',
-      },
-    }
-    const s = styles[variant] || styles.default
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        onMouseDown={press}
-        onMouseUp={release}
-        style={{
-          flex: 1, height: 38, borderRadius: 10,
-          fontSize: 11, fontWeight: 800, letterSpacing: 0.3,
-          cursor: 'pointer', transition: 'all 0.12s', ...s,
-        }}
-        onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(0.96)' }}
-        onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)' }}
-      >
-        {label}
-      </button>
-    )
-  }
+  const balanceLabel = balance < -0.009 ? 'Change' : 'Balance Amount'
+  const parts = useMemo(() => [
+    ['Voucher', num(f.voucher)], ['Card', num(f.card)], ['Online', num(f.online)], ['Cash', num(f.cash)],
+  ].filter(([, v]) => v > 0), [f])
 
   return (
-    <Modal
-      onClose={onClose}
-      width={700}
-      maxHeight="94vh"
-      header={
-        <div style={{
-          background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
-          padding: '14px 18px', flexShrink: 0,
-        }}>
-          <ModalHeader
-            icon={Layers}
-            kicker="Settlement"
-            title="Split Payment"
-            onClose={onClose}
-            style={{ padding: 0, background: 'none' }}
-          />
-
-          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-            {[
-              { label: 'Bill Total', value: fmtMoney(netAmount), accent: false },
-              { label: 'Remaining', value: fmtMoney(remaining), accent: !balanced },
-              { label: 'Paid', value: fmtMoney(billTotal), accent: false },
-            ].map(chip => (
-              <div
-                key={chip.label}
-                style={{
-                  padding: '8px 14px', borderRadius: 8,
-                  background: 'rgba(255,255,255,0.12)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.85)',
-                }}
-              >
-                {chip.label}{' '}
-                <span style={{
-                  fontFamily: 'inherit',
-                  fontSize: 16,
-                  fontWeight: 800,
-                  color: chip.accent ? 'var(--red-border)' : '#fff',
-                }}>
-                  {chip.value}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      }
-    >
-        {/* Body */}
-        <div style={{ padding: '16px 18px', overflow: 'auto', flex: 1 }}>
-
-          {/* Mode buttons */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 14 }}>
-            {PAY_MODES.map(m => {
-              const active = payMode === m.key
-              return (
-                <button
-                  key={m.key}
-                  type="button"
-                  onClick={() => setPayMode(m.key)}
-                  style={{
-                    height: 40, borderRadius: 10,
-                    border: `1.5px solid ${active ? m.border : 'var(--border)'}`,
-                    background: active ? m.bg : 'var(--surface)',
-                    color: active ? m.color : 'var(--text-3)',
-                    fontSize: 11, fontWeight: 800, cursor: 'pointer',
-                    transition: 'all 0.12s',
-                    boxShadow: active ? 'var(--shadow-sm)' : 'none',
-                  }}
-                >
-                  {m.label}
-                </button>
-              )
-            })}
+    <Modal onClose={onClose} icon={Layers} kicker="Settlement" title="Multi Pay" width={760}>
+      <div className="mpm">
+        {/* ── Fields ── */}
+        <div className="mpm-left">
+          <div className="mpm-row is-readonly">
+            <span className="mpm-label">Bill Amount</span>
+            <div className="mpm-box mpm-bill">{fmtMoney(bill)}</div>
           </div>
 
-          {/* Input + numpad */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 228px', gap: 14, marginBottom: 14 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {fieldRow('Amount', 'amount', amount)}
-              {fieldRow('Tip', 'tip', tip)}
-              {fieldRow('Ref', 'ref', ref, false)}
-              <button
-                type="button"
-                onClick={addRow}
-                onMouseDown={press}
-                onMouseUp={release}
-                style={{
-                  marginTop: 4, height: 42, borderRadius: 10, border: 'none',
-                  background: 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
-                  color: '#fff', fontSize: 12, fontWeight: 800, letterSpacing: 0.4,
-                  cursor: 'pointer', boxShadow: '0 3px 12px rgba(120,8,41,0.2)',
-                }}
-              >
-                ADD PAYMENT
-              </button>
-            </div>
+          {FIELDS.map(({ key, label, icon: Icon, text, placeholder }) => (
+            <label key={key} className={`mpm-row${focus === key ? ' is-focus' : ''}`}>
+              <span className="mpm-label"><Icon size={15} /> {label}</span>
+              <input
+                ref={refs[key]}
+                className="mpm-box"
+                value={f[key]}
+                placeholder={placeholder ?? '0.00'}
+                inputMode={text ? undefined : 'decimal'}
+                onFocus={() => setFocus(key)}
+                onChange={e => (text ? setField(key, e.target.value) : typeMoney(key, e.target.value))}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); goNext(key) } }}
+                style={{ textAlign: text ? 'left' : 'right' }}
+              />
+            </label>
+          ))}
 
-            <div>
-              <button
-                type="button"
-                onClick={useRemaining}
-                style={{
-                  width: '100%', height: 36, marginBottom: 8, borderRadius: 10,
-                  border: '1.5px solid var(--green-border)',
-                  background: 'var(--green-bg)', color: 'var(--green)',
-                  fontSize: 11, fontWeight: 800, cursor: 'pointer',
-                }}
-              >
-                Use Remaining
-              </button>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-                {NUM_ROWS.flat().map(k => (
-                  <NumBtn key={k} label={k} onClick={() => appendKey(k)} />
-                ))}
-                <NumBtn label={<Delete size={15} />} onClick={backspace} />
-                <NumBtn label="C" onClick={clearField} />
-                <NumBtn
-                  label="ADD"
-                  onClick={addRow}
-                  style={{
-                    background: 'var(--purple-bg)',
-                    borderColor: 'var(--purple-border)',
-                    color: 'var(--purple)',
-                    fontWeight: 800,
-                  }}
-                />
-              </div>
-            </div>
+          <div className={`mpm-row is-readonly mpm-balance${balance < -0.009 ? ' is-change' : covered ? ' is-done' : ''}`}>
+            <span className="mpm-label">{balanceLabel}</span>
+            <div className="mpm-box">{fmtMoney(Math.abs(balance))}</div>
           </div>
 
-          {/* Table */}
-          <div style={{
-            border: '1.5px solid var(--border)', borderRadius: 12,
-            overflow: 'hidden', background: 'var(--surface)',
-          }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-              <thead>
-                <tr style={{ background: 'var(--table-head-bg)', borderBottom: '1px solid var(--border)' }}>
-                  {['#', 'Ref', 'Mode', 'Amount', 'Tip'].map(h => (
-                    <th
-                      key={h}
-                      style={{
-                        padding: '8px 10px', textAlign: 'left', fontWeight: 800,
-                        fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: 0.4,
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={{ padding: 28, textAlign: 'center', color: 'var(--text-4)', fontWeight: 600 }}>
-                      No payments added
-                    </td>
-                  </tr>
-                ) : rows.map(r => {
-                  const selected = r.id === selectedId
-                  return (
-                    <tr
-                      key={r.id}
-                      onClick={() => setSelectedId(r.id)}
-                      style={{
-                        background: selected ? 'var(--brand-bg)' : '#fff',
-                        color: selected ? 'var(--brand)' : 'var(--text-1)',
-                        cursor: 'pointer',
-                        borderBottom: '1px solid var(--border)',
-                        transition: 'background 0.1s',
-                      }}
-                    >
-                      <td style={{ padding: '8px 10px', fontWeight: 700 }}>{r.payerNo}</td>
-                      <td style={{ padding: '8px 10px', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {r.refNo || '—'}
-                      </td>
-                      <td style={{ padding: '8px 10px', fontWeight: 700, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {r.payMode}
-                      </td>
-                      <td style={{ padding: '8px 10px', fontFamily: 'inherit', fontWeight: 800 }}>
-                        {fmtMoney(r.amount)}
-                      </td>
-                      <td style={{ padding: '8px 10px', fontFamily: 'inherit' }}>
-                        {fmtMoney(r.tip)}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+          <div className="mpm-split">
+            {parts.length
+              ? parts.map(([n, v]) => <span key={n}>{n} <b>{fmtMoney(v)}</b></span>)
+              : <span>Scan a voucher, or enter card / cash amounts</span>}
           </div>
-
-          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            {actionBtn('Remove Selected', removeSelected)}
-            {actionBtn('Clear All', clearAll, 'danger')}
-          </div>
-
-          {error && (
-            <div style={{
-              marginTop: 10, padding: '8px 12px', borderRadius: 10,
-              background: 'var(--red-bg)', border: '1.5px solid var(--red-border)',
-              color: 'var(--red)', fontSize: 11, fontWeight: 700,
-              display: 'flex', alignItems: 'center', gap: 8,
-            }}>
-              <AlertCircle size={14} />
-              {error}
-            </div>
-          )}
-
-          <div style={{
-            display: 'flex', justifyContent: 'flex-end', gap: 20,
-            marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)',
-            fontSize: 12, fontWeight: 700, color: 'var(--text-2)',
-          }}>
-            <span>Paid <span style={{ fontFamily: 'inherit', color: 'var(--text-1)' }}>{fmtMoney(billTotal)}</span></span>
-            <span>Tips <span style={{ fontFamily: 'inherit', color: 'var(--text-1)' }}>{fmtMoney(tipTotal)}</span></span>
-            <span>
-              Grand Total{' '}
-              <span style={{ fontFamily: 'inherit', color: 'var(--green)', fontWeight: 800 }}>
-                {fmtMoney(grandTotal)}
-              </span>
-            </span>
-          </div>
+          {error && <div className="mpm-error">{error}</div>}
         </div>
 
-        {/* Footer */}
-        <div style={{
-          display: 'flex', gap: 8, padding: '12px 18px 16px',
-          borderTop: '1px solid var(--border)', background: 'var(--surface-2)',
-        }}>
-          <button
-            type="button"
-            onClick={done}
-            disabled={!canDone}
-            onMouseDown={press}
-            onMouseUp={release}
-            style={{
-              flex: 1, height: 46, borderRadius: 10, border: 'none',
-              background: canDone
-                ? 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)'
-                : 'var(--border)',
-              color: canDone ? '#fff' : 'var(--text-4)',
-              fontSize: 13, fontWeight: 900, letterSpacing: 0.5,
-              cursor: canDone ? 'pointer' : 'not-allowed',
-              boxShadow: canDone ? '0 4px 14px rgba(120,8,41,0.22)' : 'none',
-            }}
-          >
-            Done
+        {/* ── Keypad ── */}
+        <div className="mpm-right">
+          <button type="button" className="mpm-exact" onClick={exactCash} disabled={bill - nonCash <= 0}>
+            Exact cash {bill - nonCash > 0 ? fmtMoney(roundMoney(bill - nonCash)) : ''}
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            onMouseDown={press}
-            onMouseUp={release}
-            style={{
-              flex: 1, height: 46, borderRadius: 10,
-              border: '1.5px solid var(--red-border)',
-              background: 'var(--red-bg)', color: 'var(--red)',
-              fontSize: 13, fontWeight: 800, cursor: 'pointer',
-            }}
-          >
-            Cancel
-          </button>
+          <Numpad onKey={pressKey} showDot showClear showBackspace={false} btnHeight={50} fontSize={18} gap={8} />
+          <div className="mpm-foot">
+            <button type="button" className="mpm-btn is-primary" onClick={confirm} disabled={!covered || tendered <= 0}>
+              <CornerDownLeft size={17} /> Enter
+            </button>
+            <button type="button" className="mpm-btn is-cancel" onClick={onClose}>Cancel</button>
+          </div>
         </div>
+      </div>
     </Modal>
   )
 }
