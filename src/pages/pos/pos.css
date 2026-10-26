@@ -50,7 +50,7 @@
   user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
   transition: box-shadow 0.1s, transform 0.07s, background 0.1s, color 0.1s, border-color 0.1s;
 }
-/* Number keys: ash of the primary maroon (same colour as every popup keypad, styles/keys.css) */
+/* Number keys: same colour as every popup keypad (--key-bg, styles/keys.css) */
 .ph-key { background: var(--key-bg); border-color: var(--key-border); }
 .ph-key:active, .ph-pay-tile:active, .ph-fn:active {
   box-shadow: var(--ph-pressed); transform: scale(0.97);
@@ -275,21 +275,28 @@
   display: flex; flex-direction: column;
   gap: var(--ph-kgap);
 }
+/* Keypad colour set: payment tiles (--pay-*) and number keys (--key-*, styles/keys.css) */
+.ph-pad {
+  /* light rose tiles; the selected one turns solid maroon */
+  --pay-bg: var(--brand-bg); --pay-border: #ead3da; --pay-fg: #5c0a24; --pay-icon: var(--brand);
+  --pay-on-bg: var(--brand); --pay-on-fg: #fff;
+}
 .ph-pay { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ph-pay-gap); }
 .ph-pay-tile {
   height: var(--ph-tile-h);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  font-size: clamp(11.5px, 0.8vw, 13.5px); font-weight: 600; color: #3f3f46;
-  /* white neumorphic tiles (raised by a light + a dark shadow), apart from the ash number keys */
-  background: #fff; border-color: #f1e8eb;
+  font-size: clamp(11.5px, 0.8vw, 13.5px); font-weight: 600; color: var(--pay-fg);
+  /* neumorphic tiles (raised by a light + a dark shadow); colours from the --pay-* set */
+  background: var(--pay-bg); border-color: var(--pay-border);
   box-shadow: 5px 5px 12px rgba(120, 8, 41, 0.13), -5px -5px 12px #ffffff;
 }
-.ph-pay-tile svg { color: var(--brand); }
+.ph-pay-tile svg { color: var(--pay-icon); }
 .ph-pay-tile:hover { border-color: var(--brand-border); }
 .ph-pay-tile:active { box-shadow: inset 3px 3px 7px rgba(120, 8, 41, 0.14), inset -3px -3px 7px #ffffff; }
-/* selected payment mode stays pressed in: white, maroon outline and label */
+/* selected payment mode stays pressed in, maroon outline */
+.ph-pay-tile.is-active svg { color: var(--pay-on-fg); }
 .ph-pay-tile.is-active {
-  background: #fff; border: 1.5px solid var(--brand); color: var(--brand); font-weight: 800;
+  background: var(--pay-on-bg); border: 1.5px solid var(--brand); color: var(--pay-on-fg); font-weight: 800;
   box-shadow: inset 3px 3px 7px rgba(120, 8, 41, 0.14), inset -3px -3px 7px #ffffff;
 }
 .ph-pad-spacer { display: none; }
