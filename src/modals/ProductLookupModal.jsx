@@ -141,13 +141,6 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
   const focusOn  = e => { e.target.style.borderColor = 'var(--brand)' }
   const focusOff = e => { e.target.style.borderColor = 'var(--border)' }
 
-  const field = (label, input) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-      <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase' }}>{label}</label>
-      {input}
-    </div>
-  )
-
   const toolBtn = (active) => ({
     height: 38, padding: '0 14px', borderRadius: 8,
     border: `1.5px solid ${active ? 'var(--brand)' : 'var(--brand-border)'}`,
@@ -176,52 +169,49 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
     >
       <style>{`@keyframes pl-spin { to { transform: rotate(360deg) } }`}</style>
 
-      {/* ── Filters: Short Description · Price · Group · Keyboard · Clear All ── */}
+      {/* ── Filters: Short Description · Price · Group · Keyboard · Clear All (names inside the boxes) ── */}
       <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2.6fr) minmax(0, 0.9fr) minmax(0, 1.3fr) auto auto', gap: 8, alignItems: 'end' }}>
-          {field('Short Description',
-            <div style={{ position: 'relative' }}>
-              <input data-system-keyboard
-                ref={queryRef}
-                value={query}
-                onChange={e => changeQuery(e.target.value)}
-                onKeyDown={handleQueryKeyDown}
-                placeholder="Name / Barcode / Code"
-                style={{ ...inputStyle, paddingRight: 34 }}
-                onFocus={focusOn}
-                onBlur={focusOff}
-              />
-              <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex' }}>
-                {loading
-                  ? <Loader2 size={14} color="var(--brand)" style={{ animation: 'pl-spin 0.8s linear infinite' }} />
-                  : <Search size={13} color="var(--text-4)" />}
-              </div>
-            </div>
-          )}
-          {field('Price',
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2.6fr) minmax(0, 0.9fr) minmax(0, 1.3fr) auto auto', gap: 8, alignItems: 'center' }}>
+          <div style={{ position: 'relative' }}>
             <input data-system-keyboard
-              value={price}
-              onChange={e => changePrice(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && fireNow(query, price, group)}
-              placeholder="Any"
-              inputMode="decimal"
-              style={{ ...inputStyle, textAlign: 'right' }}
+              ref={queryRef}
+              value={query}
+              onChange={e => changeQuery(e.target.value)}
+              onKeyDown={handleQueryKeyDown}
+              placeholder="Name / Barcode / Code"
+              aria-label="Short description: name, barcode or code"
+              style={{ ...inputStyle, paddingRight: 34 }}
               onFocus={focusOn}
               onBlur={focusOff}
             />
-          )}
-          {field('Group',
-            <select
-              value={group}
-              onChange={e => changeGroup(e.target.value)}
-              style={{ ...inputStyle, cursor: 'pointer', paddingRight: 6 }}
-              onFocus={focusOn}
-              onBlur={focusOff}
-            >
-              <option value="">All groups</option>
-              {productGroups.map(g => <option key={g.groupId} value={g.groupId}>{g.groupDescription}</option>)}
-            </select>
-          )}
+            <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex' }}>
+              {loading
+                ? <Loader2 size={14} color="var(--brand)" style={{ animation: 'pl-spin 0.8s linear infinite' }} />
+                : <Search size={13} color="var(--text-4)" />}
+            </div>
+          </div>
+          <input data-system-keyboard
+            value={price}
+            onChange={e => changePrice(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && fireNow(query, price, group)}
+            placeholder="Max Price"
+            aria-label="Max price"
+            inputMode="decimal"
+            style={{ ...inputStyle, textAlign: 'right' }}
+            onFocus={focusOn}
+            onBlur={focusOff}
+          />
+          <select
+            value={group}
+            aria-label="Group"
+            onChange={e => changeGroup(e.target.value)}
+            style={{ ...inputStyle, cursor: 'pointer', paddingRight: 6 }}
+            onFocus={focusOn}
+            onBlur={focusOff}
+          >
+            <option value="">All groups</option>
+            {productGroups.map(g => <option key={g.groupId} value={g.groupId}>{g.groupDescription}</option>)}
+          </select>
           <button type="button" onClick={() => setKbOpen(o => !o)} style={toolBtn(kbOpen)} aria-pressed={kbOpen}>
             <KeyboardIcon size={15} /> Keyboard
           </button>
