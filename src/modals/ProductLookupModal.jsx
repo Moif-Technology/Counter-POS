@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Search, Trash2, Loader2 } from 'lucide-react'
+import { Search, Loader2, RotateCcw, Tag } from 'lucide-react'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import { fmtMoney } from '../lib/currencyFormat'
@@ -111,44 +111,43 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
   }
 
   const inputStyle = {
-    width: '100%', height: 34, borderRadius: 8,
+    width: '100%', height: 38, borderRadius: 8,
     border: '1.5px solid var(--border)', background: 'var(--surface)',
     padding: '0 10px', fontSize: 12, color: 'var(--text-1)',
     fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
     transition: 'border-color 0.12s',
   }
+  const focusOn  = e => { e.target.style.borderColor = 'var(--brand)' }
+  const focusOff = e => { e.target.style.borderColor = 'var(--border)' }
 
-  const field = (label, input) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>
-        {label}
-      </span>
+  const field = (label, icon, input) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+      <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
+        {icon} {label}
+      </label>
       {input}
     </div>
   )
 
+  const count = results.length
+
+  // Same inside layout as the other popups (e.g. the report viewers):
+  // filter row · bordered table card with a rose header · footer with a count and Close.
   return (
     <Modal
       onClose={onClose}
       icon={Search}
       kicker="Product"
-      title="Product Search"
-      width={720}
+      title={groupLabel ? `Product Search · ${groupLabel}` : 'Product Search'}
+      width={760}
       maxHeight="85vh"
     >
-      <style>{`
-          @keyframes pl-spin  { from { transform:rotate(0deg) } to { transform:rotate(360deg) } }
-        `}</style>
+      <style>{`@keyframes pl-spin { to { transform: rotate(360deg) } }`}</style>
 
-      {/* ── Search bar ── */}
-      <div style={{
-        display: 'flex', alignItems: 'flex-end', gap: 10,
-        padding: '12px 16px', borderBottom: '1px solid var(--border)',
-        background: 'var(--surface-2)', flexShrink: 0,
-      }}>
-        {/* Name / barcode / code */}
-        <div style={{ flex: 3, position: 'relative' }}>
-          {field('Name / Barcode / Code',
+      {/* ── Filters ── */}
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 3fr) minmax(0, 1fr) auto', gap: 8, alignItems: 'end' }}>
+          {field('Name / Barcode / Code', <Search size={11} />,
             <div style={{ position: 'relative' }}>
               <input data-system-keyboard
                 ref={queryRef}
@@ -157,138 +156,114 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
                 onKeyDown={handleQueryKeyDown}
                 placeholder="Type or scan barcode…"
                 style={{ ...inputStyle, paddingRight: 34 }}
-                onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
-                onBlur={e => { e.target.style.borderColor = 'var(--border)' }}
+                onFocus={focusOn}
+                onBlur={focusOff}
               />
-              <div style={{
-                position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                pointerEvents: 'none',
-              }}>
+              <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex' }}>
                 {loading
                   ? <Loader2 size={14} color="var(--brand)" style={{ animation: 'pl-spin 0.8s linear infinite' }} />
-                  : <Search size={13} color="var(--text-4)" />
-                }
+                  : <Search size={13} color="var(--text-4)" />}
               </div>
             </div>
           )}
-        </div>
-
-        {/* Max Price filter */}
-        <div style={{ flex: 1 }}>
-          {field('Max Price',
+          {field('Max Price', <Tag size={11} />,
             <input data-system-keyboard
               value={price}
               onChange={handlePriceChange}
               onKeyDown={e => e.key === 'Enter' && fireNow(query, price)}
               placeholder="Any"
-              style={{ ...inputStyle, textAlign: 'right', fontFamily: 'inherit' }}
-              onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
-              onBlur={e => { e.target.style.borderColor = 'var(--border)' }}
+              style={{ ...inputStyle, textAlign: 'right' }}
+              onFocus={focusOn}
+              onBlur={focusOff}
             />
           )}
+          <button onClick={handleClearAll} style={{
+            height: 38, padding: '0 14px', borderRadius: 8,
+            border: '1.5px solid var(--brand-border)', background: 'var(--brand-bg)',
+            color: 'var(--brand)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', fontFamily: 'inherit',
+          }}>
+            <RotateCcw size={14} /> Clear
+          </button>
+        </div>
+      </div>
+
+      {/* ── Results: table card ── */}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '12px 16px' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', flexShrink: 0,
+          background: 'var(--table-head-bg)', padding: '9px 12px', borderRadius: '10px 10px 0 0',
+          border: '1.5px solid var(--border)', borderBottom: 'none',
+        }}>
+          {COLUMNS.map(col => (
+            <span key={col.key} style={{
+              width: col.w, flex: col.flex ? 1 : undefined,
+              fontSize: 9.5, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: 0.4,
+              textAlign: col.align || 'left', paddingRight: 8,
+            }}>{col.label}</span>
+          ))}
         </div>
 
-        {/* Clear */}
-        <button
-          onClick={handleClearAll}
-          style={{
-            height: 34, padding: '0 14px', borderRadius: 8, flexShrink: 0,
-            border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
-            color: 'var(--red)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 6,
-            transition: 'background 0.1s, color 0.1s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--red)'; e.currentTarget.style.color = '#fff' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'var(--red-bg)'; e.currentTarget.style.color = 'var(--red)' }}
-          onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.96)' }}
-          onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-        >
-          <Trash2 size={12} /> Clear
-        </button>
-      </div>
-
-      {/* ── Table header ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        padding: '0 14px', height: 34, flexShrink: 0,
-        borderBottom: '1.5px solid var(--brand-border)',
-        background: 'var(--table-head-bg)',
-      }}>
-        {COLUMNS.map(col => (
-          <div
-            key={col.key}
-            style={{
-              width: col.w, flex: col.flex ? 1 : undefined,
-              fontSize: 10.5, fontWeight: 700, color: 'var(--brand)',
-              textTransform: 'uppercase', letterSpacing: 0.5,
-              textAlign: col.align || 'left',
-              paddingRight: 8,
-            }}
-          >{col.label}</div>
-        ))}
-      </div>
-
-      {/* ── Results ── */}
-      <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-2)' }}>
-        {loading ? (
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            height: '100%', minHeight: 200,
-            color: 'var(--text-4)', fontSize: 13, fontWeight: 500,
-          }}>
-            <Loader2 size={16} color="var(--brand)" style={{ animation: 'pl-spin 0.8s linear infinite' }} />
-            Searching…
-          </div>
-        ) : error ? (
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            height: '100%', minHeight: 200,
-            color: 'var(--red)', fontSize: 12, fontWeight: 600,
-          }}>
-            {error}
-          </div>
-        ) : results.length === 0 ? (
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            height: '100%', minHeight: 200,
-            color: 'var(--text-4)', fontSize: 13, fontWeight: 500,
-          }}>
-            {searched ? 'No products found' : 'Enter search term above'}
-          </div>
-        ) : (
-          results.map((row, i) => {
-            const isActive = selected?.barcode === row.barcode
-            return (
-              <div
-                key={row.barcode ?? row._raw?.productId ?? i}
-                onClick={() => handleRowClick(row)}
-                onDoubleClick={() => handleRowClick(row)}
-                style={{
-                  display: 'flex', alignItems: 'center',
-                  padding: '0 14px', height: 36,
-                  borderBottom: '1px solid var(--border)',
-                  background: isActive ? 'var(--brand-bg)' : i % 2 === 0 ? '#fff' : 'var(--surface-2)',
-                  cursor: 'pointer', transition: 'background 0.1s',
-                }}
-                onMouseEnter={e => { setSelected(row); if (selected?.barcode !== row.barcode) e.currentTarget.style.background = 'var(--surface-3)' }}
-                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = i % 2 === 0 ? '#fff' : 'var(--surface-2)' }}
-              >
-                {COLUMNS.map(col => (
-                  <div
-                    key={col.key}
-                    style={{
+        <div style={{ flex: 1, overflowY: 'auto', border: '1.5px solid var(--border)', borderRadius: '0 0 10px 10px', minHeight: 260 }}>
+          {loading ? (
+            <div style={{ padding: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-4)', fontSize: 12 }}>
+              <Loader2 size={16} color="var(--brand)" style={{ animation: 'pl-spin 0.8s linear infinite' }} /> Searching…
+            </div>
+          ) : error ? (
+            <div style={{ padding: 16, color: 'var(--red)', fontSize: 12, fontWeight: 600 }}>{error}</div>
+          ) : count === 0 ? (
+            <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-4)', fontSize: 12 }}>
+              {searched ? 'No products found' : 'Type a name, barcode or code above'}
+            </div>
+          ) : (
+            results.map((row, i) => {
+              const isActive = selected?.barcode === row.barcode
+              const stripe = i % 2 === 0 ? '#fff' : 'var(--surface-2)'
+              return (
+                <div
+                  key={row.barcode ?? row._raw?.productId ?? i}
+                  onClick={() => handleRowClick(row)}
+                  style={{
+                    display: 'flex', alignItems: 'center',
+                    padding: '0 12px', height: 38,
+                    borderBottom: '1px solid var(--border)',
+                    background: isActive ? 'var(--brand-bg)' : stripe,
+                    cursor: 'pointer', transition: 'background 0.1s',
+                  }}
+                  onMouseEnter={e => { setSelected(row); e.currentTarget.style.background = 'var(--brand-bg)' }}
+                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = stripe }}
+                >
+                  {COLUMNS.map(col => (
+                    <span key={col.key} style={{
                       width: col.w, flex: col.flex ? 1 : undefined,
-                      fontSize: 12, color: isActive ? 'var(--brand)' : 'var(--text-1)',
-                      fontWeight: isActive ? 600 : 400,
-                      textAlign: col.align || 'left',
+                      fontSize: 12, color: isActive ? 'var(--brand)' : col.key === 'price' ? 'var(--text-1)' : 'var(--text-2)',
+                      fontWeight: col.key === 'price' || isActive ? 700 : 500,
+                      textAlign: col.align || 'left', fontVariantNumeric: 'tabular-nums',
                       paddingRight: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}
-                  >{row[col.key] ?? '—'}</div>
-                ))}
-              </div>
-            )
-          })
-        )}
+                    }}>{row[col.key] ?? '—'}</span>
+                  ))}
+                </div>
+              )
+            })
+          )}
+        </div>
+      </div>
+
+      {/* ── Footer ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '10px 18px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', flexShrink: 0,
+      }}>
+        <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>
+          {count} product{count !== 1 ? 's' : ''}{count ? ' · tap a row to add it' : ''}
+        </span>
+        <button onClick={onClose} style={{
+          height: 34, padding: '0 18px', borderRadius: 9,
+          border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
+          color: 'var(--red)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+        }}>
+          Close
+        </button>
       </div>
     </Modal>
   )
