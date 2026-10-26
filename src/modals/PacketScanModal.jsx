@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { Package, ScanBarcode, X, Loader2, Trash2, PackageSearch } from 'lucide-react'
+import { Package, ScanBarcode, X, Loader2, Trash2 } from 'lucide-react'
 import Numpad from '../components/common/Numpad'
 import Modal from '../components/common/Modal'
+import Table from '../components/common/Table'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import { fmtMoney } from '../lib/currencyFormat'
@@ -9,8 +10,8 @@ import './PacketScanModal.css'
 
 /**
  * Packet Scan — scan packets one after another and see what each one is.
- *   left  — big scan box, then the scanned packets as cards (newest on top):
- *           name, barcode · pack, price; unknown codes are flagged
+ *   left  — big scan box, then a table of scanned packets (newest on top, highlighted):
+ *           Sl# · Barcode · Description · Pack · Price; unknown codes are flagged
  *   right — keypad with ⌫, Add / Close
  * Nothing is added to the bill.
  */
@@ -55,7 +56,7 @@ export default function PacketScanModal({ onClose, searchFn = null }) {
   const count = items.length
 
   return (
-    <Modal onClose={onClose} icon={Package} kicker="Scanner" title="Packet Scan" width={800}>
+    <Modal onClose={onClose} icon={Package} kicker="Scanner" title="Packet Scan" width={920}>
       <div className="pks">
         <div className="pks-left">
           <div className="pks-scan">
@@ -75,28 +76,33 @@ export default function PacketScanModal({ onClose, searchFn = null }) {
             )}
           </div>
 
-          <div className="pks-list">
-            {count === 0 ? (
-              <div className="pks-empty">
-                <PackageSearch size={36} />
-                <b>No packets yet</b>
-                <span>Scan packets one after another — each one shows here</span>
-              </div>
-            ) : items.map((it, i) => (
-              <div key={it.id} className={`pks-item${it.error ? ' is-error' : ''}${i === 0 ? ' is-new' : ''}`}>
-                <span className="pks-no">{count - i}</span>
-                <div className="pks-main">
-                  {it.loading
-                    ? <b className="pks-name is-muted"><Loader2 size={13} className="pks-spin" /> Looking up…</b>
-                    : <b className="pks-name">{it.error ? it.error : it.description}</b>}
-                  <span className="pks-meta">{it.barcode}{it.pack ? ` · ${it.pack}` : ''}</span>
-                </div>
-                {it.price != null && <span className="pks-price">{fmtMoney(it.price)}</span>}
-                <button type="button" className="pks-del" onClick={() => remove(it.id)} aria-label={`Remove ${it.barcode}`}>
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            ))}
+          <div className="pks-table">
+            <Table
+              columns={[
+                { key: 'sl', label: 'Sl#', width: 40, align: 'center', render: (_, it, i) => <span className="pks-no">{count - i}</span> },
+                { key: 'barcode', label: 'Barcode', width: 84, mono: true },
+                {
+                  key: 'description', label: 'Description',
+                  render: (v, it) => it.loading
+                    ? <span className="pks-muted"><Loader2 size={13} className="pks-spin" /> Looking up…</span>
+                    : it.error ? <b className="pks-err">{it.error}</b> : v,
+                },
+                { key: 'pack', label: 'Pack', width: 58, render: v => v || '—' },
+                { key: 'price', label: 'Price', width: 70, align: 'right', mono: true, render: v => (v == null ? '—' : <b className="pks-price">{fmtMoney(v)}</b>) },
+                {
+                  key: 'del', label: '', width: 34, align: 'center',
+                  render: (_, it) => (
+                    <button type="button" className="pks-del" onClick={() => remove(it.id)} aria-label={`Remove ${it.barcode}`}>
+                      <Trash2 size={15} />
+                    </button>
+                  ),
+                },
+              ]}
+              rows={items}
+              rowKey="id"
+              selected={items[0]?.id}
+              emptyText="No packets yet — scan packets one after another"
+            />
           </div>
         </div>
 
