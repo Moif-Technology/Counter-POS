@@ -1,13 +1,13 @@
 /* ─── Number keys: one look everywhere ────────────────────────────
-   The home-screen number keyboard style (light grey key, raised
+   The home-screen number keyboard style (soft rose key, raised
    neumorphic shadow, pressed in when tapped), shared by the POS
    numpad, the <Numpad> component and every popup keypad.
 
    The look is marked !important on purpose: popup keypads size their
    keys with inline styles and some still set colours on hover; this
    keeps every number key looking the same without rewriting them. */
-/* Key colour: a light neutral grey (sits under the rose payment tiles) — also used by the home keypad */
-:root { --key-bg: #f3f3f5; --key-border: #e4e4e8; }
+/* Key colour: soft rose (sits under the grey payment tiles) — also used by the home keypad */
+:root { --key-bg: #f1e6e9; --key-border: #e4cdd4; }
 
 .ui-key {
   background: var(--key-bg) !important;
