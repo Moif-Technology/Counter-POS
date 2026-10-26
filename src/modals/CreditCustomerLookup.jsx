@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronUp, ChevronDown, Keyboard, History, ArrowRight } from 'lucide-react'
+import { Keyboard, ArrowRight } from 'lucide-react'
 import Table from '../components/common/Table'
 import Numpad from '../components/common/Numpad'
 import TouchKeyboard from '../components/common/Keyboard'
@@ -8,7 +8,7 @@ import './CreditCustomerLookup.css'
 
 /*
  * Customer lookup (first step of Receipt / Credit Settlement):
- * customer table on the left; ▲ ▼, Code / Name / Mobile filters, numpad and
+ * customer table on the left; Code / Name / Mobile filters, numpad and
  * actions on the right. Tap a row to select it, tap it again (or Enter / Settle)
  * to open the settlement.
  */
@@ -30,7 +30,7 @@ const FIELDS = [
   { key: 'mobile', label: 'Mobile No' },
 ]
 
-export default function CreditCustomerLookup({ customers, loading, error, onSearch, onOpen, onHistory, onClose }) {
+export default function CreditCustomerLookup({ customers, loading, error, onSearch, onOpen, onClose }) {
   const [q, setQ] = useState({ code: '', name: '', mobile: '' })
   const [focus, setFocus] = useState('code')
   const [selId, setSelId] = useState(null)
@@ -125,10 +125,6 @@ export default function CreditCustomerLookup({ customers, loading, error, onSear
 
       <div className="ccl-side">
         <div className="ccl-search">
-          <div className="ccl-arrows">
-            <button type="button" onClick={() => { move(-1); refocus() }} aria-label="Previous customer"><ChevronUp size={22} /></button>
-            <button type="button" onClick={() => { move(1); refocus() }} aria-label="Next customer"><ChevronDown size={22} /></button>
-          </div>
           <div className="ccl-fields">
             {FIELDS.map(f => (
               <label key={f.key} className={`ccl-field${focus === f.key ? ' is-focus' : ''}`}>
@@ -155,7 +151,6 @@ export default function CreditCustomerLookup({ customers, loading, error, onSear
         {!kbOpen && <Numpad onKey={typeKey} showDot showClear={false} showBackspace btnHeight={44} fontSize={18} gap={6} />}
 
         <div className="ccl-actions">
-          <button type="button" className="ccl-btn" onClick={onHistory}><History size={15} /> History</button>
           <button type="button" className={`ccl-btn${kbOpen ? ' is-on' : ''}`} onClick={() => { setKbOpen(o => !o); refocus() }}><Keyboard size={15} /> Keyboard</button>
           <button type="button" className="ccl-btn is-close" onClick={onClose}>Close</button>
         </div>

@@ -1,4 +1,4 @@
-/* Customer lookup — table left, arrows / filters / numpad / actions right */
+/* Customer lookup — table left, filters / numpad / actions right */
 .ccl { display: grid; grid-template-columns: 1fr 300px; gap: 14px; padding: 14px 16px; background: #fafafa; min-height: 0; }
 .ccl-table { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .ccl-table > .ui-table { flex: 1; min-height: 0; }
@@ -9,20 +9,11 @@
 .ccl-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 
 .ccl-search { display: flex; gap: 8px; }
-.ccl-arrows { display: flex; flex-direction: column; gap: 8px; justify-content: center; }
-.ccl-arrows button {
-  width: 44px; flex: 1; max-height: 64px; border-radius: 12px; cursor: pointer;
-  border: 1px solid var(--key-border, #e4cdd4); background: var(--key-bg, #f1e6e9); color: var(--brand);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 4px rgba(120, 8, 41, 0.08);
-}
-.ccl-arrows button:active { transform: scale(0.95); box-shadow: inset 0 2px 4px rgba(120, 8, 41, 0.12); }
-
 .ccl-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .ccl-field { display: flex; flex-direction: column; gap: 3px; cursor: text; }
 .ccl-field span { font-size: 10.5px; font-weight: 700; color: var(--text-4); letter-spacing: 0.5px; text-transform: uppercase; }
 .ccl-field input {
-  height: 36px; width: 100%; box-sizing: border-box; padding: 0 10px; outline: none;
+  height: 38px; width: 100%; box-sizing: border-box; padding: 0 10px; outline: none;
   border: 1.5px solid #e4e4e7; border-radius: 9px; background: #fff;
   font-family: inherit; font-size: 14px; font-weight: 700; color: #18181b;
 }
@@ -38,7 +29,7 @@
 .ccl-picked.has-value { border-style: solid; border-color: var(--brand-border); background: var(--brand-bg); }
 .ccl-picked.has-value span { color: var(--brand); }
 
-.ccl-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.ccl-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
 .ccl-btn {
   height: 40px; border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 800;
   display: flex; align-items: center; justify-content: center; gap: 5px;

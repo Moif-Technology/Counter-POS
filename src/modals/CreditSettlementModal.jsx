@@ -192,7 +192,6 @@ export default function CreditSettlementModal({
             error={error}
             onSearch={q => { setSearch(q); scheduleSearch(q) }}
             onOpen={setConfirmCust}
-            onHistory={() => setStep('history')}
             onClose={onClose}
           />
         ) : step === 'history' ? (
