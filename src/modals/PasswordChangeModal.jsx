@@ -93,7 +93,7 @@ export default function PasswordChangeModal({ onClose }) {
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 6 }}>
             Current Password
           </label>
-          <input data-system-keyboard
+          <input className="ui-input" data-system-keyboard
             type="password"
             value={currentPassword}
             onChange={e => setCurrentPassword(e.target.value)}
@@ -112,7 +112,7 @@ export default function PasswordChangeModal({ onClose }) {
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 6 }}>
             New Password
           </label>
-          <input data-system-keyboard
+          <input className="ui-input" data-system-keyboard
             type="password"
             value={newPassword}
             onChange={e => setNewPassword(e.target.value)}
@@ -130,7 +130,7 @@ export default function PasswordChangeModal({ onClose }) {
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 6 }}>
             Confirm New Password
           </label>
-          <input data-system-keyboard
+          <input className="ui-input" data-system-keyboard
             type="password"
             value={confirmPassword}
             onChange={e => setConfirmPassword(e.target.value)}

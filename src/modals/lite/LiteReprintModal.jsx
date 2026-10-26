@@ -102,7 +102,7 @@ export default function LiteReprintModal({ onClose, onPrint }) {
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>
               {docLabel} No
             </label>
-            <input
+            <input className="ui-input" data-active="true"
               ref={docNoRef}
               value={docNo}
               onChange={e => setDocNo(e.target.value.replace(/\D/g, ''))}

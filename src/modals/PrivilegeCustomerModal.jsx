@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import Modal from '../components/common/Modal'
 import Numpad from '../components/common/Numpad'
+import Field from '../components/common/Field'
 import Table from '../components/common/Table'
 
 
@@ -84,14 +85,6 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
     { label: 'Customer Name', value: customerName, key: 'name', setter: setCustomerName },
   ]
 
-  const fieldStyle = active => ({
-    width: '100%', height: 38, boxSizing: 'border-box',
-    padding: '0 10px', borderRadius: 8, outline: 'none', fontSize: 13,
-    fontWeight: 600, color: 'var(--text-1)',
-    border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
-    background: '#fff', transition: 'border-color 0.12s', fontFamily: 'inherit',
-  })
-
   const count = customers.length
   const selected = selectedIdx >= 0 ? customers[selectedIdx] : null
 
@@ -133,15 +126,15 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
           display: 'flex', flexDirection: 'column', gap: 10,
         }}>
           {FIELDS.map(f => (
-            <div key={f.key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase' }}>{f.label}</label>
-              <input
-                value={f.value}
-                onFocus={() => setFocus(f.key)}
-                onChange={e => handleFieldChange(f.setter, e.target.value)}
-                style={fieldStyle(focus === f.key)}
-              />
-            </div>
+            <Field
+              key={f.key}
+              label={f.label}
+              value={f.value}
+              active={focus === f.key}
+              onFocus={() => setFocus(f.key)}
+              onChange={e => handleFieldChange(f.setter, e.target.value)}
+              inputStyle={{ width: '100%' }}
+            />
           ))}
           <div style={{ marginTop: 4 }}>
             <Numpad onKey={pressKey} showDot showClear showBackspace={false} btnHeight={44} fontSize={16} gap={6} />

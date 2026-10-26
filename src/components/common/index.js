@@ -9,6 +9,7 @@ export { default as Modal, ModalHeader, ModalFooter, ModalCloseButton } from './
 export { default as Numpad } from './Numpad'
 export { default as Keyboard } from './Keyboard'
 export { default as Calendar } from './Calendar'
+export { default as Field } from './Field'
 export { default as DatePicker } from './DatePicker'
 export { default as DateRangePicker } from './DateRangePicker'
 export { default as TimePicker } from './TimePicker'

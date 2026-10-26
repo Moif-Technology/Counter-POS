@@ -120,7 +120,7 @@ export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Del
         <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.6, textTransform: 'uppercase' }}>
           Search Customer
         </label>
-        <input data-system-keyboard
+        <input className="ui-input" data-system-keyboard
           value={query}
           onChange={e => { setQuery(e.target.value); scheduleSearch(e.target.value) }}
           placeholder="Name, code, or mobile…"
@@ -166,7 +166,7 @@ export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Del
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
           <div>
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.6, textTransform: 'uppercase' }}>Phone</label>
-            <input data-system-keyboard
+            <input className="ui-input" data-system-keyboard
               value={phone}
               onChange={e => setPhone(e.target.value)}
               style={{
@@ -177,7 +177,7 @@ export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Del
           </div>
           <div>
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.6, textTransform: 'uppercase' }}>Delivery Time</label>
-            <input data-system-keyboard
+            <input className="ui-input" data-system-keyboard
               type="datetime-local"
               value={deliveryTime}
               onChange={e => setDeliveryTime(e.target.value)}

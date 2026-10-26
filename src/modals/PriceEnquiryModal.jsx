@@ -206,7 +206,7 @@ export default function PriceEnquiryModal({ onClose, searchFn = null }) {
           <div>
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Bar Code</label>
             <div style={{ display: 'flex', gap: 5 }}>
-              <input
+              <input className="ui-input"
                 ref={inputRef}
                 value={barcode}
                 onChange={e => setBarcode(e.target.value)}
