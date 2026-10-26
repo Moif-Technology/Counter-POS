@@ -37,7 +37,9 @@ export function useSaveBill({ fetchNextBillNo }) {
       const cartItems = enrichCartItemsForSave(fresh.cartItems)
       const hasSale   = cartItems.some(i => Number(i.qty) > 0)
       const hasReturn = cartItems.some(i => Number(i.qty) < 0)
-      const isReturn = fresh.returnMode && !hasSale && hasReturn
+      // A bill of only returned lines is a return bill. Return switches itself
+      // off after each item, so the lines decide this, not the Return key.
+      const isReturn = !hasSale && hasReturn
       const result = await api.counterPos.saveBill({
         cartItems,
         paymentMode:  fresh.paymentMode,

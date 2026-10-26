@@ -7,7 +7,7 @@ import { api } from '../../../lib/api'
 import { enrichCartItemsForSave } from '../../../lib/cartLine'
 import { isGroupBrowseMode } from '../../../lib/groupUtils'
 import { closeAndFocusBarcode } from '../../../lib/posFocus'
-import { togglePosQtyMode, togglePosReturnMode } from '../../../lib/posNumpadKeys'
+import { endOneShotReturn, togglePosQtyMode, togglePosReturnMode } from '../../../lib/posNumpadKeys'
 import { posAskPrintCopies, posConfirm, posNotifyError, posNotifyInfo, posNotifySuccess, posNotifyWarning } from '../../../lib/posNotify'
 import { holdDataFromPosState, printHoldReceipt } from '../../../lib/printHoldReceipt'
 import { deliveryDataFromPosState, printDeliveryReceipt } from '../../../lib/printDeliveryReceipt'
@@ -215,6 +215,7 @@ export function usePosActions({ onSave }) {
       vatPer:      product.vatPer ?? 0,
     })
     resetAfterLineScan()
+    endOneShotReturn()
   }
 
   function handleGroupSelect({ group, unitPrice, mode }) {

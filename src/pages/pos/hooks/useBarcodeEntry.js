@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePosStore } from '../../../store/posStore'
 import { api } from '../../../lib/api'
 import { focusBarcodeScan } from '../../../lib/posFocus'
-import { finishPosQtyEntry } from '../../../lib/posNumpadKeys'
+import { endOneShotReturn, finishPosQtyEntry } from '../../../lib/posNumpadKeys'
 import { posConfirm, posNotifyError, posNotifySuccess } from '../../../lib/posNotify'
 import { IS_ANDROID, scanSunmiBarcode } from '../../../lib/sunmiCameraScanner'
 import {
@@ -131,8 +131,7 @@ export function useBarcodeEntry() {
         vatPer:    product.vatPer ?? 0,
       })
       resetAfterLineScan()
-      // Like Qty: a typed return qty is for one scan; later scans return 1 each.
-      if (usePosStore.getState().returnMode) usePosStore.setState({ qtyBuffer: '-1' })
+      endOneShotReturn()   // like Qty: return covers this one item, then back to sale
       added = true
     } catch (err) {
       posNotifyError(err.message ?? 'Product not found', { title: 'Scan', onClose: clearScanAndRefocus })

@@ -72,7 +72,8 @@ export function togglePosQtyMode() {
 /**
  * Return key — works like Qty, but kept separate from it. Off → return mode on
  * and start typing the return qty (any sale qty being typed is dropped; ENTER
- * finishes, the next scan is returned with it). On → return mode off, back to sale.
+ * finishes). The next item added is returned with it, then return switches
+ * itself off (see endOneShotReturn). On → return mode off, back to sale.
  */
 export function togglePosReturnMode() {
   const state = usePosStore.getState()
@@ -83,6 +84,11 @@ export function togglePosReturnMode() {
     usePosStore.setState({ inputMode: 'barcode', qtyBuffer: '1' })   // back to sale, qty 1
     focusBarcodeScan()
   }
+}
+
+/** Return is one item at a time, like Qty: after an item is added, go back to sale (qty 1). */
+export function endOneShotReturn() {
+  if (usePosStore.getState().returnMode) usePosStore.setState({ returnMode: false, qtyBuffer: '1' })
 }
 
 /** Leave qty entry: keep a valid typed qty (or fall back to the default) and refocus the search box. */
