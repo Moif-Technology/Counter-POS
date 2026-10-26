@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  Loader2, AlertCircle, CheckCircle2,
-  Banknote, CreditCard, ArrowLeft, Receipt, History,
+  AlertCircle, CheckCircle2,
+  Banknote, CreditCard, ArrowLeft,
   FileText,
 } from 'lucide-react'
+import CreditCustomerLookup from './CreditCustomerLookup'
 import { CreditSettlementHistoryList, CreditSettlementReceiptDetail } from './CreditSettlementHistory'
 import Modal from '../components/common/Modal'
 import Numpad from '../components/common/Numpad'
@@ -180,98 +181,20 @@ export default function CreditSettlementModal({
           }}
         ><ArrowLeft size={16} /></button>
       )}
-      width={step === 'settle' ? 680 : 760}
+      width={step === 'settle' ? 680 : step === 'list' ? 940 : 760}
       maxHeight="92vh"
     >
 
-        {step === 'list' && (
-          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-            {[
-              { key: 'settle', label: 'Settle', icon: Receipt },
-              { key: 'history', label: 'History', icon: History },
-            ].map(tab => {
-              const Icon = tab.icon
-              const active = tab.key === 'settle'
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => tab.key === 'history' && setStep('history')}
-                  style={{
-                    flex: 1, height: 42, border: 'none', cursor: 'pointer',
-                    background: active ? 'var(--brand-bg)' : '#fff',
-                    color: active ? 'var(--brand)' : 'var(--text-3)',
-                    fontWeight: active ? 800 : 600, fontSize: 12,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                    borderBottom: active ? '2px solid var(--brand)' : '2px solid transparent',
-                  }}
-                >
-                  <Icon size={14} /> {tab.label}
-                </button>
-              )
-            })}
-          </div>
-        )}
-
         {step === 'list' ? (
-          <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 380 }}>
-            <div style={{ flex: 1, padding: 14, display: 'flex', flexDirection: 'column', gap: 10, overflow: 'hidden' }}>
-              <input
-                value={search}
-                onChange={e => { setSearch(e.target.value); scheduleSearch(e.target.value) }}
-                placeholder="Search code or name…"
-                style={{
-                  height: 40, padding: '0 12px', borderRadius: 8, border: '1.5px solid var(--border)',
-                  fontSize: 13, fontWeight: 600, outline: 'none',
-                }}
-              />
-              <div style={{ flex: 1, overflow: 'hidden', border: '1.5px solid var(--brand-border)', borderRadius: 10 }}>
-                <div style={{
-                  display: 'grid', gridTemplateColumns: '100px 1fr 100px',
-                  background: 'var(--table-head-bg)', padding: '8px 12px', borderBottom: '1px solid var(--brand-border)',
-                }}>
-                  {['Code', 'Customer Name', 'O/S Balance'].map(h => (
-                    <span key={h} style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase' }}>{h}</span>
-                  ))}
-                </div>
-                <div style={{ overflowY: 'auto', maxHeight: 340 }}>
-                  {loading && (
-                    <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-4)', fontSize: 12 }}>
-                      <Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite', display: 'inline-block' }} /> Loading…
-                    </div>
-                  )}
-                  {!loading && error && (
-                    <div style={{ padding: 16, color: 'var(--red)', fontSize: 12, fontWeight: 600 }}>{error}</div>
-                  )}
-                  {!loading && !error && customers.length === 0 && (
-                    <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-4)', fontSize: 12 }}>
-                      No credit customers with outstanding balance
-                    </div>
-                  )}
-                  {!loading && customers.map(c => (
-                    <div
-                      key={c.customerId}
-                      onClick={() => openSettlement(c)}
-                      style={{
-                        display: 'grid', gridTemplateColumns: '100px 1fr 100px',
-                        padding: '12px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border)',
-                        alignItems: 'center', transition: 'background 0.1s',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-bg)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
-                    >
-                      <span style={{ fontSize: 12, fontFamily: 'inherit', fontWeight: 600 }}>{c.customerCode}</span>
-                      <span style={{ fontSize: 12, fontWeight: 600 }}>{c.customerName}</span>
-                      <span style={{
-                        fontSize: 12, fontWeight: 800, textAlign: 'right',
-                        fontFamily: 'inherit',
-                        color: c.osAmount > 0 ? 'var(--red)' : 'var(--green)',
-                      }}>{fmt3(c.osAmount)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          <CreditCustomerLookup
+            customers={customers}
+            loading={loading}
+            error={error}
+            onSearch={q => { setSearch(q); scheduleSearch(q) }}
+            onOpen={openSettlement}
+            onHistory={() => setStep('history')}
+            onClose={onClose}
+          />
         ) : step === 'history' ? (
           <CreditSettlementHistoryList
             accessToken={accessToken}
