@@ -1,24 +1,19 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Search, Loader2, RotateCcw, Keyboard as KeyboardIcon, ChevronUp, ChevronDown } from 'lucide-react'
+import { Search, Loader2, RotateCcw, Keyboard as KeyboardIcon, ChevronUp, ChevronDown, X, PackageSearch } from 'lucide-react'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import { fmtMoney } from '../lib/currencyFormat'
 import Modal from '../components/common/Modal'
 import Keyboard from '../components/common/Keyboard'
-
-const COLUMNS = [
-  { key: 'barcode',       label: 'Barcode',        w: 130 },
-  { key: 'description',   label: 'Description',    flex: true },
-  { key: 'packetDetails', label: 'Packet Details', w: 130 },
-  { key: 'price',         label: 'Price',          w: 90, align: 'right' },
-]
+import './ProductLookupModal.css'
 
 const DEBOUNCE_MS = 350
 
 /**
- * Product Search — Short Description · Price · Group, Keyboard, Clear All;
- * results table (Barcode · Description · Packet Details · Price) with ↑ / ↓ to
- * move the highlighted row. Tap a row, or Enter on the highlighted one, to add it.
+ * Product Search — one search bar (name / barcode / code) with a keyboard toggle,
+ * group chips, max price and Clear; results as a clean list (name, barcode ·
+ * packet details, price) with ↑ / ↓ in the footer. Tap a row, or Enter on the
+ * highlighted one, to add it.
  */
 export default function ProductLookupModal({ onClose, onSelect, groupId = null, groupLabel = '', searchFn = null }) {
   const [query,    setQuery]    = useState('')
@@ -131,185 +126,125 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
     changeQuery(k === '⌫' ? query.slice(0, -1) : query + k)
   }
 
-  const inputStyle = {
-    width: '100%', height: 38, borderRadius: 8,
-    border: '1.5px solid var(--border)', background: 'var(--surface)',
-    padding: '0 10px', fontSize: 12, color: 'var(--text-1)',
-    fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
-    transition: 'border-color 0.12s',
-  }
-  const focusOn  = e => { e.target.style.borderColor = 'var(--brand)' }
-  const focusOff = e => { e.target.style.borderColor = 'var(--border)' }
-
-  const toolBtn = (active) => ({
-    height: 38, padding: '0 14px', borderRadius: 8,
-    border: `1.5px solid ${active ? 'var(--brand)' : 'var(--brand-border)'}`,
-    background: active ? 'var(--brand)' : 'var(--brand-bg)',
-    color: active ? '#fff' : 'var(--brand)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-    display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', fontFamily: 'inherit',
-  })
-
-  const arrowBtn = {
-    width: 46, height: 46, borderRadius: '50%', padding: 0,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    border: '1.5px solid var(--brand-border)', background: 'var(--brand-bg)', color: 'var(--brand)', cursor: 'pointer',
-  }
-
   const count = results.length
+  const groupName = group === '' ? '' : (productGroups.find(g => String(g.groupId) === String(group))?.groupDescription ?? groupLabel)
 
-  // Same inside layout as the other popups (filter row · table card · footer).
   return (
     <Modal
       onClose={onClose}
       icon={Search}
       kicker="Product"
-      title={groupLabel ? `Product Search · ${groupLabel}` : 'Product Search'}
-      width={820}
+      title="Product Search"
+      width={720}
       maxHeight="92vh"
     >
-      <style>{`@keyframes pl-spin { to { transform: rotate(360deg) } }`}</style>
-
-      {/* ── Filters: Short Description · Price · Group · Keyboard · Clear All (names inside the boxes) ── */}
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2.6fr) minmax(0, 0.9fr) minmax(0, 1.3fr) auto auto', gap: 8, alignItems: 'center' }}>
-          <div style={{ position: 'relative' }}>
+      <div className="pls">
+        {/* ── Search bar + filters ── */}
+        <div className="pls-top">
+          <div className="pls-search">
+            {loading ? <Loader2 size={18} className="pls-spin" /> : <Search size={18} />}
             <input data-system-keyboard
               ref={queryRef}
               value={query}
               onChange={e => changeQuery(e.target.value)}
               onKeyDown={handleQueryKeyDown}
-              placeholder="Name / Barcode / Code"
+              placeholder="Search name, barcode or code"
               aria-label="Short description: name, barcode or code"
-              style={{ ...inputStyle, paddingRight: 34 }}
-              onFocus={focusOn}
-              onBlur={focusOff}
             />
-            <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex' }}>
-              {loading
-                ? <Loader2 size={14} color="var(--brand)" style={{ animation: 'pl-spin 0.8s linear infinite' }} />
-                : <Search size={13} color="var(--text-4)" />}
-            </div>
-          </div>
-          <input data-system-keyboard
-            value={price}
-            onChange={e => changePrice(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && fireNow(query, price, group)}
-            placeholder="Max Price"
-            aria-label="Max price"
-            inputMode="decimal"
-            style={{ ...inputStyle, textAlign: 'right' }}
-            onFocus={focusOn}
-            onBlur={focusOff}
-          />
-          <select
-            value={group}
-            aria-label="Group"
-            onChange={e => changeGroup(e.target.value)}
-            style={{ ...inputStyle, cursor: 'pointer', paddingRight: 6 }}
-            onFocus={focusOn}
-            onBlur={focusOff}
-          >
-            <option value="">All groups</option>
-            {productGroups.map(g => <option key={g.groupId} value={g.groupId}>{g.groupDescription}</option>)}
-          </select>
-          <button type="button" onClick={() => setKbOpen(o => !o)} style={toolBtn(kbOpen)} aria-pressed={kbOpen}>
-            <KeyboardIcon size={15} /> Keyboard
-          </button>
-          <button type="button" onClick={handleClearAll} style={toolBtn(false)}>
-            <RotateCcw size={14} /> Clear All
-          </button>
-        </div>
-      </div>
-
-      {/* ── Results table card + ↑ / ↓ ── */}
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10, padding: '12px 16px' }}>
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', flexShrink: 0,
-            background: 'var(--table-head-bg)', padding: '9px 12px', borderRadius: '10px 10px 0 0',
-            border: '1.5px solid var(--border)', borderBottom: 'none',
-          }}>
-            {COLUMNS.map(col => (
-              <span key={col.key} style={{
-                width: col.w, flex: col.flex ? 1 : undefined,
-                fontSize: 9.5, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: 0.4,
-                textAlign: col.align || 'left', paddingRight: 8,
-              }}>{col.label}</span>
-            ))}
-          </div>
-
-          <div ref={listRef} style={{ flex: 1, overflowY: 'auto', border: '1.5px solid var(--border)', borderRadius: '0 0 10px 10px', minHeight: kbOpen ? 150 : 260 }}>
-            {loading ? (
-              <div style={{ padding: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-4)', fontSize: 12 }}>
-                <Loader2 size={16} color="var(--brand)" style={{ animation: 'pl-spin 0.8s linear infinite' }} /> Searching…
-              </div>
-            ) : error ? (
-              <div style={{ padding: 16, color: 'var(--red)', fontSize: 12, fontWeight: 600 }}>{error}</div>
-            ) : count === 0 ? (
-              <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-4)', fontSize: 12 }}>
-                {searched ? 'No products found' : 'Type a description, barcode or code, or pick a group'}
-              </div>
-            ) : (
-              results.map((row, i) => {
-                const isActive = i === selIdx
-                const stripe = i % 2 === 0 ? '#fff' : 'var(--surface-2)'
-                return (
-                  <div
-                    key={row.barcode ?? row._raw?.productId ?? i}
-                    onClick={() => pick(row)}
-                    style={{
-                      display: 'flex', alignItems: 'center',
-                      padding: '0 12px', height: 38,
-                      borderBottom: '1px solid var(--border)',
-                      borderLeft: `3px solid ${isActive ? 'var(--brand)' : 'transparent'}`,
-                      background: isActive ? 'var(--brand-bg)' : stripe,
-                      cursor: 'pointer', transition: 'background 0.1s',
-                    }}
-                  >
-                    {COLUMNS.map(col => (
-                      <span key={col.key} style={{
-                        width: col.w, flex: col.flex ? 1 : undefined,
-                        fontSize: 12, color: isActive ? 'var(--brand)' : col.key === 'price' ? 'var(--text-1)' : 'var(--text-2)',
-                        fontWeight: col.key === 'price' || isActive ? 700 : 500,
-                        textAlign: col.align || 'left', fontVariantNumeric: 'tabular-nums',
-                        paddingRight: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>{row[col.key] ?? '—'}</span>
-                    ))}
-                  </div>
-                )
-              })
+            {query && (
+              <button type="button" className="pls-icon-btn" onClick={() => { changeQuery(''); queryRef.current?.focus() }} aria-label="Clear search">
+                <X size={17} />
+              </button>
             )}
+            <button
+              type="button"
+              className={`pls-icon-btn${kbOpen ? ' is-on' : ''}`}
+              onClick={() => setKbOpen(o => !o)}
+              aria-pressed={kbOpen}
+              aria-label="On-screen keyboard"
+              title="Keyboard"
+            >
+              <KeyboardIcon size={19} />
+            </button>
+          </div>
+
+          <div className="pls-filters">
+            <div className="pls-chips" role="tablist" aria-label="Group">
+              <button type="button" className={`pls-chip${group === '' ? ' is-on' : ''}`} onClick={() => changeGroup('')}>All</button>
+              {productGroups.map(g => (
+                <button
+                  key={g.groupId}
+                  type="button"
+                  className={`pls-chip${String(group) === String(g.groupId) ? ' is-on' : ''}`}
+                  onClick={() => changeGroup(String(g.groupId))}
+                >
+                  {g.groupDescription}
+                </button>
+              ))}
+            </div>
+            <label className="pls-price">
+              <span>Max</span>
+              <input data-system-keyboard
+                value={price}
+                onChange={e => changePrice(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && fireNow(query, price, group)}
+                placeholder="Any"
+                inputMode="decimal"
+                aria-label="Max price"
+              />
+            </label>
+            <button type="button" className="pls-clear" onClick={handleClearAll}>
+              <RotateCcw size={13} /> Clear
+            </button>
           </div>
         </div>
 
-        {/* Move the highlighted row */}
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14, flexShrink: 0 }}>
-          <button type="button" onClick={() => move(-1)} disabled={!count} style={{ ...arrowBtn, opacity: count ? 1 : 0.4 }} aria-label="Previous product">
-            <ChevronUp size={24} />
-          </button>
-          <button type="button" onClick={() => move(1)} disabled={!count} style={{ ...arrowBtn, opacity: count ? 1 : 0.4 }} aria-label="Next product">
-            <ChevronDown size={24} />
-          </button>
+        {/* ── Results ── */}
+        <div ref={listRef} className="pls-list" style={{ minHeight: kbOpen ? 140 : 260 }}>
+          {error ? (
+            <div className="pls-error">{error}</div>
+          ) : count === 0 ? (
+            <div className="pls-empty">
+              <PackageSearch size={34} />
+              {loading ? 'Searching…'
+                : searched ? 'No products found'
+                : 'Type to search, or pick a group'}
+            </div>
+          ) : (
+            results.map((row, i) => (
+              <div
+                key={row.barcode ?? row._raw?.productId ?? i}
+                className={`pls-row${i === selIdx ? ' is-active' : ''}`}
+                onClick={() => pick(row)}
+                onMouseEnter={() => setSelIdx(i)}
+              >
+                <div className="pls-row-main">
+                  <span className="pls-row-name">{row.description ?? '—'}</span>
+                  <span className="pls-row-meta">
+                    {row.barcode ?? '—'}{row.packetDetails && row.packetDetails !== '—' ? ` · ${row.packetDetails}` : ''}
+                  </span>
+                </div>
+                <span className="pls-row-price">{row.price}</span>
+              </div>
+            ))
+          )}
         </div>
-      </div>
 
-      {kbOpen && <Keyboard onKey={handleKbKey} onClose={() => setKbOpen(false)} />}
+        {kbOpen && <Keyboard onKey={handleKbKey} onClose={() => setKbOpen(false)} />}
 
-      {/* ── Footer ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '10px 18px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', flexShrink: 0,
-      }}>
-        <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>
-          {count} product{count !== 1 ? 's' : ''}{count ? ' · tap a row, or Enter, to add it' : ''}
-        </span>
-        <button onClick={onClose} style={{
-          height: 34, padding: '0 18px', borderRadius: 9,
-          border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
-          color: 'var(--red)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-        }}>
-          Close
-        </button>
+        {/* ── Footer ── */}
+        <div className="pls-foot">
+          <span className="pls-count">
+            {count ? `${count} product${count !== 1 ? 's' : ''}${groupName ? ` in ${groupName}` : ''}` : ''}
+          </span>
+          <button type="button" className="pls-icon-btn pls-nav" onClick={() => move(-1)} disabled={!count} aria-label="Previous product">
+            <ChevronUp size={20} />
+          </button>
+          <button type="button" className="pls-icon-btn pls-nav" onClick={() => move(1)} disabled={!count} aria-label="Next product">
+            <ChevronDown size={20} />
+          </button>
+          <button type="button" className="pls-close" onClick={onClose}>Close</button>
+        </div>
       </div>
     </Modal>
   )
