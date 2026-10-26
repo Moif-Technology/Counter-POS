@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Delete, Loader2, Crown } from 'lucide-react'
+import { Loader2, Crown } from 'lucide-react'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import Modal from '../components/common/Modal'
+import Numpad from '../components/common/Numpad'
 
-const NUM_KEYS = [
-  ['7','8','9'],
-  ['4','5','6'],
-  ['1','2','3'],
-]
+const GRID = '1fr 1.2fr 2.2fr'   // Customer No · Code · Name
 
 export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = null }) {
   const [customerNo,   setCustomerNo]   = useState('')
@@ -53,7 +50,13 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
     setCustomerName(c.customerName ?? '')
   }
 
+  // Keypad types into the focused field; C clears it.
   const pressKey = k => {
+    if (k === 'C') {
+      const setter = { no: setCustomerNo, code: setCustomerCode, name: setCustomerName }[focus]
+      setter?.(''); scheduleSearch('')
+      return
+    }
     if (k === '⌫') {
       if (focus === 'no')   { setCustomerNo(v   => { const n = v.slice(0, -1); scheduleSearch(n); return n }) }
       if (focus === 'code') { setCustomerCode(v => { const n = v.slice(0, -1); scheduleSearch(n); return n }) }
@@ -76,191 +79,133 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
     onClose()
   }
 
+  const FIELDS = [
+    { label: 'Customer No',   value: customerNo,   key: 'no',   setter: setCustomerNo   },
+    { label: 'Customer Code', value: customerCode, key: 'code', setter: setCustomerCode },
+    { label: 'Customer Name', value: customerName, key: 'name', setter: setCustomerName },
+  ]
+
   const fieldStyle = active => ({
-    width: '100%', height: 34, boxSizing: 'border-box',
-    padding: '0 10px', borderRadius: 6, outline: 'none', fontSize: 13,
+    width: '100%', height: 38, boxSizing: 'border-box',
+    padding: '0 10px', borderRadius: 8, outline: 'none', fontSize: 13,
     fontWeight: 600, color: 'var(--text-1)',
     border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
-    background: active ? 'var(--brand-bg)' : '#fff',
-    transition: 'border-color 0.15s',
-    fontFamily: 'inherit',
+    background: '#fff', transition: 'border-color 0.12s', fontFamily: 'inherit',
   })
 
-  const numBtnStyle = {
-    flex: 1, height: 46, borderRadius: 8,
-    border: '1.5px solid var(--border)', background: '#fff',
-    fontSize: 16, fontWeight: 700, color: 'var(--text-1)',
-    cursor: 'pointer', transition: 'all 0.1s',
-  }
+  const count = customers.length
+  const selected = selectedIdx >= 0 ? customers[selectedIdx] : null
 
+  // Common popup layout: table card (left) · fields + keypad (right) · footer with count, Close, Apply.
   return (
-    <Modal onClose={onClose} icon={Crown} title="Privilege Customer Selection" width={680}>
+    <Modal onClose={onClose} icon={Crown} kicker="Customer" title="Privilege Customer" width={780} maxHeight="92vh">
       <style>{`
-        @media (max-width: 640px) {
+        @keyframes pcm-spin { to { transform: rotate(360deg) } }
+        @media (max-width: 680px) {
           .pc-body { flex-direction: column !important; }
-          .pc-left { border-right: none !important; border-bottom: 1px solid var(--border) !important; min-height: 180px; }
-          .pc-right { width: 100% !important; padding: 12px !important; }
+          .pc-right { width: 100% !important; border-left: none !important; border-top: 1px solid var(--border) !important; }
         }
       `}</style>
 
-      {/* ── Body ── */}
-      <div className="pc-body" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div className="pc-body" style={{ display: 'flex', flex: 1, minHeight: 0 }}>
 
-        {/* ── Left: customer list ── */}
-        <div className="pc-left" style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden', padding: '12px' }}>
-          {/* Table with outer border + curved corners */}
+        {/* ── Customer table ── */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', padding: '14px 16px' }}>
           <div style={{
-            flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            border: '1.5px solid var(--brand-border)', borderRadius: 10,
+            display: 'grid', gridTemplateColumns: GRID, flexShrink: 0,
+            background: 'var(--table-head-bg)', padding: '9px 12px', borderRadius: '10px 10px 0 0',
+            border: '1.5px solid var(--border)', borderBottom: 'none',
           }}>
-            {/* Heading */}
-            <div style={{
-              display: 'grid', gridTemplateColumns: '1fr 1fr 2fr',
-              background: 'var(--table-head-bg)', borderBottom: '1.5px solid var(--brand-border)',
-              padding: '8px 12px', flexShrink: 0,
-              borderRadius: '8px 8px 0 0',
-            }}>
-              {['Customer No', 'Customer Code', 'Customer Name'].map(h => (
-                <span key={h} style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</span>
-              ))}
-            </div>
+            {['Customer No', 'Customer Code', 'Customer Name'].map(h => (
+              <span key={h} style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: 0.4 }}>{h}</span>
+            ))}
+          </div>
 
-            {/* Rows */}
-            <div ref={listRef} style={{ flex: 1, overflowY: 'auto', borderRadius: '0 0 8px 8px' }}>
-              {loading && (
-                <div style={{ padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-4)', fontSize: 12 }}>
-                  <Loader2 size={14} style={{ animation: 'pcm-spin 0.8s linear infinite' }} /> Loading…
-                    <style>{`@keyframes pcm-spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
+          <div ref={listRef} style={{ flex: 1, overflowY: 'auto', border: '1.5px solid var(--border)', borderRadius: '0 0 10px 10px', minHeight: 300 }}>
+            {loading && (
+              <div style={{ padding: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-4)', fontSize: 12 }}>
+                <Loader2 size={16} color="var(--brand)" style={{ animation: 'pcm-spin 0.8s linear infinite' }} /> Loading…
+              </div>
+            )}
+            {!loading && error && (
+              <div style={{ padding: 16, color: 'var(--red)', fontSize: 12, fontWeight: 600 }}>{error}</div>
+            )}
+            {!loading && !error && count === 0 && (
+              <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-4)', fontSize: 12 }}>No customers found</div>
+            )}
+            {!loading && customers.map((c, i) => {
+              const isActive = selectedIdx === i
+              const stripe = i % 2 === 0 ? '#fff' : 'var(--surface-2)'
+              return (
+                <div
+                  key={c.customerId}
+                  onClick={() => selectRow(c, i)}
+                  onDoubleClick={() => { selectRow(c, i); onApply?.(c); onClose() }}
+                  style={{
+                    display: 'grid', gridTemplateColumns: GRID, alignItems: 'center',
+                    padding: '0 12px', height: 38, cursor: 'pointer',
+                    borderBottom: '1px solid var(--border)',
+                    borderLeft: `3px solid ${isActive ? 'var(--brand)' : 'transparent'}`,
+                    background: isActive ? 'var(--brand-bg)' : stripe,
+                    transition: 'background 0.1s',
+                  }}
+                >
+                  <span style={{ fontSize: 12, fontWeight: isActive ? 700 : 500, color: isActive ? 'var(--brand)' : 'var(--text-1)', fontVariantNumeric: 'tabular-nums' }}>{c.customerId}</span>
+                  <span style={{ fontSize: 12, fontWeight: isActive ? 700 : 500, color: isActive ? 'var(--brand)' : 'var(--text-2)' }}>{c.customerCode}</span>
+                  <span style={{ fontSize: 12, fontWeight: isActive ? 700 : 500, color: isActive ? 'var(--brand)' : 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.customerName}</span>
                 </div>
-              )}
-              {!loading && error && (
-                <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--red)', fontWeight: 600 }}>{error}</div>
-              )}
-              {!loading && !error && customers.length === 0 && (
-                <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: 'var(--text-4)' }}>No customers found</div>
-              )}
-              {!loading && customers.map((c, i) => {
-                const isActive = selectedIdx === i
-                const isLast   = i === customers.length - 1
-                return (
-                  <div
-                    key={c.customerId}
-                    onClick={() => selectRow(c, i)}
-                    style={{
-                      display: 'grid', gridTemplateColumns: '1fr 1fr 2fr',
-                      padding: '9px 12px', cursor: 'pointer',
-                      borderBottom: isLast ? 'none' : '1px solid var(--border)',
-                      background: isActive ? 'rgba(120,8,41,0.06)' : '#fff',
-                      borderLeft: `3px solid ${isActive ? 'var(--brand)' : 'transparent'}`,
-                      transition: 'background 0.1s',
-                      borderRadius: isLast ? '0 0 8px 8px' : 0,
-                    }}
-                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--surface-2)' }}
-                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = '#fff' }}
-                  >
-                    <span style={{ fontSize: 12, color: 'var(--text-1)', fontFamily: 'inherit', fontWeight: isActive ? 700 : 500 }}>{c.customerId}</span>
-                    <span style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'inherit', fontWeight: isActive ? 700 : 500 }}>{c.customerCode}</span>
-                    <span style={{ fontSize: 12, color: 'var(--text-1)', fontWeight: isActive ? 700 : 500 }}>{c.customerName}</span>
-                  </div>
-                )
-              })}
-            </div>
+              )
+            })}
           </div>
         </div>
 
-        {/* ── Right: inputs + numpad ── */}
-        <div className="pc-right" style={{ width: 260, display: 'flex', flexDirection: 'column', padding: '14px 14px 0', gap: 10, flexShrink: 0 }}>
-
-          {/* Fields */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[
-              { label: 'Customer No :',   value: customerNo,   key: 'no',   setter: setCustomerNo   },
-              { label: 'Customer Code :', value: customerCode, key: 'code', setter: setCustomerCode },
-              { label: 'Customer Name :', value: customerName, key: 'name', setter: setCustomerName },
-            ].map(f => (
-              <div key={f.key}>
-                <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--brand)', display: 'block', marginBottom: 3 }}>{f.label}</label>
-                <input
-                  value={f.value}
-                  onFocus={() => setFocus(f.key)}
-                  onChange={e => handleFieldChange(f.setter, e.target.value)}
-                  style={fieldStyle(focus === f.key)}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Numpad */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            {NUM_KEYS.map((row, ri) => (
-              <div key={ri} style={{ display: 'flex', gap: 5 }}>
-                {row.map(k => (
-                  <button
-                    key={k}
-                    className="ui-key"
-                    onClick={() => pressKey(k)}
-                    style={numBtnStyle}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-bg)'; e.currentTarget.style.borderColor = 'var(--brand-border)'; e.currentTarget.style.color = 'var(--brand)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-1)' }}
-                    onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)' }}
-                    onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-                  >{k}</button>
-                ))}
-              </div>
-            ))}
-            {/* Bottom row: 0 · ⌫ */}
-            <div style={{ display: 'flex', gap: 5 }}>
-              <button className="ui-key" onClick={() => pressKey('0')} style={{ ...numBtnStyle, flex: 2 }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-bg)'; e.currentTarget.style.borderColor = 'var(--brand-border)'; e.currentTarget.style.color = 'var(--brand)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-1)' }}
-                onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)' }}
-                onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-              >0</button>
-              <button className="ui-key" onClick={() => pressKey('.')} style={numBtnStyle}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-bg)'; e.currentTarget.style.borderColor = 'var(--brand-border)'; e.currentTarget.style.color = 'var(--brand)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-1)' }}
-                onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)' }}
-                onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-              >.</button>
-              <button className="ui-key is-back" onClick={() => pressKey('⌫')}
-                style={{ ...numBtnStyle, background: 'var(--red-bg)', borderColor: 'var(--red-border)', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(0.93)' }}
-                onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)' }}
-                onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)' }}
-                onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-              ><Delete size={15} /></button>
+        {/* ── Fields + keypad ── */}
+        <div className="pc-right" style={{
+          width: 270, flexShrink: 0, padding: '14px 16px', borderLeft: '1px solid var(--border)',
+          display: 'flex', flexDirection: 'column', gap: 10,
+        }}>
+          {FIELDS.map(f => (
+            <div key={f.key} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase' }}>{f.label}</label>
+              <input
+                value={f.value}
+                onFocus={() => setFocus(f.key)}
+                onChange={e => handleFieldChange(f.setter, e.target.value)}
+                style={fieldStyle(focus === f.key)}
+              />
             </div>
+          ))}
+          <div style={{ marginTop: 4 }}>
+            <Numpad onKey={pressKey} showDot showClear showBackspace={false} btnHeight={44} fontSize={16} gap={6} />
           </div>
-
-          {/* Footer buttons inside right panel */}
-          <div style={{ display: 'flex', gap: 6, paddingBottom: 14, marginTop: 'auto' }}>
-            <button
-              onClick={handleApply}
-              disabled={selectedIdx < 0}
-              style={{
-                flex: 1, height: 36, borderRadius: 8, border: 'none',
-                background: selectedIdx >= 0 ? 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)' : 'var(--border)',
-                color: selectedIdx >= 0 ? '#fff' : 'var(--text-4)',
-                fontSize: 12, fontWeight: 700, cursor: selectedIdx >= 0 ? 'pointer' : 'not-allowed',
-                transition: 'all 0.1s',
-              }}
-              onMouseEnter={e => { if (selectedIdx >= 0) e.currentTarget.style.filter = 'brightness(1.08)' }}
-              onMouseLeave={e => { e.currentTarget.style.filter = 'brightness(1)' }}
-            >Apply</button>
-            <button
-              onClick={onClose}
-              style={{
-                flex: 1, height: 36, borderRadius: 8,
-                border: '1.5px solid var(--border)', background: '#fff',
-                color: 'var(--text-2)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                transition: 'background 0.1s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-2)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
-            >Close</button>
-          </div>
-
         </div>
+      </div>
+
+      {/* ── Footer ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '10px 18px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', flexShrink: 0,
+      }}>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: 'var(--text-3)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {selected
+            ? <>Selected: <b style={{ color: 'var(--brand)' }}>{selected.customerName}</b></>
+            : `${count} customer${count !== 1 ? 's' : ''} · tap a row to select`}
+        </span>
+        <button onClick={onClose} style={{
+          height: 34, padding: '0 18px', borderRadius: 9,
+          border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
+          color: 'var(--red)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+        }}>
+          Close
+        </button>
+        <button onClick={handleApply} disabled={!selected} style={{
+          height: 34, padding: '0 22px', borderRadius: 9, border: 'none',
+          background: selected ? 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)' : 'var(--border)',
+          color: selected ? '#fff' : 'var(--text-4)',
+          fontSize: 12, fontWeight: 700, cursor: selected ? 'pointer' : 'not-allowed', fontFamily: 'inherit',
+        }}>
+          Apply
+        </button>
       </div>
     </Modal>
   )
