@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Search, Loader2, RotateCcw, Keyboard as KeyboardIcon, ChevronUp, ChevronDown, X, PackageSearch } from 'lucide-react'
+import { Search, Loader2, RotateCcw, Keyboard as KeyboardIcon, ChevronUp, ChevronDown, X, PackageSearch, LayoutGrid } from 'lucide-react'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import { fmtMoney } from '../lib/currencyFormat'
@@ -10,10 +10,9 @@ import './ProductLookupModal.css'
 const DEBOUNCE_MS = 350
 
 /**
- * Product Search — one search bar (name / barcode / code) with a keyboard toggle,
- * group chips, max price and Clear; results as a clean list (name, barcode ·
- * packet details, price) with ↑ / ↓ in the footer. Tap a row, or Enter on the
- * highlighted one, to add it.
+ * Product Search — search bar (name / barcode / code), max price, keyboard and
+ * clear on top; groups listed on the left; products as tiles (name, barcode ·
+ * packet, price). Tap a tile, or move with the arrows and press Enter, to add it.
  */
 export default function ProductLookupModal({ onClose, onSelect, groupId = null, groupLabel = '', searchFn = null }) {
   const [query,    setQuery]    = useState('')
@@ -110,9 +109,17 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
     listRef.current?.children[next]?.scrollIntoView({ block: 'nearest' })
   }
 
+  // Tiles per row in the grid, so ↑ / ↓ keys jump a whole row.
+  const perRow = () => {
+    const tiles = [...(listRef.current?.children ?? [])]
+    return Math.max(1, tiles.filter(el => el.offsetTop === tiles[0]?.offsetTop).length)
+  }
+
   const handleQueryKeyDown = (e) => {
-    if (e.key === 'ArrowDown') { e.preventDefault(); move(1); return }
-    if (e.key === 'ArrowUp')   { e.preventDefault(); move(-1); return }
+    if (e.key === 'ArrowDown')  { e.preventDefault(); move(perRow()); return }
+    if (e.key === 'ArrowUp')    { e.preventDefault(); move(-perRow()); return }
+    if (e.key === 'ArrowRight' && e.currentTarget.selectionStart === e.currentTarget.value.length && selIdx >= 0) { e.preventDefault(); move(1); return }
+    if (e.key === 'ArrowLeft'  && e.currentTarget.selectionStart === 0 && selIdx > 0) { e.preventDefault(); move(-1); return }
     if (e.key !== 'Enter') return
     e.preventDefault()
     if (selIdx >= 0 && results[selIdx]) { pick(results[selIdx]); return }
@@ -129,20 +136,21 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
   const count = results.length
   const groupName = group === '' ? '' : (productGroups.find(g => String(g.groupId) === String(group))?.groupDescription ?? groupLabel)
 
+  // Layout: search bar on top · groups list on the left · product tiles on the right.
   return (
     <Modal
       onClose={onClose}
       icon={Search}
       kicker="Product"
       title="Product Search"
-      width={720}
+      width={940}
       maxHeight="92vh"
     >
-      <div className="pls">
-        {/* ── Search bar + filters ── */}
-        <div className="pls-top">
-          <div className="pls-search">
-            {loading ? <Loader2 size={18} className="pls-spin" /> : <Search size={18} />}
+      <div className="plg">
+        {/* ── Search bar ── */}
+        <div className="plg-top">
+          <div className="plg-search">
+            {loading ? <Loader2 size={18} className="plg-spin" /> : <Search size={18} />}
             <input data-system-keyboard
               ref={queryRef}
               value={query}
@@ -152,98 +160,100 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
               aria-label="Short description: name, barcode or code"
             />
             {query && (
-              <button type="button" className="pls-icon-btn" onClick={() => { changeQuery(''); queryRef.current?.focus() }} aria-label="Clear search">
+              <button type="button" className="plg-icon-btn" onClick={() => { changeQuery(''); queryRef.current?.focus() }} aria-label="Clear search">
                 <X size={17} />
               </button>
             )}
-            <button
-              type="button"
-              className={`pls-icon-btn${kbOpen ? ' is-on' : ''}`}
-              onClick={() => setKbOpen(o => !o)}
-              aria-pressed={kbOpen}
-              aria-label="On-screen keyboard"
-              title="Keyboard"
-            >
-              <KeyboardIcon size={19} />
-            </button>
           </div>
-
-          <div className="pls-filters">
-            <div className="pls-chips" role="tablist" aria-label="Group">
-              <button type="button" className={`pls-chip${group === '' ? ' is-on' : ''}`} onClick={() => changeGroup('')}>All</button>
-              {productGroups.map(g => (
-                <button
-                  key={g.groupId}
-                  type="button"
-                  className={`pls-chip${String(group) === String(g.groupId) ? ' is-on' : ''}`}
-                  onClick={() => changeGroup(String(g.groupId))}
-                >
-                  {g.groupDescription}
-                </button>
-              ))}
-            </div>
-            <label className="pls-price">
-              <span>Max</span>
-              <input data-system-keyboard
-                value={price}
-                onChange={e => changePrice(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && fireNow(query, price, group)}
-                placeholder="Any"
-                inputMode="decimal"
-                aria-label="Max price"
-              />
-            </label>
-            <button type="button" className="pls-clear" onClick={handleClearAll}>
-              <RotateCcw size={13} /> Clear
-            </button>
-          </div>
+          <label className="plg-price">
+            <span>Max price</span>
+            <input data-system-keyboard
+              value={price}
+              onChange={e => changePrice(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && fireNow(query, price, group)}
+              placeholder="Any"
+              inputMode="decimal"
+              aria-label="Max price"
+            />
+          </label>
+          <button
+            type="button"
+            className={`plg-tool${kbOpen ? ' is-on' : ''}`}
+            onClick={() => setKbOpen(o => !o)}
+            aria-pressed={kbOpen}
+            aria-label="On-screen keyboard"
+          >
+            <KeyboardIcon size={19} />
+          </button>
+          <button type="button" className="plg-tool" onClick={handleClearAll} aria-label="Clear all" title="Clear all">
+            <RotateCcw size={17} />
+          </button>
         </div>
 
-        {/* ── Results ── */}
-        <div ref={listRef} className="pls-list" style={{ minHeight: kbOpen ? 140 : 260 }}>
-          {error ? (
-            <div className="pls-error">{error}</div>
-          ) : count === 0 ? (
-            <div className="pls-empty">
-              <PackageSearch size={34} />
-              {loading ? 'Searching…'
-                : searched ? 'No products found'
-                : 'Type to search, or pick a group'}
-            </div>
-          ) : (
-            results.map((row, i) => (
-              <div
-                key={row.barcode ?? row._raw?.productId ?? i}
-                className={`pls-row${i === selIdx ? ' is-active' : ''}`}
-                onClick={() => pick(row)}
-                onMouseEnter={() => setSelIdx(i)}
+        <div className="plg-body">
+          {/* ── Groups ── */}
+          <nav className="plg-groups" aria-label="Group">
+            <button type="button" className={`plg-group${group === '' ? ' is-on' : ''}`} onClick={() => changeGroup('')}>
+              <LayoutGrid size={15} /> All products
+            </button>
+            {productGroups.map(g => (
+              <button
+                key={g.groupId}
+                type="button"
+                className={`plg-group${String(group) === String(g.groupId) ? ' is-on' : ''}`}
+                onClick={() => changeGroup(String(g.groupId))}
               >
-                <div className="pls-row-main">
-                  <span className="pls-row-name">{row.description ?? '—'}</span>
-                  <span className="pls-row-meta">
-                    {row.barcode ?? '—'}{row.packetDetails && row.packetDetails !== '—' ? ` · ${row.packetDetails}` : ''}
-                  </span>
-                </div>
-                <span className="pls-row-price">{row.price}</span>
+                {g.groupDescription}
+              </button>
+            ))}
+          </nav>
+
+          {/* ── Product tiles ── */}
+          <div className="plg-results">
+            {error ? (
+              <div className="plg-error">{error}</div>
+            ) : count === 0 ? (
+              <div className="plg-empty">
+                <PackageSearch size={38} />
+                <b>{loading ? 'Searching…' : searched ? 'No products found' : 'Find a product'}</b>
+                {!loading && !searched && <span>Type a name, barcode or code — or pick a group on the left</span>}
               </div>
-            ))
-          )}
+            ) : (
+              <div ref={listRef} className="plg-grid">
+                {results.map((row, i) => (
+                  <button
+                    type="button"
+                    key={row.barcode ?? row._raw?.productId ?? i}
+                    className={`plg-tile${i === selIdx ? ' is-active' : ''}`}
+                    onClick={() => pick(row)}
+                    onMouseEnter={() => setSelIdx(i)}
+                  >
+                    <span className="plg-tile-name">{row.description ?? '—'}</span>
+                    <span className="plg-tile-meta">
+                      {row.barcode ?? '—'}{row.packetDetails && row.packetDetails !== '—' ? ` · ${row.packetDetails}` : ''}
+                    </span>
+                    <span className="plg-tile-price">{row.price}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {kbOpen && <Keyboard onKey={handleKbKey} onClose={() => setKbOpen(false)} />}
 
         {/* ── Footer ── */}
-        <div className="pls-foot">
-          <span className="pls-count">
-            {count ? `${count} product${count !== 1 ? 's' : ''}${groupName ? ` in ${groupName}` : ''}` : ''}
+        <div className="plg-foot">
+          <span className="plg-count">
+            {count ? <><b>{count}</b> product{count !== 1 ? 's' : ''}{groupName ? ` in ${groupName}` : ''} · tap a tile to add</> : ''}
           </span>
-          <button type="button" className="pls-icon-btn pls-nav" onClick={() => move(-1)} disabled={!count} aria-label="Previous product">
+          <button type="button" className="plg-tool" onClick={() => move(-1)} disabled={!count} aria-label="Previous product">
             <ChevronUp size={20} />
           </button>
-          <button type="button" className="pls-icon-btn pls-nav" onClick={() => move(1)} disabled={!count} aria-label="Next product">
+          <button type="button" className="plg-tool" onClick={() => move(1)} disabled={!count} aria-label="Next product">
             <ChevronDown size={20} />
           </button>
-          <button type="button" className="pls-close" onClick={onClose}>Close</button>
+          <button type="button" className="plg-close" onClick={onClose}>Close</button>
         </div>
       </div>
     </Modal>
