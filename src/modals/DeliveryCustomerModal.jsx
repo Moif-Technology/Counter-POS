@@ -3,6 +3,7 @@ import { Truck, Loader2, AlertCircle } from 'lucide-react'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import Modal from '../components/common/Modal'
+import DateTimePicker from '../components/common/DateTimePicker'
 
 function defaultDeliveryTime() {
   const d = new Date()
@@ -175,18 +176,7 @@ export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Del
               }}
             />
           </div>
-          <div>
-            <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.6, textTransform: 'uppercase' }}>Delivery Time</label>
-            <input data-system-keyboard
-              type="datetime-local"
-              value={deliveryTime}
-              onChange={e => setDeliveryTime(e.target.value)}
-              style={{
-                width: '100%', marginTop: 4, height: 36, border: '1.5px solid var(--border)',
-                borderRadius: 8, padding: '0 8px', fontSize: 12, boxSizing: 'border-box',
-              }}
-            />
-          </div>
+          <DateTimePicker label="Delivery Time" value={deliveryTime} onChange={setDeliveryTime} />
         </div>
 
         <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.6, textTransform: 'uppercase' }}>Delivery Address</label>
