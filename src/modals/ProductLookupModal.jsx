@@ -147,25 +147,25 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
       {/* ── Filters ── */}
       <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 3fr) minmax(0, 1fr) auto', gap: 8, alignItems: 'end' }}>
-          {field('Name / Barcode / Code', <Search size={11} />,
-            <div style={{ position: 'relative' }}>
-              <input data-system-keyboard
-                ref={queryRef}
-                value={query}
-                onChange={handleQueryChange}
-                onKeyDown={handleQueryKeyDown}
-                placeholder="Type or scan barcode…"
-                style={{ ...inputStyle, paddingRight: 34 }}
-                onFocus={focusOn}
-                onBlur={focusOff}
-              />
-              <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex' }}>
-                {loading
-                  ? <Loader2 size={14} color="var(--brand)" style={{ animation: 'pl-spin 0.8s linear infinite' }} />
-                  : <Search size={13} color="var(--text-4)" />}
-              </div>
+          {/* the field name sits inside the box as its placeholder */}
+          <div style={{ position: 'relative' }}>
+            <input data-system-keyboard
+              ref={queryRef}
+              value={query}
+              onChange={handleQueryChange}
+              onKeyDown={handleQueryKeyDown}
+              placeholder="Name / Barcode / Code"
+              aria-label="Name, barcode or code"
+              style={{ ...inputStyle, paddingRight: 34 }}
+              onFocus={focusOn}
+              onBlur={focusOff}
+            />
+            <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex' }}>
+              {loading
+                ? <Loader2 size={14} color="var(--brand)" style={{ animation: 'pl-spin 0.8s linear infinite' }} />
+                : <Search size={13} color="var(--text-4)" />}
             </div>
-          )}
+          </div>
           {field('Max Price', <Tag size={11} />,
             <input data-system-keyboard
               value={price}
