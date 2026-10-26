@@ -1,157 +1,113 @@
-import { useState } from 'react'
-import { X, Package } from 'lucide-react'
-import Table from '../components/common/Table'
+import { useEffect, useRef, useState } from 'react'
+import { Package, ScanBarcode, X, Loader2, Trash2, PackageSearch } from 'lucide-react'
 import Numpad from '../components/common/Numpad'
-import { moneyPlaceholder } from '../lib/currencyFormat'
 import Modal from '../components/common/Modal'
+import { api } from '../lib/api'
+import { usePosStore } from '../store/posStore'
+import { fmtMoney } from '../lib/currencyFormat'
+import './PacketScanModal.css'
 
-const COLUMNS = [
-  { key: 'sl',          label: 'Sl#',          width: 40,  align: 'center' },
-  { key: 'barcode',     label: 'Barcode',       width: 120, mono: true },
-  { key: 'description', label: 'Description'               },
-  { key: 'packDetails', label: 'Pack Details',  width: 100 },
-  { key: 'unitPrice',   label: 'Unit Price',    width: 90,  align: 'right', mono: true },
-  { key: 'discount',    label: 'Discount',      width: 76,  align: 'right', mono: true },
-]
+/**
+ * Packet Scan — scan packets one after another and see what each one is.
+ *   left  — big scan box, then the scanned packets as cards (newest on top):
+ *           name, barcode · pack, price; unknown codes are flagged
+ *   right — keypad with ⌫, Add / Close
+ * Nothing is added to the bill.
+ */
+export default function PacketScanModal({ onClose, searchFn = null }) {
+  const [barcode, setBarcode] = useState('')
+  const [items,   setItems]   = useState([])   // newest first
+  const inputRef    = useRef()
+  const seq         = useRef(0)
+  const accessToken = usePosStore(s => s.accessToken)
 
-export default function PacketScanModal({ onClose }) {
-  const [barcode,  setBarcode]  = useState('')
-  const [rows,     setRows]     = useState([])
+  useEffect(() => { inputRef.current?.focus() }, [])
 
-  const handleKey = k => {
-    if (k === 'C')  { setBarcode(''); return }
-    if (k === '⌫') { setBarcode(v => v.slice(0, -1)); return }
-    setBarcode(v => v + k)
+  const handleKey = (k) => {
+    if (k === '⌫') setBarcode(v => v.slice(0, -1))
+    else setBarcode(v => v + k)
+    inputRef.current?.focus()
   }
 
-  const handleEnter = () => {
-    if (!barcode.trim()) return
-    const newRow = {
-      sl:          rows.length + 1,
-      barcode:     barcode.trim(),
-      description: '—',
-      packDetails: '—',
-      unitPrice:   moneyPlaceholder(),
-      discount:    moneyPlaceholder(),
-    }
-    setRows(prev => [...prev, newRow])
+  const add = async () => {
+    const code = barcode.trim()
+    if (!code) return
+    const id = ++seq.current
+    setItems(prev => [{ id, barcode: code, loading: true }, ...prev])
     setBarcode('')
+    inputRef.current?.focus()
+    try {
+      const doSearch = searchFn ?? ((t) => api.counterPos.productSearch(t, accessToken))
+      const { product } = await doSearch(code)
+      const unit = Number(product.unitPrice) || 0
+      const price = unit * (1 + (Number(product.vatPer) || 0) / 100)
+      setItems(prev => prev.map(it => it.id === id ? {
+        ...it, loading: false,
+        description: product.description ?? product.productName,
+        pack: product.unitName, price,
+      } : it))
+    } catch (e) {
+      setItems(prev => prev.map(it => it.id === id ? { ...it, loading: false, error: e.status === 404 ? 'Not found' : (e.message || 'Lookup failed') } : it))
+    }
   }
+
+  const remove = (id) => setItems(prev => prev.filter(it => it.id !== id))
+  const count = items.length
 
   return (
-    <Modal onClose={onClose} icon={Package} kicker="Scanner" title="Packet Scan" width={820}>
-      <style>{`
-        @media (max-width: 640px) {
-          .ps-body { flex-direction: column !important; }
-          .ps-left { border-right: none !important; border-bottom: 1px solid var(--border) !important; min-height: 180px; }
-          .ps-right { width: 100% !important; }
-        }
-      `}</style>
-
-      {/* ── Body ── */}
-      <div className="ps-body" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-
-        {/* LEFT — table */}
-        <div className="ps-left" style={{ flex: 1, padding: '16px 16px', display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden' }}>
-          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <Table
-              columns={COLUMNS}
-              rows={rows}
-              rowKey="sl"
-              emptyText="Scan a barcode to add items"
+    <Modal onClose={onClose} icon={Package} kicker="Scanner" title="Packet Scan" width={800}>
+      <div className="pks">
+        <div className="pks-left">
+          <div className="pks-scan">
+            <ScanBarcode size={22} />
+            <input
+              ref={inputRef}
+              value={barcode}
+              onChange={e => setBarcode(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
+              placeholder="Scan a packet barcode"
+              aria-label="Packet barcode"
             />
-          </div>
-        </div>
-
-        {/* RIGHT — barcode input + numpad */}
-        <div className="ps-right" style={{ width: 220, flexShrink: 0, padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-
-          {/* BarCode field */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>
-              BarCode
-            </label>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <div style={{
-                flex: 1, height: 36, borderRadius: 8,
-                border: '1.5px solid var(--brand)', background: 'var(--brand-bg)',
-                display: 'flex', alignItems: 'center', padding: '0 10px',
-                fontSize: 13, fontWeight: 700, color: barcode ? 'var(--text-1)' : 'var(--text-4)',
-                fontFamily: 'inherit',
-                overflow: 'hidden',
-              }}>
-                {barcode || <span style={{ fontWeight: 500, fontSize: 11 }}>Scan or type…</span>}
-              </div>
-              <button
-                onClick={() => setBarcode('')}
-                style={{
-                  width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-                  background: 'var(--amber-bg)', border: '1.5px solid var(--amber-border)',
-                  color: 'var(--amber)', fontSize: 12, fontWeight: 800,
-                  cursor: 'pointer', transition: 'all 0.12s',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--amber)'; e.currentTarget.style.color = '#fff' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'var(--amber-bg)'; e.currentTarget.style.color = 'var(--amber)' }}
-                onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)' }}
-                onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-              >
-                <X size={14} />
+            {barcode && (
+              <button type="button" className="pks-clear" onClick={() => { setBarcode(''); inputRef.current?.focus() }} aria-label="Clear">
+                <X size={16} />
               </button>
-            </div>
+            )}
           </div>
 
-          {/* Numpad */}
-          <Numpad
-            onKey={handleKey}
-            showDot={false}
-            showClear={false}
-            showBackspace={true}
-            btnHeight={42}
-            fontSize={16}
-            gap={6}
-            extraRows={[[
-              {
-                label: 'Enter',
-                flex: 1,
-                style: {
-                  background: barcode.trim()
-                    ? 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)'
-                    : 'var(--border)',
-                  color: barcode.trim() ? '#fff' : 'var(--text-4)',
-                  border: 'none',
-                  fontSize: 13,
-                  fontWeight: 800,
-                  boxShadow: barcode.trim() ? '0 4px 12px rgba(120,8,41,0.2)' : 'none',
-                },
-                onClick: handleEnter,
-              },
-            ]]}
-          />
+          <div className="pks-list">
+            {count === 0 ? (
+              <div className="pks-empty">
+                <PackageSearch size={36} />
+                <b>No packets yet</b>
+                <span>Scan packets one after another — each one shows here</span>
+              </div>
+            ) : items.map((it, i) => (
+              <div key={it.id} className={`pks-item${it.error ? ' is-error' : ''}${i === 0 ? ' is-new' : ''}`}>
+                <span className="pks-no">{count - i}</span>
+                <div className="pks-main">
+                  {it.loading
+                    ? <b className="pks-name is-muted"><Loader2 size={13} className="pks-spin" /> Looking up…</b>
+                    : <b className="pks-name">{it.error ? it.error : it.description}</b>}
+                  <span className="pks-meta">{it.barcode}{it.pack ? ` · ${it.pack}` : ''}</span>
+                </div>
+                {it.price != null && <span className="pks-price">{fmtMoney(it.price)}</span>}
+                <button type="button" className="pks-del" onClick={() => remove(it.id)} aria-label={`Remove ${it.barcode}`}>
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* ── Footer ── */}
-      <div style={{
-        display: 'flex', justifyContent: 'flex-end',
-        padding: '10px 16px',
-        borderTop: '1px solid var(--border)', background: 'var(--surface-2)', flexShrink: 0,
-      }}>
-        <button
-          onClick={onClose}
-          style={{
-            height: 38, paddingInline: 28, borderRadius: 10,
-            border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
-            color: 'var(--red)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-            transition: 'background 0.12s, color 0.12s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--red)'; e.currentTarget.style.color = '#fff' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'var(--red-bg)'; e.currentTarget.style.color = 'var(--red)' }}
-          onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.97)' }}
-          onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
-        >
-          Close
-        </button>
+        <div className="pks-right">
+          <div className="pks-count"><b>{count}</b> packet{count !== 1 ? 's' : ''} scanned</div>
+          <Numpad onKey={handleKey} showDot={false} showClear={false} showBackspace btnHeight={50} fontSize={18} gap={8} />
+          <div className="pks-foot">
+            <button type="button" className="pks-btn is-primary" onClick={add} disabled={!barcode.trim()}>Add</button>
+            <button type="button" className="pks-btn is-cancel" onClick={onClose}>Close</button>
+          </div>
+        </div>
       </div>
     </Modal>
   )
