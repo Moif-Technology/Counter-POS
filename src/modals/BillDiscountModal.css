@@ -1,0 +1,68 @@
+/* Bill Discount — summary cards, VAT switch, presets, fields + numpad */
+.bd { padding: 16px 18px; background: #fafafa; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+
+.bd-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.bd-card {
+  display: flex; flex-direction: column; gap: 6px; padding: 12px 14px;
+  border: 1px solid #ececee; border-radius: 12px; background: #fff;
+}
+.bd-card span { font-size: 11px; font-weight: 700; color: var(--text-4); letter-spacing: 0.4px; text-transform: uppercase; }
+.bd-card b { font-size: 22px; font-weight: 800; color: #18181b; text-align: right; font-variant-numeric: tabular-nums; }
+.bd-card.is-main { border-color: var(--brand-border); background: var(--brand-bg); }
+.bd-card.is-main b { color: var(--brand); }
+
+.bd-body { display: grid; grid-template-columns: 1.15fr 1fr; gap: 18px; align-items: start; }
+.bd-left { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+.bd-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 12px; background: #efe7ea; }
+.bd-seg button {
+  height: 48px; border: none; border-radius: 9px; background: transparent; cursor: pointer; font-family: inherit;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  font-size: 13.5px; font-weight: 800; color: #52525b;
+}
+.bd-seg small { font-size: 10.5px; font-weight: 600; color: #a1a1aa; }
+.bd-seg button.is-on { background: #fff; color: var(--brand); box-shadow: 0 2px 8px rgba(120, 8, 41, 0.12); }
+.bd-seg button.is-on small { color: var(--brand); opacity: 0.7; }
+
+.bd-presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.bd-presets button {
+  height: 38px; border-radius: 99px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 800;
+  border: 1px solid var(--brand-border); background: #fff; color: var(--brand);
+}
+.bd-presets button:hover { background: var(--brand-bg); }
+.bd-presets button.is-on { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+.bd-fields { display: flex; flex-direction: column; gap: 8px; }
+.bd-field {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 46px; padding: 0 14px;
+  border: 1px solid #ececee; border-radius: 10px; background: #fff; font-family: inherit; text-align: left;
+}
+.bd-field span { font-size: 13px; font-weight: 700; color: #3f3f46; white-space: nowrap; }
+.bd-field span em { font-style: normal; font-size: 11px; font-weight: 600; color: var(--text-4); }
+.bd-field b { font-size: 19px; font-weight: 800; color: #18181b; font-variant-numeric: tabular-nums; }
+.bd-field b i { font-style: normal; font-size: 14px; margin-left: 3px; color: var(--text-4); }
+.bd-field b.is-good { color: #15803d; }
+.bd-field.is-input { cursor: pointer; border-style: dashed; border-color: #e4cdd4; }
+.bd-field.is-active { border: 1.5px solid var(--brand); background: #fff; box-shadow: 0 0 0 3px rgba(120, 8, 41, 0.1); }
+.bd-field.is-active b { color: var(--brand); }
+.bd-field:not(.is-input) { background: #f7f7f8; }
+
+.bd-right { padding: 10px; border-radius: 14px; background: #fff; border: 1px solid #ececee; }
+
+.bd-foot {
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 12px 18px; flex-shrink: 0;
+  border-top: 1px solid var(--border); background: #fff;
+}
+.bd-save { margin-right: auto; font-size: 13px; font-weight: 700; color: #15803d; }
+.bd-save b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.bd-cancel, .bd-apply {
+  height: 44px; padding: 0 22px; border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 800;
+  display: flex; align-items: center; gap: 6px;
+}
+.bd-cancel { border: 1px solid #fbd5d5; background: #fff5f5; color: #dc2626; }
+.bd-apply { border: none; background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%); color: #fff; min-width: 170px; justify-content: center; }
+
+@media (max-width: 720px) {
+  .bd-body { grid-template-columns: 1fr; }
+  .bd-card b { font-size: 18px; }
+}
