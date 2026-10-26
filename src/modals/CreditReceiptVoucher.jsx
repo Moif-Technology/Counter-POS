@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import Modal from '../components/common/Modal'
 import Numpad from '../components/common/Numpad'
-import DatePicker from '../components/common/DatePicker'
+import DateRangePicker from '../components/common/DateRangePicker'
 import { fmt3 } from '../lib/utils'
 import { CREDIT_SETTLEMENT_PAY_MODES, PM, normalizePaymentMode } from '../lib/paymentModes'
 import './CreditReceiptVoucher.css'
@@ -108,7 +108,6 @@ export function ReceiptSummaryDates({ onPrint, onClose }) {
   const [error, setError] = useState(null)
 
   const print = async () => {
-    if (from > to) { setError('From date must be on or before To date'); return }
     setBusy(true); setError(null)
     try { await onPrint(from, to); onClose() } catch (e) { setError(e.message ?? String(e)) } finally { setBusy(false) }
   }
@@ -116,10 +115,7 @@ export function ReceiptSummaryDates({ onPrint, onClose }) {
   return (
     <Modal onClose={onClose} icon={CalendarRange} kicker="Receipt Summary" title="Select Date Range" width={460} zIndex={1100}>
       <div className="crv-range">
-        <div className="crv-range-row">
-          <DatePicker label="From" value={from} onChange={setFrom} placement="bottom" />
-          <DatePicker label="To" value={to} onChange={setTo} placement="bottom" />
-        </div>
+        <DateRangePicker label="Date range" from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t) }} />
         {error && <div className="crv-msg is-error"><AlertCircle size={15} /> {error}</div>}
       </div>
       <div className="crv-range-foot">
