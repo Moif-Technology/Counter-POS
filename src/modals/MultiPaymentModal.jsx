@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Layers, ScanBarcode, Ticket, CreditCard, Banknote, Globe, CornerDownLeft } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Layers, CornerDownLeft } from 'lucide-react'
 import Modal from '../components/common/Modal'
 import Numpad from '../components/common/Numpad'
 import { usePosStore } from '../store/posStore'
@@ -25,7 +25,7 @@ function fieldsFromSplits(splits) {
 /**
  * Multi Pay — pay one bill with a gift voucher, a credit card and cash:
  *   Bill Amount · Scan Gift Voucher · Gift Voucher · Credit Card · Cash Paid · Balance Amount
- * with a keypad and Enter / Cancel. Cash may be more than what is left: the
+ * with a keypad and Enter / Cancel (same contents as the old desktop screen). Cash may be more than what is left: the
  * extra is change. Saves splits (VOUCHER / CREDITCARD / CASH) that add up to
  * the bill, exactly as before.
  *
@@ -48,11 +48,11 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
   const hasOnline = num(f.online) > 0   // only shown when an earlier split used Online
 
   const FIELDS = [
-    { key: 'voucherNo', label: 'Scan Gift Voucher', icon: ScanBarcode, text: true, placeholder: 'Scan or type voucher no.' },
-    { key: 'voucher',   label: 'Gift Voucher',      icon: Ticket },
-    { key: 'card',      label: 'Credit Card',       icon: CreditCard },
-    ...(hasOnline ? [{ key: 'online', label: 'Online', icon: Globe }] : []),
-    { key: 'cash',      label: 'Cash Paid',         icon: Banknote },
+    { key: 'voucherNo', label: 'Scan Gift Voucher', text: true, placeholder: 'Scan or type voucher no.' },
+    { key: 'voucher',   label: 'Gift Voucher' },
+    { key: 'card',      label: 'Credit Card' },
+    ...(hasOnline ? [{ key: 'online', label: 'Online' }] : []),
+    { key: 'cash',      label: 'Cash Paid' },
   ]
 
   const nonCash = roundMoney(num(f.voucher) + num(f.card) + num(f.online))
@@ -75,12 +75,6 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
     if (FIELDS.find(x => x.key === focus)?.text) setField(focus, cur + k)
     else typeMoney(focus, cur + k)
     refs[focus].current?.focus()
-  }
-
-  /** Fill Cash Paid with what is still due. */
-  const exactCash = () => {
-    const due = roundMoney(bill - nonCash)
-    if (due > 0) { setField('cash', fmtMoney(due)); setFocus('cash'); refs.cash.current?.focus() }
   }
 
   const goNext = (key) => {
@@ -114,9 +108,6 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
   }
 
   const balanceLabel = balance < -0.009 ? 'Change' : 'Balance Amount'
-  const parts = useMemo(() => [
-    ['Voucher', num(f.voucher)], ['Card', num(f.card)], ['Online', num(f.online)], ['Cash', num(f.cash)],
-  ].filter(([, v]) => v > 0), [f])
 
   return (
     <Modal onClose={onClose} icon={Layers} kicker="Settlement" title="Multi Pay" width={760}>
@@ -128,9 +119,9 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
             <div className="mpm-box mpm-bill">{fmtMoney(bill)}</div>
           </div>
 
-          {FIELDS.map(({ key, label, icon: Icon, text, placeholder }) => (
+          {FIELDS.map(({ key, label, text, placeholder }) => (
             <label key={key} className={`mpm-row${focus === key ? ' is-focus' : ''}`}>
-              <span className="mpm-label"><Icon size={15} /> {label}</span>
+              <span className="mpm-label">{label}</span>
               <input
                 ref={refs[key]}
                 className="mpm-box"
@@ -150,19 +141,11 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
             <div className="mpm-box">{fmtMoney(Math.abs(balance))}</div>
           </div>
 
-          <div className="mpm-split">
-            {parts.length
-              ? parts.map(([n, v]) => <span key={n}>{n} <b>{fmtMoney(v)}</b></span>)
-              : <span>Scan a voucher, or enter card / cash amounts</span>}
-          </div>
           {error && <div className="mpm-error">{error}</div>}
         </div>
 
         {/* ── Keypad ── */}
         <div className="mpm-right">
-          <button type="button" className="mpm-exact" onClick={exactCash} disabled={bill - nonCash <= 0}>
-            Exact cash {bill - nonCash > 0 ? fmtMoney(roundMoney(bill - nonCash)) : ''}
-          </button>
           <Numpad onKey={pressKey} showDot showClear showBackspace={false} btnHeight={50} fontSize={18} gap={8} />
           <div className="mpm-foot">
             <button type="button" className="mpm-btn is-primary" onClick={confirm} disabled={!covered || tendered <= 0}>
