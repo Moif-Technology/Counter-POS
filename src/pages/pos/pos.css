@@ -277,23 +277,24 @@
 }
 /* Keypad colour set: payment tiles (--pay-*) and number keys (--key-*, styles/keys.css) */
 .ph-pad {
-  /* simple neumorphism: soft grey tiles, no border; the selected one is pressed in */
-  --pay-bg: #f2f2f4; --pay-fg: #52525b; --pay-icon: #71717a; --pay-on-fg: var(--brand);
+  /* simple neumorphism: soft grey tiles with a light pink border; the selected one is pressed in */
+  --pay-bg: #f2f2f4; --pay-border: #ead3da; --pay-fg: #52525b; --pay-icon: #71717a; --pay-on-fg: var(--brand);
 }
 .ph-pay { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ph-pay-gap); }
 .ph-pay-tile {
   height: var(--ph-tile-h);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   font-size: clamp(11.5px, 0.8vw, 13.5px); font-weight: 600; color: var(--pay-fg);
-  background: var(--pay-bg); border: none;
+  background: var(--pay-bg); border: 1px solid var(--pay-border);
   box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.10), -4px -4px 10px #ffffff;   /* raised */
   transition: box-shadow 0.15s, color 0.15s;
 }
 .ph-pay-tile svg { color: var(--pay-icon); transition: color 0.15s; }
+.ph-pay-tile:hover { border-color: var(--brand-border); }
 .ph-pay-tile:active { box-shadow: inset 3px 3px 7px rgba(0, 0, 0, 0.12), inset -3px -3px 7px #ffffff; transform: none; }
-/* selected payment mode: pressed in, maroon icon and label */
+/* selected payment mode: pressed in, maroon border, icon and label */
 .ph-pay-tile.is-active {
-  color: var(--pay-on-fg); font-weight: 800;
+  color: var(--pay-on-fg); font-weight: 800; border: 1.5px solid var(--brand);
   box-shadow: inset 4px 4px 9px rgba(0, 0, 0, 0.13), inset -4px -4px 9px #ffffff;
 }
 .ph-pay-tile.is-active svg { color: var(--pay-on-fg); }
