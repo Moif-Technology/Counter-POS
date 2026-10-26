@@ -50,6 +50,8 @@
   user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
   transition: box-shadow 0.1s, transform 0.07s, background 0.1s, color 0.1s, border-color 0.1s;
 }
+/* Number keys: ash of the primary maroon (same colour as every popup keypad, styles/keys.css) */
+.ph-key { background: var(--key-bg); border-color: var(--key-border); }
 .ph-key:active, .ph-pay-tile:active, .ph-fn:active {
   box-shadow: var(--ph-pressed); transform: scale(0.97);
 }

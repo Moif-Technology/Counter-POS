@@ -1,14 +1,17 @@
 /* ─── Number keys: one look everywhere ────────────────────────────
-   The home-screen number keyboard style (soft rose key, raised
+   The home-screen number keyboard style (ash-of-maroon key, raised
    neumorphic shadow, pressed in when tapped), shared by the POS
    numpad, the <Numpad> component and every popup keypad.
 
    The look is marked !important on purpose: popup keypads size their
    keys with inline styles and some still set colours on hover; this
    keeps every number key looking the same without rewriting them. */
+/* Key colour: an ash (greyed) tone of the primary maroon — also used by the home keypad */
+:root { --key-bg: #f2ecee; --key-border: #e7dce0; }
+
 .ui-key {
-  background: var(--surface-2) !important;
-  border: 1px solid var(--border) !important;
+  background: var(--key-bg) !important;
+  border: 1px solid var(--key-border) !important;
   border-radius: 12px !important;
   box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.10), -4px -4px 8px rgba(255, 255, 255, 0.75) !important;
   color: var(--text-1) !important;
