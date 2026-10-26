@@ -94,12 +94,12 @@ export default function BillDiscountModal({ onClose }) {
   const hasDisc = preview.discountAmt > 0
 
   return (
-    <Modal onClose={onClose} icon={Percent} kicker={`Bill # ${billNo || '—'}`} title="Bill Discount" width={860}>
+    <Modal onClose={onClose} icon={Percent} kicker={`Bill # ${billNo || '—'}`} title="Bill Discount" width={780}>
       <div className="bd">
-        <div className="bd-cards">
-          <div className="bd-card is-main"><span>Net Bill Amount</span><b>{fmtMoney(gross)}</b></div>
-          <div className="bd-card"><span>Taxable Amount</span><b>{fmtMoney(base)}</b></div>
-          <div className="bd-card"><span>Tax Amount</span><b>{fmtMoney(totals.taxAmt)}</b></div>
+        <div className="bd-sum">
+          <div className="is-main"><span>Net Bill</span><b>{fmtMoney(gross)}</b></div>
+          <div><span>Taxable</span><b>{fmtMoney(base)}</b></div>
+          <div><span>Tax</span><b>{fmtMoney(totals.taxAmt)}</b></div>
         </div>
 
         <div className="bd-body">
@@ -109,7 +109,7 @@ export default function BillDiscountModal({ onClose }) {
                 Before VAT<small>from Taxable</small>
               </button>
               <button type="button" className={vat === 'after' ? 'is-on' : ''} onClick={() => switchVat('after')}>
-                After VAT<small>Round off style</small>
+                After VAT<small>Round off</small>
               </button>
             </div>
 
@@ -121,28 +121,23 @@ export default function BillDiscountModal({ onClose }) {
               ))}
             </div>
 
-            <div className="bd-fields">
-              <button type="button" className={`bd-field is-input${mode === 'pct' ? ' is-active' : ''}`} onClick={() => pickField('pct')}>
-                <span>Discount Percent</span>
-                <b>{shownPct || '0'}<i>%</i></b>
-              </button>
-              <button type="button" className={`bd-field is-input${mode === 'amt' ? ' is-active' : ''}`} onClick={() => pickField('amt')}>
-                <span>Discount Amount{vat === 'after' && <em> incl. VAT</em>}</span>
-                <b>{shownAmt || fmtMoney(0)}</b>
-              </button>
-              <div className="bd-field">
-                <span>Net Total After Disc</span>
-                <b className={hasDisc ? 'is-good' : ''}>{fmtMoney(preview.grossTotal)}</b>
-              </div>
-              <div className="bd-field">
-                <span>Taxable After Disc</span>
-                <b>{fmtMoney(preview.netTaxable)}</b>
-              </div>
+            <button type="button" className={`bd-field${mode === 'pct' ? ' is-active' : ''}`} onClick={() => pickField('pct')}>
+              <span>Discount %</span>
+              <b>{shownPct || '0'}<i>%</i></b>
+            </button>
+            <button type="button" className={`bd-field${mode === 'amt' ? ' is-active' : ''}`} onClick={() => pickField('amt')}>
+              <span>Discount Amount{vat === 'after' && <em> incl. VAT</em>}</span>
+              <b>{shownAmt || fmtMoney(0)}</b>
+            </button>
+
+            <div className={`bd-result${hasDisc ? ' has-disc' : ''}`}>
+              <div><span>Net Total After Disc</span><b>{fmtMoney(preview.grossTotal)}</b></div>
+              <div><span>Taxable After Disc</span><em>{fmtMoney(preview.netTaxable)}</em></div>
             </div>
           </div>
 
-          <div className="bd-right">
-            <Numpad onKey={handleKey} showDot showClear showBackspace btnHeight={56} fontSize={20} gap={8} />
+          <div className="bd-pad">
+            <Numpad onKey={handleKey} showDot showClear showBackspace fontSize={20} gap={8} />
           </div>
         </div>
       </div>
