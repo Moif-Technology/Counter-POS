@@ -83,6 +83,22 @@ export default function CreditCustomerLookup({ customers, loading, error, onSear
     else setSelId(row.customerId)
   }
 
+  // Enter / ↑ ↓ also work when focus isn't in a field (e.g. after tapping a row).
+  const navRef = useRef(null)
+  useEffect(() => { navRef.current = { move, openSelected } })
+  useEffect(() => {
+    const onKey = e => {
+      if (e.defaultPrevented || /^(INPUT|TEXTAREA|BUTTON)$/.test(e.target?.tagName)) return
+      if (e.key === 'ArrowDown') navRef.current.move(1)
+      else if (e.key === 'ArrowUp') navRef.current.move(-1)
+      else if (e.key === 'Enter') navRef.current.openSelected()
+      else return
+      e.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   const onFieldKey = e => {
     if (e.key === 'ArrowDown') move(1)
     else if (e.key === 'ArrowUp') move(-1)
