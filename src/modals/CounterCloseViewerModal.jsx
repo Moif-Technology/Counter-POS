@@ -4,6 +4,7 @@ import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
 import { fmt3 } from '../lib/utils'
 import Modal from '../components/common/Modal'
+import Table from '../components/common/Table'
 import DateRangePicker from '../components/common/DateRangePicker'
 
 function todayISO() {
@@ -179,7 +180,6 @@ function CloseDetailModal({ closeId, accessToken, onClose, detailFn = null }) {
   )
 }
 
-const GRID_COLS = '130px 1fr 52px 52px 72px 72px 72px 72px'
 
 export default function CounterCloseViewerModal({ onClose, historyFn = null, closeDetailFn = null }) {
   const accessToken = usePosStore(s => s.accessToken)
@@ -247,64 +247,29 @@ export default function CounterCloseViewerModal({ onClose, historyFn = null, clo
         </div>
       </div>
 
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '0 16px 12px' }}>
-        <div style={{
-          display: 'grid', gridTemplateColumns: GRID_COLS,
-          background: 'var(--table-head-bg)', padding: '9px 10px', borderRadius: '10px 10px 0 0',
-          border: '1.5px solid var(--border)', borderBottom: 'none', marginTop: 12,
-        }}>
-          {['Close Date', 'Close No', 'Type', 'Bills', 'Gross', 'To Collect', 'Collected', 'Diff'].map(h => (
-            <span key={h} style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: 0.4 }}>{h}</span>
-          ))}
-        </div>
-
-        <div style={{
-          flex: 1, overflowY: 'auto', border: '1.5px solid var(--border)',
-          borderRadius: '0 0 10px 10px', minHeight: 280,
-        }}>
-          {loading && (
-            <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-4)', fontSize: 12 }}>
-              <Loader2 size={18} style={{ animation: 'ccv-spin 0.8s linear infinite', display: 'inline-block' }} /> Loading…
-            </div>
-          )}
-          {!loading && error && (
-            <div style={{ padding: 16, color: 'var(--red)', fontSize: 12, fontWeight: 600 }}>{error}</div>
-          )}
-          {!loading && !error && closes.length === 0 && (
-            <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-4)', fontSize: 12 }}>
-              No counter closes found for selected dates
-            </div>
-          )}
-          {!loading && !error && closes.map((c, i) => (
-            <button
-              key={c.closeId}
-              type="button"
-              onClick={() => setDetailId(c.closeId)}
-              style={{
-                width: '100%', display: 'grid', gridTemplateColumns: GRID_COLS,
-                padding: '9px 10px', border: 'none', borderBottom: '1px solid var(--border)',
-                background: i % 2 === 0 ? '#fff' : 'var(--surface-2)',
-                fontSize: 11, textAlign: 'left', cursor: 'pointer', color: 'var(--text-1)',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-bg)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? '#fff' : 'var(--surface-2)' }}
-            >
-              <span>{fmtDateTime(c.closeDate)}</span>
-              <span style={{ fontWeight: 700 }}>{c.closeNo ?? `#${c.closeId}`}</span>
-              <span>{c.reportType}</span>
-              <span style={{ textAlign: 'right' }}>{c.billCount}</span>
-              <span style={{ textAlign: 'right', fontWeight: 700 }}>{fmt3(c.grossAmount)}</span>
-              <span style={{ textAlign: 'right' }}>{fmt3(c.cashToBeCollected)}</span>
-              <span style={{ textAlign: 'right' }}>{fmt3(c.collectedCash)}</span>
-              <span style={{
-                textAlign: 'right', fontWeight: 700,
-                color: Number(c.cashDifference) >= 0 ? 'var(--green)' : 'var(--red)',
-              }}>
-                {fmt3(c.cashDifference)}
-              </span>
-            </button>
-          ))}
-        </div>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '12px 16px' }}>
+        <Table
+          columns={[
+            { key: 'closeDate',         label: 'Close Date', width: 130, render: v => fmtDateTime(v) },
+            { key: 'closeNo',           label: 'Close No',   render: (v, c) => <b>{v ?? `#${c.closeId}`}</b> },
+            { key: 'reportType',        label: 'Type',       width: 52 },
+            { key: 'billCount',         label: 'Bills',      width: 52, align: 'right', mono: true },
+            { key: 'grossAmount',       label: 'Gross',      width: 78, align: 'right', mono: true, render: v => <b>{fmt3(v)}</b> },
+            { key: 'cashToBeCollected', label: 'To Collect', width: 78, align: 'right', mono: true, render: v => fmt3(v) },
+            { key: 'collectedCash',     label: 'Collected',  width: 78, align: 'right', mono: true, render: v => fmt3(v) },
+            {
+              key: 'cashDifference', label: 'Diff', width: 78, align: 'right', mono: true,
+              render: v => <b style={{ color: Number(v) >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt3(v)}</b>,
+            },
+          ]}
+          rows={closes}
+          rowKey="closeId"
+          onRowClick={c => setDetailId(c.closeId)}
+          loading={loading}
+          error={error}
+          emptyText="No counter closes found for selected dates"
+          minHeight={280}
+        />
       </div>
 
       <div style={{

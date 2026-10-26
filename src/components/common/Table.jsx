@@ -1,23 +1,31 @@
-import { useState } from 'react'
+import { Loader2 } from 'lucide-react'
+import './Table.css'
 
 /*
- * Reusable Table component.
+ * Reusable Table — the shared table look for every popup, same as the cart
+ * table on the POS home screen (styles in Table.css).
  *
  * Props:
- *   columns   — array of { key, label, width?, align? }
- *   rows      — array of data objects
- *   rowKey    — string key to use as unique id (default 'id')
- *   selected  — rowKey value of the currently selected row
- *   onRowClick— (row) => void
- *   maxHeight — string, e.g. '300px' (default: fills flex parent)
- *   emptyText — string shown when rows is empty
+ *   columns          — array of { key, label, width?, align?, mono?, render?, cellStyle? }
+ *                        width: number (px) or any CSS grid size ('1.2fr', '20%'); default flexible
+ *                        render: (value, row, index) => node
+ *   rows             — array of data objects
+ *   rowKey           — string key to use as unique id (default 'id')
+ *   selected         — rowKey value of the currently selected row
+ *   onRowClick       — (row, index) => void
+ *   onRowDoubleClick — (row, index) => void
+ *   loading          — show "Loading…" instead of the rows
+ *   error            — error message shown instead of the rows
+ *   emptyText        — string shown when rows is empty
+ *   maxHeight        — fixed height, e.g. '300px' (default: fills the flex parent)
+ *   minHeight        — minimum height of the table in px
  *
  * Example:
  *   <Table
  *     columns={[
- *       { key: 'no',   label: 'No',          width: 60  },
- *       { key: 'name', label: 'Name'                    },
- *       { key: 'price',label: 'Price', align: 'right'   },
+ *       { key: 'no',    label: 'No',    width: 60 },
+ *       { key: 'name',  label: 'Name' },
+ *       { key: 'price', label: 'Price', align: 'right', mono: true },
  *     ]}
  *     rows={data}
  *     rowKey="no"
@@ -26,48 +34,7 @@ import { useState } from 'react'
  *   />
  */
 
-function TableRow({ columns, row, rowKey, isSelected, isLast, onRowClick }) {
-  const [hover, setHover] = useState(false)
-
-  return (
-    <div
-      onClick={() => onRowClick?.(row)}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        display: 'grid',
-        gridTemplateColumns: columns.map(c => c.width ? `${c.width}px` : '1fr').join(' '),
-        padding: '8px 12px',
-        borderBottom: isLast ? 'none' : '1px solid var(--border)',
-        borderLeft: `3px solid ${isSelected ? 'var(--brand)' : 'transparent'}`,
-        background: isSelected ? 'rgba(120,8,41,0.06)' : hover ? 'var(--surface-2)' : '#fff',
-        cursor: onRowClick ? 'pointer' : 'default',
-        transition: 'background 0.1s',
-        borderRadius: isLast ? '0 0 8px 8px' : 0,
-      }}
-    >
-      {columns.map(col => (
-        <span
-          key={col.key}
-          style={{
-            fontSize: 12,
-            fontWeight: isSelected ? 700 : 500,
-            color: 'var(--text-1)',
-            textAlign: col.align || 'left',
-            fontFamily: col.mono ? 'inherit' : 'inherit',
-            fontVariantNumeric: col.mono ? 'tabular-nums' : undefined,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            ...col.cellStyle,
-          }}
-        >
-          {col.render ? col.render(row[col.key], row) : row[col.key]}
-        </span>
-      ))}
-    </div>
-  )
-}
+const trackOf = (w) => (w == null ? 'minmax(0, 1fr)' : typeof w === 'number' ? `${w}px` : w)
 
 export default function Table({
   columns = [],
@@ -75,65 +42,57 @@ export default function Table({
   rowKey = 'id',
   selected,
   onRowClick,
-  maxHeight,
+  onRowDoubleClick,
+  loading = false,
+  error = null,
   emptyText = 'No data found',
+  maxHeight,
+  minHeight,
 }) {
+  const grid = { gridTemplateColumns: columns.map(c => trackOf(c.width)).join(' ') }
+  const clickable = !!(onRowClick || onRowDoubleClick)
+
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column',
-      border: '1px solid rgba(0,0,0,0.18)',
-      borderRadius: 10, overflow: 'hidden',
-      flex: maxHeight ? undefined : 1,
-      height: maxHeight || undefined,
-    }}>
-
-      {/* ── Heading ── */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: columns.map(c => c.width ? `${c.width}px` : '1fr').join(' '),
-        background: 'var(--table-head-bg)',
-        borderBottom: '1px solid rgba(0,0,0,0.18)',
-        padding: '8px 12px',
-        flexShrink: 0,
-        borderRadius: '8px 8px 0 0',
-      }}>
+    <div
+      className={`ui-table${maxHeight ? '' : ' is-fill'}`}
+      style={{ height: maxHeight || undefined, minHeight: minHeight || undefined }}
+    >
+      <div className="ui-table-row ui-table-head" style={grid}>
         {columns.map(col => (
-          <span
-            key={col.key}
-            style={{
-              fontSize: 10, fontWeight: 700,
-              color: 'var(--brand)',
-              textTransform: 'uppercase', letterSpacing: 0.5,
-              textAlign: col.align || 'left',
-            }}
-          >
-            {col.label}
-          </span>
+          <span key={col.key} style={{ textAlign: col.align || 'left' }}>{col.label}</span>
         ))}
       </div>
 
-      {/* ── Rows ── */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        {rows.length === 0 ? (
-          <div style={{
-            padding: '32px 16px', textAlign: 'center',
-            fontSize: 12, color: 'var(--text-4)', fontWeight: 500,
-          }}>
-            {emptyText}
-          </div>
-        ) : rows.map((row, i) => (
-          <TableRow
-            key={row[rowKey] ?? i}
-            columns={columns}
-            row={row}
-            rowKey={rowKey}
-            isSelected={selected !== undefined && row[rowKey] === selected}
-            isLast={i === rows.length - 1}
-            onRowClick={onRowClick}
-          />
-        ))}
+      <div className="ui-table-body">
+        {loading ? (
+          <div className="ui-table-msg"><Loader2 size={16} className="ui-table-spin" /> Loading…</div>
+        ) : error ? (
+          <div className="ui-table-msg is-error">{error}</div>
+        ) : rows.length === 0 ? (
+          <div className="ui-table-msg">{emptyText}</div>
+        ) : rows.map((row, i) => {
+          const isSelected = selected !== undefined && selected !== null && row[rowKey] === selected
+          return (
+            <div
+              key={row[rowKey] ?? i}
+              className={`ui-table-row${clickable ? ' is-click' : ''}${isSelected ? ' is-selected' : ''}`}
+              style={grid}
+              onClick={onRowClick ? () => onRowClick(row, i) : undefined}
+              onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(row, i) : undefined}
+            >
+              {columns.map(col => (
+                <span
+                  key={col.key}
+                  className={col.mono ? 'is-num' : undefined}
+                  style={{ textAlign: col.align || 'left', ...col.cellStyle }}
+                >
+                  {col.render ? col.render(row[col.key], row, i) : row[col.key]}
+                </span>
+              ))}
+            </div>
+          )
+        })}
       </div>
-
     </div>
   )
 }

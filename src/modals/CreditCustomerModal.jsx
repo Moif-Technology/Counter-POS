@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Delete, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Delete } from 'lucide-react'
 import { normalizePaymentMode, PM } from '../lib/paymentModes'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import { fmtMoney } from '../lib/currencyFormat'
 import Modal from '../components/common/Modal'
+import Table from '../components/common/Table'
 
 const NUM_KEYS = [
   ['7','8','9'],
@@ -24,7 +25,6 @@ export default function CreditCustomerModal({ onClose, onApply }) {
   const [loading,      setLoading]      = useState(false)
   const [error,        setError]        = useState(null)
   const [focus,        setFocus]        = useState('code')
-  const listRef     = useRef()
   const debounceRef = useRef(null)
   const accessToken = usePosStore(s => s.accessToken)
 
@@ -95,109 +95,35 @@ export default function CreditCustomerModal({ onClose, onApply }) {
   }
 
   const selected = selectedIdx >= 0 ? customers[selectedIdx] : null
-  const osAmt    = selected ? Number(selected.osAmount ?? 0) : 0
 
   return (
     <Modal onClose={onClose} title="Credit Customer Selection" width={700}>
-      <style>{`
-        @keyframes cc-spin  { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-        @keyframes cc-bal   { from{opacity:0;transform:scaleY(0.7)} to{opacity:1;transform:scaleY(1)} }
-      `}</style>
-
       {/* Body */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
         {/* Left: customer list */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden', padding: '12px' }}>
-          <div style={{
-            flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
-            border: '1.5px solid var(--brand-border)', borderRadius: 10,
-          }}>
-            {/* Column headings */}
-            <div style={{
-              display: 'grid', gridTemplateColumns: '110px 1fr',
-              background: 'var(--table-head-bg)', borderBottom: '1.5px solid var(--brand-border)',
-              padding: '8px 12px', flexShrink: 0,
-              borderRadius: '8px 8px 0 0',
-            }}>
-              {['Customer Code', 'Customer Name'].map(h => (
-                <span key={h} style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</span>
-              ))}
-            </div>
-
-            {/* Rows */}
-            <div ref={listRef} style={{ flex: 1, overflowY: 'auto', borderRadius: '0 0 8px 8px' }}>
-              {loading && (
-                <div style={{ padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-4)', fontSize: 12 }}>
-                  <Loader2 size={14} style={{ animation: 'cc-spin 0.8s linear infinite' }} /> Loading…
-                </div>
-              )}
-              {!loading && error && (
-                <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--red)', fontWeight: 600 }}>{error}</div>
-              )}
-              {!loading && !error && customers.length === 0 && (
-                <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: 'var(--text-4)' }}>No credit customers found</div>
-              )}
-              {!loading && customers.map((c, i) => {
-                const isActive = selectedIdx === i
-                const isLast   = i === customers.length - 1
-                const cOs      = Number(c.osAmount ?? 0)
-                return (
-                  <div key={c.customerId}>
-                    {/* Main row */}
-                    <div
-                      onClick={() => selectRow(c, i)}
-                      style={{
-                        display: 'grid', gridTemplateColumns: '110px 1fr',
-                        padding: '9px 12px', cursor: 'pointer',
-                        borderBottom: (isActive || (!isActive && !isLast)) ? '1px solid var(--border)' : 'none',
-                        background: isActive ? 'var(--brand-bg)' : '#fff',
-                        borderLeft: `3px solid ${isActive ? 'var(--brand)' : 'transparent'}`,
-                        transition: 'background 0.1s',
-                      }}
-                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--surface-2)' }}
-                      onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = '#fff' }}
-                    >
-                      <span style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'inherit', fontWeight: isActive ? 700 : 500 }}>{c.customerCode}</span>
-                      <span style={{ fontSize: 12, color: 'var(--text-1)', fontWeight: isActive ? 700 : 500 }}>{c.customerName}</span>
-                    </div>
-
-                    {/* Inline OS balance strip — visible only when this row selected */}
-                    {isActive && (
-                      <div style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '8px 14px 8px 15px',
-                        background: cOs > 0 ? 'var(--red-bg)' : 'var(--green-bg)',
-                        borderLeft: `3px solid ${cOs > 0 ? 'var(--red)' : 'var(--green)'}`,
-                        borderBottom: isLast ? 'none' : '1px solid var(--border)',
-                        animation: 'cc-bal 0.15s ease',
-                        transformOrigin: 'top',
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          {cOs > 0
-                            ? <AlertCircle  size={13} color="var(--red)"   />
-                            : <CheckCircle2 size={13} color="var(--green)" />
-                          }
-                          <span style={{ fontSize: 11, fontWeight: 700, color: cOs > 0 ? 'var(--red)' : 'var(--green)' }}>
-                            Outstanding Balance
-                          </span>
-                        </div>
-                        <span style={{
-                          fontSize: 15, fontWeight: 800,
-                          fontFamily: 'inherit',
-                          fontVariantNumeric: 'tabular-nums',
-                          color: cOs > 0 ? 'var(--red)' : 'var(--green)',
-                          letterSpacing: '-0.3px',
-                        }}>
-                          {fmtMoney(cOs)} <span style={{ fontSize: 10, fontWeight: 700, opacity: 0.65 }}>AED</span>
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', padding: '14px 16px' }}>
+          <Table
+            columns={[
+              { key: 'customerCode', label: 'Customer Code', width: 120 },
+              { key: 'customerName', label: 'Customer Name' },
+              {
+                key: 'osAmount', label: 'Outstanding', width: 110, align: 'right', mono: true,
+                render: v => {
+                  const os = Number(v ?? 0)
+                  return <b style={{ color: os > 0 ? 'var(--red)' : 'var(--green)' }}>{fmtMoney(os)}</b>
+                },
+              },
+            ]}
+            rows={customers}
+            rowKey="customerId"
+            selected={selected?.customerId}
+            onRowClick={(c, i) => selectRow(c, i)}
+            loading={loading}
+            error={error}
+            emptyText="No credit customers found"
+            minHeight={300}
+          />
         </div>
 
         {/* Right: inputs + numpad */}

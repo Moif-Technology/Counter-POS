@@ -53,7 +53,7 @@ export default function PacketScanModal({ onClose }) {
 
         {/* LEFT — table */}
         <div className="ps-left" style={{ flex: 1, padding: '16px 16px', display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden' }}>
-          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', border: '1px solid rgba(0,0,0,0.18)', borderRadius: 10 }}>
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <Table
               columns={COLUMNS}
               rows={rows}

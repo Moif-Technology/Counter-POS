@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Loader2, Crown } from 'lucide-react'
+import { Crown } from 'lucide-react'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import Modal from '../components/common/Modal'
 import Numpad from '../components/common/Numpad'
+import Table from '../components/common/Table'
 
-const GRID = '1fr 1.2fr 2.2fr'   // Customer No · Code · Name
 
 export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = null }) {
   const [customerNo,   setCustomerNo]   = useState('')
@@ -16,7 +16,6 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
   const [loading,      setLoading]      = useState(false)
   const [error,        setError]        = useState(null)
   const [focus,        setFocus]        = useState('no')
-  const listRef     = useRef()
   const debounceRef = useRef(null)
   const accessToken = usePosStore(s => s.accessToken)
 
@@ -100,7 +99,6 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
   return (
     <Modal onClose={onClose} icon={Crown} kicker="Customer" title="Privilege Customer" width={780} maxHeight="92vh">
       <style>{`
-        @keyframes pcm-spin { to { transform: rotate(360deg) } }
         @media (max-width: 680px) {
           .pc-body { flex-direction: column !important; }
           .pc-right { width: 100% !important; border-left: none !important; border-top: 1px solid var(--border) !important; }
@@ -111,52 +109,22 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
 
         {/* ── Customer table ── */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', padding: '14px 16px' }}>
-          <div style={{
-            display: 'grid', gridTemplateColumns: GRID, flexShrink: 0,
-            background: 'var(--table-head-bg)', padding: '9px 12px', borderRadius: '10px 10px 0 0',
-            border: '1.5px solid var(--border)', borderBottom: 'none',
-          }}>
-            {['Customer No', 'Customer Code', 'Customer Name'].map(h => (
-              <span key={h} style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: 0.4 }}>{h}</span>
-            ))}
-          </div>
-
-          <div ref={listRef} style={{ flex: 1, overflowY: 'auto', border: '1.5px solid var(--border)', borderRadius: '0 0 10px 10px', minHeight: 300 }}>
-            {loading && (
-              <div style={{ padding: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-4)', fontSize: 12 }}>
-                <Loader2 size={16} color="var(--brand)" style={{ animation: 'pcm-spin 0.8s linear infinite' }} /> Loading…
-              </div>
-            )}
-            {!loading && error && (
-              <div style={{ padding: 16, color: 'var(--red)', fontSize: 12, fontWeight: 600 }}>{error}</div>
-            )}
-            {!loading && !error && count === 0 && (
-              <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-4)', fontSize: 12 }}>No customers found</div>
-            )}
-            {!loading && customers.map((c, i) => {
-              const isActive = selectedIdx === i
-              const stripe = i % 2 === 0 ? '#fff' : 'var(--surface-2)'
-              return (
-                <div
-                  key={c.customerId}
-                  onClick={() => selectRow(c, i)}
-                  onDoubleClick={() => { selectRow(c, i); onApply?.(c); onClose() }}
-                  style={{
-                    display: 'grid', gridTemplateColumns: GRID, alignItems: 'center',
-                    padding: '0 12px', height: 38, cursor: 'pointer',
-                    borderBottom: '1px solid var(--border)',
-                    borderLeft: `3px solid ${isActive ? 'var(--brand)' : 'transparent'}`,
-                    background: isActive ? 'var(--brand-bg)' : stripe,
-                    transition: 'background 0.1s',
-                  }}
-                >
-                  <span style={{ fontSize: 12, fontWeight: isActive ? 700 : 500, color: isActive ? 'var(--brand)' : 'var(--text-1)', fontVariantNumeric: 'tabular-nums' }}>{c.customerId}</span>
-                  <span style={{ fontSize: 12, fontWeight: isActive ? 700 : 500, color: isActive ? 'var(--brand)' : 'var(--text-2)' }}>{c.customerCode}</span>
-                  <span style={{ fontSize: 12, fontWeight: isActive ? 700 : 500, color: isActive ? 'var(--brand)' : 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.customerName}</span>
-                </div>
-              )
-            })}
-          </div>
+          <Table
+            columns={[
+              { key: 'customerId',   label: 'Customer No',   width: '1fr', mono: true },
+              { key: 'customerCode', label: 'Customer Code', width: '1.2fr' },
+              { key: 'customerName', label: 'Customer Name', width: '2.2fr' },
+            ]}
+            rows={customers}
+            rowKey="customerId"
+            selected={selected?.customerId}
+            onRowClick={(c, i) => selectRow(c, i)}
+            onRowDoubleClick={(c, i) => { selectRow(c, i); onApply?.(c); onClose() }}
+            loading={loading}
+            error={error}
+            emptyText="No customers found"
+            minHeight={300}
+          />
         </div>
 
         {/* ── Fields + keypad ── */}

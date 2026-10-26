@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Wallet, RefreshCw, Loader2 } from 'lucide-react'
+import { Wallet, RefreshCw } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
 import { fmt3 } from '../lib/utils'
 import Modal from '../components/common/Modal'
+import Table from '../components/common/Table'
 import DateRangePicker from '../components/common/DateRangePicker'
 
 function todayISO() {
@@ -24,7 +25,6 @@ function fmtDateTime(d) {
   })
 }
 
-const GRID_COLS = '118px 52px 48px 100px 1fr 80px'
 
 export default function CashInOutViewerModal({ onClose, reportFn = null }) {
   const accessToken = usePosStore(s => s.accessToken)
@@ -66,7 +66,6 @@ export default function CashInOutViewerModal({ onClose, reportFn = null }) {
 
   return (
     <Modal onClose={onClose} icon={Wallet} kicker="Reports" title="Cash In / Out Viewer" width={920}>
-      <style>{`@keyframes cio-spin { to { transform: rotate(360deg) } }`}</style>
 
       <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 72px 1fr auto', gap: 8, alignItems: 'end' }}>
@@ -133,81 +132,32 @@ export default function CashInOutViewerModal({ onClose, reportFn = null }) {
         </div>
       )}
 
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '0 16px 12px' }}>
-        <div style={{
-          display: 'grid', gridTemplateColumns: GRID_COLS,
-          background: 'var(--table-head-bg)', padding: '9px 10px', borderRadius: '10px 10px 0 0',
-          border: '1.5px solid var(--border)', borderBottom: 'none', marginTop: 12,
-        }}>
-          {['Date / Time', 'Type', 'Cntr', 'Close No', 'Remarks', 'Amount'].map(h => (
-            <span key={h} style={{
-              fontSize: 9, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: 0.4,
-              textAlign: h === 'Amount' ? 'right' : 'left',
-            }}>{h}</span>
-          ))}
-        </div>
-
-        <div style={{
-          flex: 1, overflowY: 'auto', border: '1.5px solid var(--border)',
-          borderRadius: '0 0 10px 10px', minHeight: 260,
-        }}>
-          {loading && (
-            <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-4)', fontSize: 12 }}>
-              <Loader2 size={18} style={{ animation: 'cio-spin 0.8s linear infinite', display: 'inline-block' }} /> Loading…
-            </div>
-          )}
-          {!loading && error && (
-            <div style={{ padding: 16, color: 'var(--red)', fontSize: 12, fontWeight: 600 }}>{error}</div>
-          )}
-          {!loading && !error && rows.length === 0 && (
-            <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-4)', fontSize: 12 }}>
-              No cash in/out entries for selected filters
-            </div>
-          )}
-          {!loading && !error && rows.map((r, i) => {
-            const isIn = r.transactionType === 'CASH_IN'
-            return (
-              <div
-                key={r.id}
-                style={{
-                  display: 'grid', gridTemplateColumns: GRID_COLS,
-                  padding: '9px 10px', borderBottom: '1px solid var(--border)',
-                  background: i % 2 === 0 ? '#fff' : 'var(--surface-2)',
-                  fontSize: 11, alignItems: 'center',
-                }}
-              >
-                <span style={{ color: 'var(--text-2)' }}>{fmtDateTime(r.createdAt)}</span>
-                <span style={{
-                  fontWeight: 800, fontSize: 10, letterSpacing: 0.4,
-                  color: isIn ? 'var(--green)' : 'var(--red)',
-                }}>
-                  {isIn ? 'IN' : 'OUT'}
-                </span>
-                <span style={{ textAlign: 'center' }}>{r.counterNo}</span>
-                <span style={{
-                  fontWeight: 700, fontSize: 10,
-                  color: r.counterCloseNo === 'PENDING' ? 'var(--amber)' : 'var(--text-2)',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {r.counterCloseNo ?? '—'}
-                </span>
-                <span style={{
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  color: 'var(--text-2)',
-                }} title={r.remarks || ''}>
-                  {r.remarks || '—'}
-                </span>
-                <span style={{
-                  textAlign: 'right', fontWeight: 800,
-                  fontFamily: 'inherit',
-                  color: isIn ? 'var(--green)' : 'var(--red)',
-                }}>
-                  {fmt3(r.amount)}
-                </span>
-              </div>
-            )
-          })}
-        </div>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '12px 16px' }}>
+        <Table
+          columns={[
+            { key: 'createdAt', label: 'Date / Time', width: 130, render: v => fmtDateTime(v) },
+            {
+              key: 'transactionType', label: 'Type', width: 56,
+              render: v => <b style={{ fontSize: 10, letterSpacing: 0.4, color: v === 'CASH_IN' ? 'var(--green)' : 'var(--red)' }}>{v === 'CASH_IN' ? 'IN' : 'OUT'}</b>,
+            },
+            { key: 'counterNo', label: 'Cntr', width: 48, align: 'center' },
+            {
+              key: 'counterCloseNo', label: 'Close No', width: 110,
+              render: v => <b style={{ fontSize: 11, color: v === 'PENDING' ? 'var(--amber)' : 'var(--text-2)' }}>{v ?? '—'}</b>,
+            },
+            { key: 'remarks', label: 'Remarks', render: v => <span title={v || ''}>{v || '—'}</span> },
+            {
+              key: 'amount', label: 'Amount', width: 90, align: 'right', mono: true,
+              render: (v, r) => <b style={{ color: r.transactionType === 'CASH_IN' ? 'var(--green)' : 'var(--red)' }}>{fmt3(v)}</b>,
+            },
+          ]}
+          rows={rows}
+          rowKey="id"
+          loading={loading}
+          error={error}
+          emptyText="No cash in/out entries for selected filters"
+          minHeight={260}
+        />
       </div>
 
       <div style={{
