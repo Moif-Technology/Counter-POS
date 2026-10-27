@@ -17,7 +17,7 @@ import Modal from '../components/common/Modal'
 import './ReportsModal.css'
 
 /*
- * Reports — the counter's numbered options, grouped into cards:
+ * Reports — the counter's numbered options as a grid of box tiles:
  * tap an option, or type its number in "Selected Option" and press Enter.
  * `no` is the number shown; `key` is the internal action id (unchanged).
  */
@@ -47,8 +47,7 @@ const SECTIONS = [
     { no: 9,  key: 9,  label: 'Shut Down',            icon: Power, danger: true },
   ] },
 ]
-const COLUMNS = [[SECTIONS[0], SECTIONS[1]], [SECTIONS[2], SECTIONS[3]]]
-const ALL = SECTIONS.flatMap(sec => sec.items)
+const ALL = SECTIONS.flatMap(sec => sec.items).sort((a, b) => a.no - b.no)
 const byNo = (n) => ALL.find(i => i.no === n)
 const MAX_NO = Math.max(...ALL.map(i => i.no))
 
@@ -118,31 +117,22 @@ export default function ReportsModal({
     <>
     <Modal closeOnEsc={false} onClose={onClose} icon={BarChart2} kicker="Counter POS" title="Reports" width={820}>
       <div className="rpt">
-        <div className="rpt-cols">
-          {COLUMNS.map((col, ci) => (
-            <div key={ci} className="rpt-col">
-              {col.map(sec => (
-                <section key={sec.title} className="rpt-sec">
-                  <h4>{sec.title}</h4>
-                  {sec.items.map(item => {
-                    const Icon = item.icon
-                    return (
-                      <button
-                        key={item.no}
-                        type="button"
-                        className={`rpt-item${item.danger ? ' is-danger' : ''}${typedItem?.no === item.no ? ' is-typed' : ''}`}
-                        onClick={() => handleSelect(item.key)}
-                      >
-                        <span className="rpt-ico"><Icon size={17} /></span>
-                        <span className="rpt-label">{item.label}</span>
-                        <span className="rpt-no">{item.no}</span>
-                      </button>
-                    )
-                  })}
-                </section>
-              ))}
-            </div>
-          ))}
+        <div className="rpt-grid">
+          {ALL.map(item => {
+            const Icon = item.icon
+            return (
+              <button
+                key={item.no}
+                type="button"
+                className={`rpt-tile${item.danger ? ' is-danger' : ''}${typedItem?.no === item.no ? ' is-typed' : ''}`}
+                onClick={() => handleSelect(item.key)}
+              >
+                <span className="rpt-no">{item.no}</span>
+                <span className="rpt-ico"><Icon size={22} /></span>
+                <span className="rpt-label">{item.label}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
