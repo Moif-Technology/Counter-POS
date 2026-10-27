@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Eraser, Trash2, RefreshCw, MessageSquare } from 'lucide-react'
+import { Eraser, Trash2, RefreshCw, MessageSquare, Search, Clock } from 'lucide-react'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import { fmtMoney } from '../lib/currencyFormat'
@@ -9,9 +9,10 @@ import Table from '../components/common/Table'
 import './ClearHoldBillModal.css'
 
 /*
- * Clear Hold Bill — held bills on the left (tap to see items), the bill's items
- * on the right, then "Clear Hold Bill" deletes the selected hold.
- * ↑ / ↓ move through the holds, Delete clears, Escape closes.
+ * Clear Hold Bill — held bills as cards on the left (age, sales man, customer,
+ * comment; holds older than a day are tagged "Old"), the selected bill's items
+ * on the right, then "Clear Hold Bill" deletes it.
+ * Type a hold no to find it; ↑ / ↓ move, Delete clears, Escape closes.
  */
 function fmtDateTime(value) {
   if (!value) return ''
@@ -22,11 +23,19 @@ function fmtDateTime(value) {
 
 const salesMan = h => h.staff_name || h.sales_man || h.staff_code || ''
 
-const HOLD_COLS = [
-  { key: 'hold_no',   label: 'Hold No',   width: 70, mono: true, render: v => <b>{v}</b> },
-  { key: 'bill_date', label: 'Bill Time', width: 124, render: v => fmtDateTime(v) },
-  { key: 'staff',     label: 'Sales Man', render: (_, h) => salesMan(h) || '—' },
-]
+const DAY_MS = 24 * 60 * 60 * 1000
+const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+
+/** → 'Today 14:20' · 'Yesterday 09:05' · '3 days ago' · '31 Dec 2024' (older than a week) */
+function holdAge(value) {
+  const d = new Date(value)
+  if (!value || Number.isNaN(d.getTime())) return { label: '—', old: false }
+  const days = Math.round((startOfDay(new Date()) - startOfDay(d)) / DAY_MS)
+  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  const label = days <= 0 ? `Today ${time}` : days === 1 ? `Yesterday ${time}` : days <= 7 ? `${days} days ago`
+    : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  return { label, old: Date.now() - d.getTime() > DAY_MS }
+}
 
 const ITEM_COLS = [
   { key: 'sl',                label: 'SL',          width: 36, align: 'center', render: (_, __, i) => i + 1 },
@@ -52,7 +61,8 @@ export default function ClearHoldBillModal({ onClose }) {
   const items = selected ? itemsById[selected.sales_id] ?? [] : []
   const itemsLoading = !!selected && !itemsById[selected.sales_id]
   const billTotal = items.reduce((s, it) => s + (Number(it.line_total) || 0), 0)
-  const comment = String(selected?.remarks ?? '').trim()
+  const [find, setFind] = useState('')
+  const shown = find ? holds.filter(h => String(h.hold_no).includes(find.trim())) : holds
 
   // Held bills (reloadKey bumps on Refresh)
   useEffect(() => {
@@ -117,9 +127,9 @@ export default function ClearHoldBillModal({ onClose }) {
       if (e.key === 'Delete') { handleClear(); return }
       if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
       e.preventDefault()
-      const idx = holds.findIndex(h => h.sales_id === selectedId)
-      const nextIdx = Math.max(0, Math.min(holds.length - 1, idx + (e.key === 'ArrowDown' ? 1 : -1)))
-      if (holds[nextIdx]) setSelectedId(holds[nextIdx].sales_id)
+      const idx = shown.findIndex(h => h.sales_id === selectedId)
+      const nextIdx = Math.max(0, Math.min(shown.length - 1, idx + (e.key === 'ArrowDown' ? 1 : -1)))
+      if (shown[nextIdx]) setSelectedId(shown[nextIdx].sales_id)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -145,27 +155,54 @@ export default function ClearHoldBillModal({ onClose }) {
 
       <div className="chb">
         <section className="chb-left">
-          <h4>Held Bills <span>{holds.length}</span></h4>
-          <div className="chb-table">
-            <Table
-              columns={HOLD_COLS}
-              rows={holds}
-              rowKey="sales_id"
-              selected={selectedId}
-              onRowClick={h => setSelectedId(h.sales_id)}
-              loading={loading}
-              emptyText="No held bills"
-            />
+          <div className="chb-left-head">
+            <h4>Held Bills <span>{holds.length}</span></h4>
+            <label className="chb-find">
+              <Search size={15} />
+              <input
+                data-system-keyboard
+                value={find}
+                onChange={e => {
+                  const v = e.target.value.replace(/D/g, '')
+                  setFind(v)
+                  const hit = holds.find(h => String(h.hold_no).includes(v))
+                  if (v && hit) setSelectedId(hit.sales_id)
+                }}
+                onKeyDown={e => e.stopPropagation()}
+                placeholder="Find hold no"
+              />
+            </label>
           </div>
-          <div className={`chb-comment${comment ? ' has-value' : ''}`}>
-            <MessageSquare size={15} />
-            <span>Comments</span>
-            <p>{comment || '—'}</p>
+          <div className="chb-cards">
+            {loading && <div className="chb-empty">Loading held bills…</div>}
+            {!loading && shown.length === 0 && <div className="chb-empty">{find ? `No hold "${find}"` : 'No held bills'}</div>}
+            {!loading && shown.map(h => {
+              const age = holdAge(h.bill_date)
+              const note = String(h.remarks ?? '').trim()
+              return (
+                <button
+                  key={h.sales_id}
+                  type="button"
+                  className={`chb-card${h.sales_id === selectedId ? ' is-on' : ''}`}
+                  onClick={() => setSelectedId(h.sales_id)}
+                >
+                  <span className="chb-card-no"><small>Hold</small>{h.hold_no}</span>
+                  <span className="chb-card-main">
+                    <span className="chb-card-top">
+                      <b>{h.customer_name || 'Walk-in'}</b>
+                      {age.old && <em>Old</em>}
+                    </span>
+                    <span className="chb-card-meta"><Clock size={12} /> {age.label}{salesMan(h) ? ` · ${salesMan(h)}` : ''}</span>
+                    {note && <span className="chb-card-note"><MessageSquare size={12} /> {note}</span>}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </section>
 
         <section className="chb-right">
-          <h4>{selected ? <>Hold <b>{selected.hold_no}</b> · {selected.customer_name || 'Walk-in'}</> : 'Bill items'}</h4>
+          <h4>{selected ? <>Hold <b>{selected.hold_no}</b> · {selected.customer_name || 'Walk-in'} <small>{fmtDateTime(selected.bill_date)}</small></> : 'Bill items'}</h4>
           <div className="chb-table">
             <Table
               columns={ITEM_COLS}
