@@ -1,117 +1,47 @@
 import { useState } from 'react'
-import { Percent } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { findCartItemByKey } from '../lib/cartLine'
+import { roundMoney } from '../lib/currencyFormat'
 import {
   lineDiscountInitialState,
   lineTaxableBeforeDiscount,
   previewLineDiscount,
-  resolveDiscountOnTaxable,
 } from '../lib/discountCalc'
-import DiscountEntryPanel from './DiscountEntryPanel'
-import Modal from '../components/common/Modal'
+import DiscountScreen from './DiscountScreen'
 
+/** Line Discount — discount on one cart line (same screen as Bill Discount). */
 export default function DiscountModal({ onClose, rowKey: rowKeyProp, zIndex = 1000 }) {
   const cartItems      = usePosStore(s => s.cartItems)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
   const updateLine     = usePosStore(s => s.updateLine)
   const activeKey      = rowKeyProp ?? selectedRowKey
   const item           = findCartItemByKey(cartItems, activeKey)
-
-  const initial = lineDiscountInitialState(item)
-  const [mode, setMode]       = useState(initial.mode)
-  const [discPct, setDiscPct] = useState(initial.discPct)
-  const [discAmt, setDiscAmt] = useState(initial.discAmt)
+  const [initial]      = useState(() => lineDiscountInitialState(item))
 
   if (!item) return null
 
-  const taxableBase = lineTaxableBeforeDiscount(item)
-  const preview = previewLineDiscount(item, mode, discPct, discAmt)
-  const displayPct = mode === 'pct' ? discPct : (preview.pct ? String(preview.pct) : '')
-  const displayAmt = mode === 'amt' ? discAmt : (preview.discountAmt ? String(preview.discountAmt) : '')
+  const base  = lineTaxableBeforeDiscount(item)
+  const gross = previewLineDiscount(item, 'pct', '0', '').grossTotal   // line total before any discount
 
-  const handleKey = k => {
-    if (k === 'C') {
-      if (mode === 'pct') setDiscPct('')
-      else setDiscAmt('')
-      return
-    }
-    if (k === '⌫') {
-      if (mode === 'pct') setDiscPct(v => v.slice(0, -1))
-      else setDiscAmt(v => v.slice(0, -1))
-      return
-    }
-    if (k === '.' && (mode === 'pct' ? discPct : discAmt).includes('.')) return
-
-    if (mode === 'pct') {
-      const next = discPct + k
-      if (parseFloat(next) > 100) return
-      setDiscPct(next)
-    } else {
-      const next = discAmt + k
-      if (parseFloat(next) > Math.abs(taxableBase)) return
-      setDiscAmt(next)
-    }
-  }
-
-  const applyPreset = p => {
-    setMode('pct')
-    setDiscPct(String(p))
-    setDiscAmt('')
-  }
-
-  const handleDone = () => {
-    const { discountAmt, pct } = resolveDiscountOnTaxable(
-      taxableBase,
-      mode,
-      mode === 'pct' ? discPct : displayPct,
-      mode === 'amt' ? discAmt : displayAmt,
-    )
-    if (discountAmt <= 0 && pct <= 0) {
-      updateLine(activeKey, { discount: 0, discountAmt: 0, discountMode: 'pct' })
-    } else if (mode === 'amt') {
-      updateLine(activeKey, { discount: 0, discountAmt, discountMode: 'amt' })
-    } else {
-      updateLine(activeKey, { discount: pct, discountAmt: 0, discountMode: 'pct' })
-    }
-    onClose()
+  const handleApply = ({ mode, discountAmt, pct }) => {
+    if (discountAmt <= 0 && pct <= 0) updateLine(activeKey, { discount: 0, discountAmt: 0, discountMode: 'pct' })
+    else if (mode === 'amt') updateLine(activeKey, { discount: 0, discountAmt, discountMode: 'amt' })
+    else updateLine(activeKey, { discount: pct, discountAmt: 0, discountMode: 'pct' })
   }
 
   return (
-    <Modal
-      onClose={onClose}
-      icon={Percent}
-      kicker="Line item"
+    <DiscountScreen
       title="Line Discount"
+      kicker={item.description}
+      totalLabel="Line Total"
+      base={base}
+      tax={roundMoney(gross - base)}
+      gross={gross}
+      initial={initial}
+      preview={(mode, pct, amt) => previewLineDiscount(item, mode, pct, amt)}
+      onApply={handleApply}
+      onClose={onClose}
       zIndex={zIndex}
-      width={600}
-    >
-      <style>{`
-        @media (max-width: 600px) {
-          .dc-body { flex-direction: column !important; }
-          .dc-left { border-right: none !important; border-bottom: 1px solid var(--border) !important; }
-          .dc-right { width: 100% !important; }
-        }
-      `}</style>
-
-      <DiscountEntryPanel
-        contextLabel={item.description}
-        contextHint="Discount applies on taxable amount (before VAT)."
-        taxableBefore={taxableBase}
-        discountAmt={preview.discountAmt}
-        taxableAfter={preview.netTaxable}
-        totalWithVat={preview.grossTotal}
-        totalLabel="Line total (incl. VAT)"
-        mode={mode}
-        setMode={setMode}
-        displayPct={displayPct}
-        displayAmt={displayAmt}
-        onKey={handleKey}
-        applyPreset={applyPreset}
-        onClear={() => { setDiscPct(''); setDiscAmt('') }}
-        onDone={handleDone}
-        onClose={onClose}
-      />
-    </Modal>
+    />
   )
 }
