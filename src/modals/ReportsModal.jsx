@@ -125,7 +125,7 @@ export default function ReportsModal({
       />
     )}
     {staffWiseOpen && (
-      <StaffWiseReportModal onClose={() => setStaffWiseOpen(false)} reportFn={staffReportFn} />
+      <StaffWiseReportModal onClose={() => setStaffWiseOpen(false)} reportFn={staffReportFn} historyFn={closeHistoryFn} />
     )}
    
     {salesViewerOpen && (
