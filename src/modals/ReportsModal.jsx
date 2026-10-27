@@ -10,10 +10,12 @@ import SalesViewerModal from './SalesViewerModal'
 import CounterCloseViewerModal from './CounterCloseViewerModal'
 import CashInOutViewerModal from './CashInOutViewerModal'
 import {
-  BarChart2, Gauge, Users, FileText, Layers, ReceiptText, Lock, ArrowLeftRight,
+  BarChart2, Info, Gauge, Users, FileText, Layers, ReceiptText, Lock, ArrowLeftRight,
   KeyRound, UserCog, Mail, ShieldCheck, CirclePause, Download, Upload, Trash2, Power,
 } from 'lucide-react'
 import Modal from '../components/common/Modal'
+import { api } from '../lib/api'
+import { usePosStore } from '../store/posStore'
 import './ReportsModal.css'
 
 /*
@@ -58,6 +60,9 @@ export default function ReportsModal({
   const [staffWiseOpen,     setStaffWiseOpen]     = useState(false)
   const [groupWiseOpen,     setGroupWiseOpen]     = useState(false)
   const [cashierChangeOpen, setCashierChangeOpen] = useState(false)
+  const [readingNeeded, setReadingNeeded] = useState(false)   // "take the counter reading first" notice
+  const accessToken = usePosStore(s => s.accessToken)
+  const counterNo   = usePosStore(s => s.counterNo)
   const [clearHoldBillOpen, setClearHoldBillOpen] = useState(false)
   const [passwordChangeOpen, setPasswordChangeOpen] = useState(false)
   const [privilegeSettingsOpen, setPrivilegeSettingsOpen] = useState(false)
@@ -65,13 +70,29 @@ export default function ReportsModal({
   const [counterCloseViewerOpen, setCounterCloseViewerOpen] = useState(false)
   const [cashInOutViewerOpen,    setCashInOutViewerOpen]    = useState(false)
   const subOpen = counterReadingOpen || staffWiseOpen || groupWiseOpen || cashierChangeOpen || clearHoldBillOpen
-    || passwordChangeOpen || privilegeSettingsOpen || salesViewerOpen || counterCloseViewerOpen || cashInOutViewerOpen
+    || passwordChangeOpen || privilegeSettingsOpen || salesViewerOpen || counterCloseViewerOpen || cashInOutViewerOpen || readingNeeded
+
+  // Cashier Change needs the counter reading (Z-Report) first when the session has bills.
+  async function openCashierChange() {
+    let pending
+    try {
+      const doSummary = counterSummaryFn ?? (() => api.counterPos.counterSummary(counterNo, accessToken))
+      pending = Number((await doSummary())?.billCount) || 0
+    } catch {
+      pending = 0   // summary unavailable: don't block the change
+    }
+    if (pending > 0) {
+      setReadingNeeded(true)
+      return
+    }
+    setCashierChangeOpen(true)
+  }
 
   function handleSelect(itemKey) {
     if (itemKey === 0) { setCounterReadingOpen(true); return }
     if (itemKey === 1) { setStaffWiseOpen(true); return }
     if (itemKey === 8) { setGroupWiseOpen(true); return }
-    if (itemKey === 4) { setCashierChangeOpen(true); return }
+    if (itemKey === 4) { openCashierChange(); return }
     if (itemKey === 5) { setClearHoldBillOpen(true); return }
     if (itemKey === 3) { setPasswordChangeOpen(true); return }
     if (itemKey === 12) { setPrivilegeSettingsOpen(true); return }
@@ -139,6 +160,19 @@ export default function ReportsModal({
     )}
      {groupWiseOpen && (
       <GroupWiseReportModal onClose={() => setGroupWiseOpen(false)} reportFn={groupReportFn} />
+    )}
+    {readingNeeded && (
+      <Modal onClose={() => setReadingNeeded(false)} header={false} width={420} zIndex={1200}>
+        <div className="rpt-note">
+          <span className="rpt-note-ico"><Info size={30} /></span>
+          <h3>Counter Reading Pending</h3>
+          <p>Take the Counter Reading before changing the Cashier.</p>
+          <div className="rpt-note-btns">
+            <button type="button" className="rpt-note-alt" onClick={() => { setReadingNeeded(false); setCounterReadingOpen(true) }}>Counter Reading</button>
+            <button type="button" className="rpt-note-ok" onClick={() => setReadingNeeded(false)} autoFocus>OK</button>
+          </div>
+        </div>
+      </Modal>
     )}
     {cashierChangeOpen && (
   <CashierChangeModal onClose={() => setCashierChangeOpen(false)} />
