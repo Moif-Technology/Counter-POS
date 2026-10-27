@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import CounterReadingModal from './CounterReadingModal'
 import StaffWiseReportModal from './StaffWiseReportModal'
 import GroupWiseReportModal from './GroupWiseReportModal'
@@ -10,16 +10,15 @@ import SalesViewerModal from './SalesViewerModal'
 import CounterCloseViewerModal from './CounterCloseViewerModal'
 import CashInOutViewerModal from './CashInOutViewerModal'
 import {
-  BarChart2, CornerDownLeft, Gauge, Users, FileText, Layers, ReceiptText, Lock, ArrowLeftRight,
+  BarChart2, Gauge, Users, FileText, Layers, ReceiptText, Lock, ArrowLeftRight,
   KeyRound, UserCog, Mail, ShieldCheck, CirclePause, Download, Upload, Trash2, Power,
 } from 'lucide-react'
 import Modal from '../components/common/Modal'
 import './ReportsModal.css'
 
 /*
- * Reports — the counter's numbered options as a grid of box tiles:
- * tap an option, or type its number in "Selected Option" and press Enter.
- * `no` is the number shown; `key` is the internal action id (unchanged).
+ * Reports — the counter's options as a grid of tiles; tap one to open it.
+ * `no` sets the tile order; `key` is the internal action id (unchanged).
  */
 const SECTIONS = [
   { title: 'Reports', items: [
@@ -48,8 +47,6 @@ const SECTIONS = [
   ] },
 ]
 const ALL = SECTIONS.flatMap(sec => sec.items).sort((a, b) => a.no - b.no)
-const byNo = (n) => ALL.find(i => i.no === n)
-const MAX_NO = Math.max(...ALL.map(i => i.no))
 
 export default function ReportsModal({
   onClose, onSelect,
@@ -67,13 +64,10 @@ export default function ReportsModal({
   const [salesViewerOpen,       setSalesViewerOpen]       = useState(false)
   const [counterCloseViewerOpen, setCounterCloseViewerOpen] = useState(false)
   const [cashInOutViewerOpen,    setCashInOutViewerOpen]    = useState(false)
-  const [typed, setTyped] = useState('')     // "Selected Option"
-  const typedRef = useRef('')
   const subOpen = counterReadingOpen || staffWiseOpen || groupWiseOpen || cashierChangeOpen || clearHoldBillOpen
     || passwordChangeOpen || privilegeSettingsOpen || salesViewerOpen || counterCloseViewerOpen || cashInOutViewerOpen
 
   function handleSelect(itemKey) {
-    setTyped(''); typedRef.current = ''
     if (itemKey === 0) { setCounterReadingOpen(true); return }
     if (itemKey === 1) { setStaffWiseOpen(true); return }
     if (itemKey === 8) { setGroupWiseOpen(true); return }
@@ -88,30 +82,13 @@ export default function ReportsModal({
     onClose()
   }
 
-  // Keyboard: digits fill "Selected Option"; Enter opens it. A number that can't
-  // grow into a longer option (e.g. 2–9, 10–15) opens straight away.
+  // Escape closes the list (sub-reports handle their own Escape).
   useEffect(() => {
     if (subOpen) return undefined
-    const onKey = e => {
-      if (e.key === 'Escape') { onClose(); return }
-      if (e.key === 'Backspace') { typedRef.current = typedRef.current.slice(0, -1); setTyped(typedRef.current); return }
-      if (e.key === 'Enter') {
-        const item = typedRef.current !== '' && byNo(Number(typedRef.current))
-        if (item) handleSelect(item.key)
-        return
-      }
-      if (!/^\d$/.test(e.key)) return
-      const next = (typedRef.current + e.key).replace(/^0(\d)/, '$1')
-      if (Number(next) > MAX_NO) return
-      typedRef.current = next; setTyped(next)
-      const canGrow = Number(next) * 10 <= MAX_NO && Number(next) !== 0
-      if (!canGrow && byNo(Number(next))) handleSelect(byNo(Number(next)).key)
-    }
+    const onKey = e => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose, subOpen]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const typedItem = typed !== '' ? byNo(Number(typed)) : null
+  }, [onClose, subOpen])
 
   return (
     <>
@@ -124,11 +101,10 @@ export default function ReportsModal({
               <button
                 key={item.no}
                 type="button"
-                className={`rpt-tile${item.danger ? ' is-danger' : ''}${typedItem?.no === item.no ? ' is-typed' : ''}`}
+                className={`rpt-tile${item.danger ? ' is-danger' : ''}`}
                 onClick={() => handleSelect(item.key)}
               >
-                <span className="rpt-no">{item.no}</span>
-                <span className="rpt-ico"><Icon size={22} /></span>
+                <span className="rpt-ico"><Icon size={24} /></span>
                 <span className="rpt-label">{item.label}</span>
               </button>
             )
@@ -137,14 +113,6 @@ export default function ReportsModal({
       </div>
 
       <div className="rpt-foot">
-        <span className="rpt-foot-label">Selected Option</span>
-        <div className={`rpt-sel${typed ? ' has-value' : ''}`}>
-          <b>{typed || '–'}</b>
-          {typedItem && <span>{typedItem.label}</span>}
-        </div>
-        <button type="button" className="rpt-go" disabled={!typedItem} onClick={() => typedItem && handleSelect(typedItem.key)}>
-          <CornerDownLeft size={15} /> Open
-        </button>
         <button type="button" className="rpt-close" onClick={onClose}>Close</button>
       </div>
     </Modal>
