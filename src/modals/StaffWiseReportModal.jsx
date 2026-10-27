@@ -103,11 +103,11 @@ export default function StaffWiseReportModal({ onClose, reportFn = null, history
     .header h2 { font-size: 13px; font-weight: 700; color: #333; margin-top: 2px; }
     .meta { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 12px; flex-wrap: nowrap; white-space: nowrap; }
     table { width: 100%; border-collapse: collapse; }
-    th { background: #000; color: #fff; padding: 7px 8px; font-size: 12px; font-weight: 700; text-align: left; }
+    th { background: #f2f2f2; color: #000; padding: 7px 8px; font-size: 12px; font-weight: 700; text-align: left; border-top: 1px solid #bbb; border-bottom: 1px solid #bbb; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     th.right { text-align: right; }
     th.center { text-align: center; }
     td { padding: 6px 8px; border-bottom: 1px solid #ccc; font-size: 13px; }
-    .tfoot td { background: #000; color: #fff; font-weight: 700; padding: 7px 8px; border: none; }
+    .tfoot td { background: #f2f2f2; color: #000; font-weight: 800; padding: 7px 8px; border-top: 1.5px solid #888; border-bottom: 1px solid #bbb; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .tfoot td.right { text-align: right; }
     .tfoot td.center { text-align: center; }
   </style>
