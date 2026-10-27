@@ -1,0 +1,52 @@
+/* Download Data — progress card + checklist of items */
+.dd { display: flex; flex-direction: column; gap: 12px; padding: 16px; background: #f7f7f8; overflow-y: auto; }
+.dd-spin { animation: dd-spin 0.9s linear infinite; }
+@keyframes dd-spin { to { transform: rotate(360deg); } }
+
+.dd-hero {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px 12px; padding: 14px 16px;
+  border-radius: 14px; background: #fff; border: 1px solid #ececee;
+}
+.dd-hero-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dd-hero-text b { font-size: 16px; font-weight: 800; color: #18181b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dd-hero-text span { font-size: 12.5px; font-weight: 600; color: #71717a; }
+.dd-pct { font-size: 22px; font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; }
+.dd-bar { grid-column: 1 / -1; height: 10px; border-radius: 99px; background: #f1e6e9; overflow: hidden; }
+.dd-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--brand) 0%, var(--brand-2) 100%); transition: width 0.35s ease; }
+.dd-hero.is-done .dd-pct, .dd-hero.is-done .dd-hero-text b { color: #15803d; }
+.dd-hero.is-done .dd-bar i { background: #16a34a; }
+.dd-hero.is-error .dd-pct, .dd-hero.is-error .dd-hero-text b { color: #b91c1c; }
+.dd-hero.is-error .dd-bar i { background: #dc2626; }
+
+.dd-list-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
+.dd-list-head span { font-size: 11px; font-weight: 800; color: var(--text-4); letter-spacing: 0.6px; text-transform: uppercase; }
+.dd-list-head button { border: none; background: none; cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 800; color: var(--brand); }
+.dd-list-head button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.dd-list { display: flex; flex-direction: column; border-radius: 14px; background: #fff; border: 1px solid #ececee; overflow: hidden; }
+.dd-row { display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 0 14px; }
+.dd-row + .dd-row { border-top: 1px solid #f4f4f5; }
+.dd-check { display: flex; cursor: pointer; }
+.dd-check input { width: 18px; height: 18px; accent-color: var(--brand); cursor: pointer; }
+.dd-ico { width: 32px; height: 32px; flex-shrink: 0; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: var(--brand-bg); color: var(--brand); }
+.dd-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; color: #18181b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dd-state { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: #a1a1aa; white-space: nowrap; }
+.dd-state button {
+  display: flex; align-items: center; gap: 4px; margin-left: 4px; height: 26px; padding: 0 10px; border-radius: 99px; cursor: pointer;
+  border: 1px solid #fecaca; background: #fff; color: #b91c1c; font-family: inherit; font-size: 11.5px; font-weight: 800;
+}
+.dd-row.is-busy { background: #fcf5f7; }
+.dd-row.is-busy .dd-state { color: var(--brand); }
+.dd-row.is-done .dd-state { color: #15803d; }
+.dd-row.is-error .dd-state { color: #b91c1c; }
+.dd-row.is-off .dd-ico { background: #f4f4f5; color: #a1a1aa; }
+.dd-row.is-off .dd-name { color: #a1a1aa; }
+
+.dd-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); background: #fff; flex-shrink: 0; }
+.dd-close, .dd-go {
+  height: 46px; padding: 0 24px; border-radius: 11px; cursor: pointer; font-family: inherit; font-size: 14.5px; font-weight: 800;
+  display: flex; align-items: center; gap: 8px;
+}
+.dd-close { border: 1px solid #e4e4e7; background: #fff; color: #3f3f46; }
+.dd-go { border: none; min-width: 190px; justify-content: center; background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%); color: #fff; }
+.dd-close:disabled, .dd-go:disabled { opacity: 0.45; cursor: not-allowed; }
