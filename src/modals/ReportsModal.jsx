@@ -5,6 +5,7 @@ import GroupWiseReportModal from './GroupWiseReportModal'
 import CashierChangeModal from './CashierChangeModal'
 import ClearHoldBillModal from './ClearHoldBillModal'
 import DownloadDataModal from './DownloadDataModal'
+import UploadDataModal from './UploadDataModal'
 import PasswordChangeModal from './PasswordChangeModal'
 import PrivilegeSettingsModal from './PrivilegeSettingsModal'
 import SalesViewerModal from './SalesViewerModal'
@@ -66,13 +67,14 @@ export default function ReportsModal({
   const counterNo   = usePosStore(s => s.counterNo)
   const [clearHoldBillOpen, setClearHoldBillOpen] = useState(false)
   const [downloadOpen,      setDownloadOpen]      = useState(false)
+  const [uploadOpen,        setUploadOpen]        = useState(false)
   const [passwordChangeOpen, setPasswordChangeOpen] = useState(false)
   const [privilegeSettingsOpen, setPrivilegeSettingsOpen] = useState(false)
   const [salesViewerOpen,       setSalesViewerOpen]       = useState(false)
   const [counterCloseViewerOpen, setCounterCloseViewerOpen] = useState(false)
   const [cashInOutViewerOpen,    setCashInOutViewerOpen]    = useState(false)
   const subOpen = counterReadingOpen || staffWiseOpen || groupWiseOpen || cashierChangeOpen || clearHoldBillOpen
-    || passwordChangeOpen || privilegeSettingsOpen || salesViewerOpen || counterCloseViewerOpen || cashInOutViewerOpen || readingNeeded || downloadOpen
+    || passwordChangeOpen || privilegeSettingsOpen || salesViewerOpen || counterCloseViewerOpen || cashInOutViewerOpen || readingNeeded || downloadOpen || uploadOpen
 
   // Cashier Change needs the counter reading (Z-Report) first when the session has bills.
   async function openCashierChange() {
@@ -97,6 +99,7 @@ export default function ReportsModal({
     if (itemKey === 4) { openCashierChange(); return }
     if (itemKey === 5) { setClearHoldBillOpen(true); return }
     if (itemKey === 6) { setDownloadOpen(true); return }
+    if (itemKey === 7) { setUploadOpen(true); return }
     if (itemKey === 3) { setPasswordChangeOpen(true); return }
     if (itemKey === 12) { setPrivilegeSettingsOpen(true); return }
     if (itemKey === 14) { setSalesViewerOpen(true); return }
@@ -178,6 +181,7 @@ export default function ReportsModal({
       </Modal>
     )}
     {downloadOpen && <DownloadDataModal onClose={() => setDownloadOpen(false)} />}
+    {uploadOpen && <UploadDataModal onClose={() => setUploadOpen(false)} />}
     {cashierChangeOpen && (
   <CashierChangeModal onClose={() => setCashierChangeOpen(false)} />
 )}
