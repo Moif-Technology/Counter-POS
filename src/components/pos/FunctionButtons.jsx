@@ -314,7 +314,7 @@ export function SideNav() {
       {/* Spacer + logout at bottom */}
       <div style={{ flex: 1 }} />
       <button
-        onClick={() => navigate('/')}
+        onClick={() => { usePosStore.getState().logout(); navigate('/') }}
         style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           justifyContent: 'center', gap: 4,

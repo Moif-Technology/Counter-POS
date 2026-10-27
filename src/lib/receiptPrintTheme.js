@@ -205,13 +205,14 @@ export function fmtReceiptDateTime(d) {
   if (!d) return '—'
   const dt = new Date(d)
   if (Number.isNaN(dt.getTime())) return '—'
-  const date = dt.toLocaleDateString('en-GB', {
-    day: '2-digit', month: 'short', year: 'numeric',
-  }).replace(/ /g, '/')
-  const time = dt.toLocaleTimeString('en-US', {
-    hour: '2-digit', minute: '2-digit', hour12: true,
-  })
-  return `${date} - ${time}`
+  const day = String(dt.getDate()).padStart(2, '0')
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const month = months[dt.getMonth()]
+  const year = dt.getFullYear()
+  const hour12 = dt.getHours() % 12 || 12
+  const minute = String(dt.getMinutes()).padStart(2, '0')
+  const ampm = dt.getHours() >= 12 ? 'PM' : 'AM'
+  return `${day}/${month}/${year} - ${String(hour12).padStart(2, '0')}:${minute} ${ampm}`
 }
 
 /** Parse bill no input (e.g. 66, B-66, R-66) to sales_id */

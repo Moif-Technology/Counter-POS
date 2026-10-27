@@ -79,6 +79,14 @@ const SWAL_CSS = `
     from { width: 100%; }
     to   { width: 0%; }
   }
+  @keyframes toastSlideIn {
+    from { opacity: 0; transform: translateY(10px) translateX(-50%); }
+    to   { opacity: 1; transform: translateY(0) translateX(-50%); }
+  }
+  @keyframes toastSlideOut {
+    from { opacity: 1; transform: translateY(0) translateX(-50%); }
+    to   { opacity: 0; transform: translateY(10px) translateX(-50%); }
+  }
 `
 
 function SwalOverlay({ visible, onBackdropClick, children }) {
@@ -192,26 +200,24 @@ function SwalButton({ children, onClick, theme, variant = 'primary', autoFocus }
   )
 }
 
+/** Compact, non-blocking toast — small pill anchored bottom-center, no backdrop.
+ *  Confirm/Prompt stay as full modals since they require a decision; plain
+ *  alerts (success/warning/error/info) are just informational, so they no
+ *  longer need to interrupt the whole screen. */
 function AlertDialog({ alert, onDismiss }) {
-  const [visible, setVisible] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const theme = THEMES[alert.type] || THEMES.info
-
-  useEffect(() => {
-    const t = requestAnimationFrame(() => setVisible(true))
-    return () => cancelAnimationFrame(t)
-  }, [])
+  const Icon = theme.icon
 
   const close = useCallback(() => {
     setLeaving(true)
-    setTimeout(() => onDismiss(alert.id), alert.timer ? 100 : 180)
-  }, [alert.id, alert.timer, onDismiss])
+    setTimeout(() => onDismiss(alert.id), 140)
+  }, [alert.id, onDismiss])
 
   useEffect(() => {
-    if (!alert.timer || leaving) return
-    const t = setTimeout(close, alert.timer)
+    const t = setTimeout(close, alert.timer || 2600)
     return () => clearTimeout(t)
-  }, [alert.timer, close, leaving])
+  }, [alert.timer, close])
 
   useEffect(() => {
     const onKey = (e) => {
@@ -222,40 +228,40 @@ function AlertDialog({ alert, onDismiss }) {
   }, [close])
 
   return (
-    <SwalOverlay visible={visible && !leaving} onBackdropClick={close}>
-      <SwalCard visible={visible} leaving={leaving} onClick={e => e.stopPropagation()}>
-        <SwalIcon type={alert.type} />
-        <h2 style={{
-          fontSize: 20, fontWeight: 800, color: colors.text1,
-          marginBottom: 8, lineHeight: 1.25,
-        }}>
-          {alert.title}
-        </h2>
-        <p style={{
-          fontSize: 14, color: colors.text2, lineHeight: 1.55,
-          marginBottom: 24, padding: '0 4px',
-        }}>
-          {alert.message}
-        </p>
-        <div style={{ position: 'relative' }}>
-          <SwalButton theme={theme} onClick={close} autoFocus>
-            {alert.okLabel}
-          </SwalButton>
-          {alert.timer && (
-            <div style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0, height: 3,
-              borderRadius: '0 0 10px 10px', overflow: 'hidden', pointerEvents: 'none',
-            }}>
-              <div style={{
-                height: '100%',
-                background: 'rgba(255,255,255,0.45)',
-                animation: `swalTimerShrink ${alert.timer}ms linear forwards`,
-              }} />
-            </div>
-          )}
-        </div>
-      </SwalCard>
-    </SwalOverlay>
+    <div
+      onClick={close}
+      style={{
+        position: 'fixed', left: '50%', bottom: 24, zIndex: 10050,
+        maxWidth: 'min(360px, calc(100vw - 32px))',
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 14px', borderRadius: 12,
+        background: colors.white,
+        border: `1px solid ${theme.ringBorder}`,
+        boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
+        cursor: 'pointer',
+        animation: `${leaving ? 'toastSlideOut' : 'toastSlideIn'} 0.18s ease forwards`,
+      }}
+    >
+      <div style={{
+        width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+        background: theme.ring,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Icon size={15} color={theme.iconColor} strokeWidth={2.4} />
+      </div>
+      <div style={{ minWidth: 0 }}>
+        {alert.title && (
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: colors.text1, lineHeight: 1.3 }}>
+            {alert.title}
+          </div>
+        )}
+        {alert.message && (
+          <div style={{ fontSize: 11.5, color: colors.text2, lineHeight: 1.3 }}>
+            {alert.message}
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 

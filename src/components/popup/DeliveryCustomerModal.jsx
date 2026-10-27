@@ -11,7 +11,7 @@ function defaultDeliveryTime() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Delivery Details' }) {
+export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Delivery Details', searchFn = null }) {
   const accessToken = usePosStore(s => s.accessToken)
   const storeCustomerId = usePosStore(s => s.customerId)
   const storeCustomerName = usePosStore(s => s.customerName)
@@ -41,14 +41,15 @@ export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Del
     setLoading(true)
     setError(null)
     try {
-      const { customers: list } = await api.counterPos.customerSearch(q, 80, accessToken)
+      const doSearch = searchFn ?? ((qq) => api.counterPos.customerSearch(qq, 80, accessToken))
+      const { customers: list } = await doSearch(q)
       setCustomers(list ?? [])
     } catch (e) {
       setError(e.message)
     } finally {
       setLoading(false)
     }
-  }, [accessToken])
+  }, [accessToken, searchFn])
 
   useEffect(() => { doSearch('') }, [doSearch])
 

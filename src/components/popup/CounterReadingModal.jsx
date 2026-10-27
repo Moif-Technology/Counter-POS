@@ -25,7 +25,7 @@ const DENOMS = [
 
 const initCounts = () => Object.fromEntries(DENOMS.map(d => [d.label, '']))
 
-export default function CounterReadingModal({ onClose }) {
+export default function CounterReadingModal({ onClose, summaryFn = null, closeFn = null }) {
   const accessToken = usePosStore(s => s.accessToken)
   const counterNo   = usePosStore(s => s.counterNo)
   const [summary,     setSummary]     = useState(null)
@@ -43,14 +43,15 @@ export default function CounterReadingModal({ onClose }) {
     setLoading(true)
     setError(null)
     try {
-      const data = await api.counterPos.counterSummary(counterNo, accessToken)
+      const doSummary = summaryFn ?? (() => api.counterPos.counterSummary(counterNo, accessToken))
+      const data = await doSummary()
       setSummary(data)
     } catch (err) {
       setError(err.message ?? 'Failed to load summary')
     } finally {
       setLoading(false)
     }
-  }, [counterNo, accessToken])
+  }, [counterNo, accessToken, summaryFn])
 
   useEffect(() => { fetchSummary() }, [fetchSummary])
 
@@ -93,11 +94,12 @@ export default function CounterReadingModal({ onClose }) {
     setSubmitting(reportType)
     setError(null)
     try {
-      const result = await api.counterPos.counterClose({
+      const doClose = closeFn ?? ((payload) => api.counterPos.counterClose(payload, accessToken))
+      const result = await doClose({
         counterNo,
         reportType,
         collectedCash: collectedAmount,
-      }, accessToken)
+      })
       const printPayload = { ...summary, ...result, collectedCash: collectedAmount, cashDifference: collectedAmount - (summary?.cashToBeCollected ?? 0) }
       try {
         await printCounterReport(printPayload, {
