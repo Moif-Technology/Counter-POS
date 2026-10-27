@@ -9,38 +9,46 @@ import PrivilegeSettingsModal from './PrivilegeSettingsModal'
 import SalesViewerModal from './SalesViewerModal'
 import CounterCloseViewerModal from './CounterCloseViewerModal'
 import CashInOutViewerModal from './CashInOutViewerModal'
-import { BarChart2, CornerDownLeft } from 'lucide-react'
+import {
+  BarChart2, CornerDownLeft, Gauge, Users, FileText, Layers, ReceiptText, Lock, ArrowLeftRight,
+  KeyRound, UserCog, Mail, ShieldCheck, CirclePause, Download, Upload, Trash2, Power,
+} from 'lucide-react'
 import Modal from '../components/common/Modal'
 import './ReportsModal.css'
 
 /*
- * Reports — the numbered option list of the counter (as on the old screen):
+ * Reports — the counter's numbered options, grouped into cards:
  * tap an option, or type its number in "Selected Option" and press Enter.
  * `no` is the number shown; `key` is the internal action id (unchanged).
  */
-const COLUMNS = [
-  [
-    { no: 0,  key: 0,  label: 'Counter Reading' },
-    { no: 1,  key: 1,  label: 'Staff Wise Report' },
-    { no: 2,  key: 2,  label: 'Special Report' },
-    { no: 3,  key: 3,  label: 'Password Change' },
-    { no: 4,  key: 4,  label: 'Cashier Change' },
-    { no: 5,  key: 5,  label: 'Clear Hold Bill' },
-    { no: 13, key: 14, label: 'Sales Viewer' },
-    { no: 14, key: 15, label: 'Counter Close Viewer' },
-    { no: 15, key: 16, label: 'Cash In/Out Viewer' },
-  ],
-  [
-    { no: 6,  key: 6,  label: 'Download Data' },
-    { no: 7,  key: 7,  label: 'Upload To Server' },
-    { no: 8,  key: 8,  label: 'Group Wise Report' },
-    { no: 9,  key: 9,  label: 'Shut Down', danger: true },
-    { no: 10, key: 10, label: 'Clear All Hold Bills', danger: true },
-    { no: 11, key: 11, label: 'eMail Settings' },
-    { no: 12, key: 12, label: 'Privilege Settings' },
-  ],
+const SECTIONS = [
+  { title: 'Reports', items: [
+    { no: 0,  key: 0,  label: 'Counter Reading',    icon: Gauge },
+    { no: 1,  key: 1,  label: 'Staff Wise Report',  icon: Users },
+    { no: 2,  key: 2,  label: 'Special Report',     icon: FileText },
+    { no: 8,  key: 8,  label: 'Group Wise Report',  icon: Layers },
+  ] },
+  { title: 'Viewers', items: [
+    { no: 13, key: 14, label: 'Sales Viewer',         icon: ReceiptText },
+    { no: 14, key: 15, label: 'Counter Close Viewer', icon: Lock },
+    { no: 15, key: 16, label: 'Cash In/Out Viewer',   icon: ArrowLeftRight },
+  ] },
+  { title: 'Account & Settings', items: [
+    { no: 3,  key: 3,  label: 'Password Change',    icon: KeyRound },
+    { no: 4,  key: 4,  label: 'Cashier Change',     icon: UserCog },
+    { no: 11, key: 11, label: 'eMail Settings',     icon: Mail },
+    { no: 12, key: 12, label: 'Privilege Settings', icon: ShieldCheck },
+  ] },
+  { title: 'Data & System', items: [
+    { no: 5,  key: 5,  label: 'Clear Hold Bill',      icon: CirclePause },
+    { no: 6,  key: 6,  label: 'Download Data',        icon: Download },
+    { no: 7,  key: 7,  label: 'Upload To Server',     icon: Upload },
+    { no: 10, key: 10, label: 'Clear All Hold Bills', icon: Trash2, danger: true },
+    { no: 9,  key: 9,  label: 'Shut Down',            icon: Power, danger: true },
+  ] },
 ]
-const ALL = COLUMNS.flat()
+const COLUMNS = [[SECTIONS[0], SECTIONS[1]], [SECTIONS[2], SECTIONS[3]]]
+const ALL = SECTIONS.flatMap(sec => sec.items)
 const byNo = (n) => ALL.find(i => i.no === n)
 const MAX_NO = Math.max(...ALL.map(i => i.no))
 
@@ -113,16 +121,25 @@ export default function ReportsModal({
         <div className="rpt-cols">
           {COLUMNS.map((col, ci) => (
             <div key={ci} className="rpt-col">
-              {col.map(item => (
-                <button
-                  key={item.no}
-                  type="button"
-                  className={`rpt-item${item.danger ? ' is-danger' : ''}${typedItem?.no === item.no ? ' is-typed' : ''}`}
-                  onClick={() => handleSelect(item.key)}
-                >
-                  <span className="rpt-no">{item.no}</span>
-                  <span className="rpt-label">{item.label}</span>
-                </button>
+              {col.map(sec => (
+                <section key={sec.title} className="rpt-sec">
+                  <h4>{sec.title}</h4>
+                  {sec.items.map(item => {
+                    const Icon = item.icon
+                    return (
+                      <button
+                        key={item.no}
+                        type="button"
+                        className={`rpt-item${item.danger ? ' is-danger' : ''}${typedItem?.no === item.no ? ' is-typed' : ''}`}
+                        onClick={() => handleSelect(item.key)}
+                      >
+                        <span className="rpt-ico"><Icon size={17} /></span>
+                        <span className="rpt-label">{item.label}</span>
+                        <span className="rpt-no">{item.no}</span>
+                      </button>
+                    )
+                  })}
+                </section>
               ))}
             </div>
           ))}
