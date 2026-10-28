@@ -17,7 +17,8 @@
 .es-save { border: none; background: var(--brand); color: #fff; }
 
 /* Input with a button at the end (password eye, To + / ✕) */
-.es-list { display: flex; flex-direction: column; gap: 8px; }
+.es-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; max-height: 88px; overflow-y: auto; padding-right: 2px; }   /* 2 extra boxes (3 in all), then scroll */
+.es-list .es-box { flex-shrink: 0; }
 .es-box { position: relative; }
 .es-box input { padding-right: 46px; }
 .es-icon {

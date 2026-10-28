@@ -71,24 +71,32 @@ export default function EmailSettingsModal({ onClose }) {
 
         <div className="es-field">
           <label htmlFor="es-to-0">Email To Address</label>
-          <div className="es-list">
-            {form.to.map((addr, i) => (
-              <div key={i} className="es-box">
-                <input
-                  id={`es-to-${i}`}
-                  data-system-keyboard
-                  type="email"
-                  value={addr}
-                  onChange={e => setTo(i, e.target.value)}
-                  placeholder={i === 0 ? 'manager@yourshop.com' : 'Another email'}
-                  autoFocus={i > 0 && i === form.to.length - 1 && !addr}
-                />
-                {i === 0
-                  ? <button type="button" className="es-icon is-add" onClick={addTo} aria-label="Add another address"><Plus size={18} /></button>
-                  : <button type="button" className="es-icon is-remove" onClick={() => removeTo(i)} aria-label="Remove address"><X size={16} /></button>}
-              </div>
-            ))}
+          {/* First box keeps the + button in view; extra boxes scroll (3 visible in all) */}
+          <div className="es-box">
+            <input id="es-to-0" data-system-keyboard type="email" value={form.to[0]} onChange={e => setTo(0, e.target.value)} placeholder="manager@yourshop.com" />
+            <button type="button" className="es-icon is-add" onClick={addTo} aria-label="Add another address"><Plus size={18} /></button>
           </div>
+          {form.to.length > 1 && (
+            <div className="es-list">
+              {form.to.slice(1).map((addr, j) => {
+                const i = j + 1
+                return (
+                  <div key={i} className="es-box">
+                    <input
+                      id={`es-to-${i}`}
+                      data-system-keyboard
+                      type="email"
+                      value={addr}
+                      onChange={e => setTo(i, e.target.value)}
+                      placeholder="Another email"
+                      autoFocus={i === form.to.length - 1 && !addr}
+                    />
+                    <button type="button" className="es-icon is-remove" onClick={() => removeTo(i)} aria-label="Remove address"><X size={16} /></button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         <div className="es-field">
