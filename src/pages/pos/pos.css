@@ -588,3 +588,19 @@
   .ph-status { grid-template-columns: minmax(0, 1fr); justify-items: center; }   /* phone: just the clock, centred */
   .ph-status-left, .ph-status-right { display: none; }
 }
+
+/* Bill summary: compact (less vertical space) */
+.ph-txn { gap: clamp(4px, 0.6vh, 8px); padding: clamp(7px, 0.9vh, 10px) clamp(12px, 1vw, 16px); }
+.ph-txn-stat, .ph-txn-total { padding-top: clamp(3px, 0.5vh, 6px); padding-bottom: clamp(3px, 0.5vh, 6px); gap: 1px; }
+.ph-txn-stat b { font-size: clamp(14px, 1vw, 17px); }
+.ph-txn-total { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
+.ph-txn-total > span { align-self: flex-start; }
+.ph-txn-total strong { font-size: clamp(20px, 1.7vw, 30px); order: 2; padding-right: 2px; }
+.ph-txn-total { padding-left: 10px; padding-right: 12px; }
+.ph-txn-paid { order: 1; flex-direction: column; gap: 0; font-size: 10.5px; line-height: 1.35; }
+.ph-txn-total { min-width: 0; overflow: hidden; }
+@media (max-width: 1180px) {
+  .ph-txn-boxes { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 2.1fr); }
+  .ph-txn-total > span { display: none; }
+  .ph-txn-total strong { font-size: clamp(18px, 2vw, 24px); }
+}
