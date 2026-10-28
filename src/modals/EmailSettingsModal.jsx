@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Mail, AtSign, KeyRound, Eye, EyeOff, Send, Paperclip, X, Save } from 'lucide-react'
+import { Mail, AtSign, Eye, EyeOff, Send, Paperclip, X, Save, Check } from 'lucide-react'
 import { posNotifySuccess } from '../lib/posNotify'
 import Modal from '../components/common/Modal'
 import './EmailSettingsModal.css'
@@ -55,33 +55,33 @@ export default function EmailSettingsModal({ onClose }) {
   }
 
   return (
-    <Modal onClose={onClose} icon={Mail} kicker="Settings" title="eMail Settings" width={520} zIndex={1100}>
+    <Modal onClose={onClose} icon={Mail} kicker="Settings" title="eMail Settings" width={540} zIndex={1100}>
       <div className="es">
-        <label className={`es-field${errors.from ? ' has-error' : ''}`}>
-          <span>Email From Address</span>
-          <div className="es-input">
-            <AtSign size={16} />
+        {/* Send from */}
+        <section className="es-card">
+          <header><span className="es-badge"><AtSign size={15} /></span><b>Send from</b></header>
+          <label className={`es-row${errors.from ? ' has-error' : ''}`}>
+            <span>Email address</span>
             <input data-system-keyboard type="email" value={form.from} onChange={e => set('from', e.target.value)} placeholder="counter@yourshop.com" autoFocus />
-          </div>
-          {errors.from && <em>{errors.from}</em>}
-        </label>
-
-        <label className={`es-field${errors.password ? ' has-error' : ''}`}>
-          <span>Email Password</span>
-          <div className="es-input">
-            <KeyRound size={16} />
+          </label>
+          {errors.from && <em className="es-err">{errors.from}</em>}
+          <label className={`es-row${errors.password ? ' has-error' : ''}`}>
+            <span>Password</span>
             <input data-system-keyboard type={showPw ? 'text' : 'password'} value={form.password} onChange={e => set('password', e.target.value)} placeholder="App password" />
-            <button type="button" className="es-eye" onClick={() => setShowPw(v => !v)} title={showPw ? 'Hide' : 'Show'}>
-              {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+            <button type="button" className="es-eye" onClick={() => setShowPw(v => !v)}>
+              {showPw ? <EyeOff size={15} /> : <Eye size={15} />} {showPw ? 'Hide' : 'Show'}
             </button>
-          </div>
-          {errors.password && <em>{errors.password}</em>}
-        </label>
+          </label>
+          {errors.password && <em className="es-err">{errors.password}</em>}
+        </section>
 
-        <div className={`es-field${errors.to ? ' has-error' : ''}`}>
-          <span>Email To Address <small>press Enter to add</small></span>
+        {/* Send to */}
+        <section className={`es-card${errors.to ? ' has-error' : ''}`}>
+          <header>
+            <span className="es-badge"><Send size={15} /></span><b>Send to</b>
+            {form.to.length > 0 && <small>{form.to.length} recipient{form.to.length !== 1 ? 's' : ''}</small>}
+          </header>
           <div className="es-chips" onClick={e => e.currentTarget.querySelector('input')?.focus()}>
-            <Send size={16} />
             {form.to.map(addr => (
               <span key={addr} className="es-chip">
                 {addr}
@@ -98,24 +98,26 @@ export default function EmailSettingsModal({ onClose }) {
                 else if (e.key === 'Backspace' && !toText && form.to.length) set('to', form.to.slice(0, -1))
               }}
               onBlur={() => toText && addTo()}
-              placeholder={form.to.length ? 'Add another…' : 'manager@yourshop.com'}
+              placeholder={form.to.length ? 'Add another email…' : 'Type an email and press Enter'}
             />
           </div>
-          {errors.to && <em>{errors.to}</em>}
-        </div>
+          {errors.to && <em className="es-err">{errors.to}</em>}
+        </section>
 
-        <label className="es-field">
-          <span>Email Attachment</span>
-          <div className="es-input">
-            <Paperclip size={16} />
+        {/* Attachment */}
+        <section className="es-card">
+          <header><span className="es-badge"><Paperclip size={15} /></span><b>Attachment</b><small>optional</small></header>
+          <label className="es-row">
+            <span>File name</span>
             <input data-system-keyboard value={form.attachment} onChange={e => set('attachment', e.target.value)} placeholder="e.g. Counter Report.pdf" />
-          </div>
-        </label>
+          </label>
+        </section>
       </div>
 
       <div className="es-foot">
+        <span className="es-note"><Save size={13} /> Saved on this counter</span>
         <button type="button" className="es-close" onClick={onClose}>Close</button>
-        <button type="button" className="es-save" onClick={handleSave}><Save size={16} /> Save</button>
+        <button type="button" className="es-save" onClick={handleSave}><Check size={17} /> Save</button>
       </div>
     </Modal>
   )
