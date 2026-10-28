@@ -65,8 +65,8 @@ export default function ClearAllHoldsModal({ onClose }) {
     body = (
       <div className="cah-state">
         <span className="cah-ico"><Trash2 size={30} /></span>
-        <h3>Clear ALL hold bills?</h3>
-        <p>Are you sure you want to cancel all held bills? This cannot be undone.</p>
+        <h3>Are You Sure to Cancel the ALL Hold Bill?</h3>
+        <p>This cannot be undone.</p>
         <div className="cah-facts">
           <div><b>{count}</b><span>held bill{count !== 1 ? 's' : ''}</span></div>
           <div><b>{oldest}</b><span>oldest</span></div>
@@ -89,11 +89,11 @@ export default function ClearAllHoldsModal({ onClose }) {
       <div className="cah-foot">
         {asking || busy ? (
           <>
-            <button type="button" className="cah-no" onClick={onClose} disabled={busy}>No</button>
-            <button type="button" className="cah-yes" onClick={clearAll} disabled={busy} autoFocus>
+            <button type="button" className="cah-yes" onClick={clearAll} disabled={busy}>
               {busy ? <Loader2 size={16} className="cah-spin" /> : <Trash2 size={16} />}
-              {busy ? 'Clearing…' : 'Yes, Clear All'}
+              {busy ? 'Clearing…' : 'Yes'}
             </button>
+            <button type="button" className="cah-no" onClick={onClose} disabled={busy} autoFocus>No</button>
           </>
         ) : (
           <button type="button" className="cah-ok" onClick={onClose} disabled={holds === null}>OK</button>
