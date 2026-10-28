@@ -15,6 +15,7 @@ import { openDisplayWindow, isWindowOpen, closeDisplayWindow, setSunmiDisplayPlu
 import { IS_ANDROID } from '../../../lib/sunmiCameraScanner'
 
 import GroupModal from '../../../modals/GroupModal'
+import GroupPriceModal from '../../../modals/GroupPriceModal'
 import ProductLookupModal from '../../../modals/ProductLookupModal'
 import RecallHoldModal from '../../../modals/RecallHoldModal'
 import BillReprintModal from '../../../modals/BillReprintModal'
@@ -232,7 +233,7 @@ export function usePosActions({ onSave }) {
   function openGroup(group) {
     if (isGroupBrowseMode(group)) { setLookupGroup(group); setModal('lookup'); return }
     setGroupPreset(group)
-    setModal('group')
+    setModal('groupPrice')
   }
 
   const needRow = (title, next) => () => {
@@ -321,6 +322,14 @@ export function usePosActions({ onSave }) {
           initialGroup={groupPreset}
           onClose={done()}
           onSelect={done((result) => { close(); handleGroupSelect(result) })}
+        />
+      )}
+      {modal === 'groupPrice' && groupPreset && (
+        <GroupPriceModal
+          group={groupPreset}
+          qty={parseFloat(qtyBuffer) > 0 ? parseFloat(qtyBuffer) : 1}
+          onClose={done()}
+          onDone={done((unitPrice) => { handleGroupSelect({ group: groupPreset, unitPrice, mode: 'price_entry' }); close() })}
         />
       )}
       {modal === 'lookup' && (
