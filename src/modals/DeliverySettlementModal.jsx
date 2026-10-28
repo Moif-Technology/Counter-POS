@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Truck, ScanLine, RotateCcw, Check, CheckCircle2, XCircle, Layers, Banknote, CreditCard, UserRound, LayoutGrid,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
@@ -179,11 +180,13 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
       closeOnEsc={!multiRow && !notice}
     >
       <div className="ds-tabs">
-        <button type="button" className={tab === 'pending' ? 'is-on' : ''} onClick={() => setTab('pending')}>
-          Pending <span>{rows.length}</span>
+        {/* Step 1 → step 2: Settlement opens only after deliveries are ticked */}
+        <button type="button" className={tab === 'pending' ? 'is-on' : 'is-done'} onClick={() => setTab('pending')}>
+          <i>1</i> Pending <span>{rows.length}</span>
         </button>
-        <button type="button" className={tab === 'settle' ? 'is-on' : ''} onClick={() => setTab('settle')}>
-          Settlement <span>{selected.length}</span>
+        <ChevronRight size={16} className="ds-step-arrow" />
+        <button type="button" className={tab === 'settle' ? 'is-on' : ''} onClick={() => setTab('settle')} disabled={!selected.length} title={selected.length ? undefined : 'Tick deliveries first'}>
+          <i>2</i> Settlement <span>{selected.length}</span>
         </button>
       </div>
 
@@ -275,10 +278,12 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
 
       <div className="ds-foot">
         <span className="ds-total">Total Delivery Amount <b>{fmtMoney(selectedTotal)}</b><small>{selected.length} selected</small></span>
-        <button type="button" className="ds-close" onClick={onClose}>Close</button>
+        {tab === 'pending'
+          ? <button type="button" className="ds-close" onClick={onClose}>Close</button>
+          : <button type="button" className="ds-close" onClick={() => setTab('pending')}><ChevronLeft size={17} /> Back</button>}
         {tab === 'pending' ? (
           <button type="button" className="ds-go" onClick={() => setTab('settle')} disabled={!selected.length}>
-            Next: Settlement
+            Next <ChevronRight size={17} />
           </button>
         ) : (
           <button type="button" className="ds-go" onClick={settle} disabled={!selected.length || settling}>
@@ -302,7 +307,7 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
         tone={notice.ok ? 'success' : 'error'}
         title={notice.title}
         message={notice.message}
-        onClose={() => { const ok = notice.ok; setNotice(null); if (ok && !rows.some(r => r.selected)) setTab('pending') }}
+        onClose={() => { const ok = notice.ok; setNotice(null); if (ok) setTab('pending') }}
       />
     )}
     </>

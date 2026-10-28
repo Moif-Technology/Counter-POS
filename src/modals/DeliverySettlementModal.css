@@ -112,3 +112,14 @@
   .ds-cash { display: grid; grid-template-columns: 1fr 1fr; }
   .ds-field, .ds-diff { flex-direction: column; align-items: flex-start; gap: 0; }
 }
+
+/* Step tabs: 1 Pending › 2 Settlement */
+.ds-tabs { align-items: center; }
+.ds-tabs button i {
+  width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font-style: normal; font-size: 11.5px; font-weight: 800; background: #ececee; color: #71717a;
+}
+.ds-tabs button.is-on i { background: var(--brand); color: #fff; }
+.ds-tabs button.is-done i { background: var(--brand-bg); color: var(--brand); }
+.ds-tabs button:disabled { opacity: 0.45; cursor: not-allowed; }
+.ds-step-arrow { color: #c4c4cc; }
