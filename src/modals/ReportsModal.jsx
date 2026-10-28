@@ -10,11 +10,8 @@ import ClearAllHoldsModal from './ClearAllHoldsModal'
 import EmailSettingsModal from './EmailSettingsModal'
 import PasswordChangeModal from './PasswordChangeModal'
 import PrivilegeSettingsModal from './PrivilegeSettingsModal'
-import SalesViewerModal from './SalesViewerModal'
-import CounterCloseViewerModal from './CounterCloseViewerModal'
-import CashInOutViewerModal from './CashInOutViewerModal'
 import {
-  BarChart2, Info, Gauge, Users, FileText, Layers, ReceiptText, Lock, ArrowLeftRight,
+  BarChart2, Info, Gauge, Users, FileText, Layers,
   KeyRound, UserCog, Mail, ShieldCheck, CirclePause, Download, Upload, Trash2, Power,
 } from 'lucide-react'
 import Modal from '../components/common/Modal'
@@ -32,11 +29,6 @@ const SECTIONS = [
     { no: 1,  key: 1,  label: 'Staff Wise Report',  icon: Users },
     { no: 2,  key: 2,  label: 'Special Report',     icon: FileText },
     { no: 8,  key: 8,  label: 'Group Wise Report',  icon: Layers },
-  ] },
-  { title: 'Viewers', items: [
-    { no: 13, key: 14, label: 'Sales Viewer',         icon: ReceiptText },
-    { no: 14, key: 15, label: 'Counter Close Viewer', icon: Lock },
-    { no: 15, key: 16, label: 'Cash In/Out Viewer',   icon: ArrowLeftRight },
   ] },
   { title: 'Account & Settings', items: [
     { no: 3,  key: 3,  label: 'Password Change',    icon: KeyRound },
@@ -57,8 +49,7 @@ const ALL = SECTIONS.flatMap(sec => sec.items).sort((a, b) => a.no - b.no)
 export default function ReportsModal({
   onClose, onSelect,
   counterSummaryFn, counterCloseFn, staffReportFn,groupReportFn,
-  salesListFn, billDetailFn, billPrintFn, customerSearchFn,
-  closeHistoryFn, closeDetailFn, cashInOutReportFn,changePasswordFn, loadPrivilegesFn, savePrivilegesFn,
+  closeHistoryFn, changePasswordFn, loadPrivilegesFn, savePrivilegesFn,
 }) {
   const [counterReadingOpen, setCounterReadingOpen] = useState(false)
   const [staffWiseOpen,     setStaffWiseOpen]     = useState(false)
@@ -74,11 +65,8 @@ export default function ReportsModal({
   const [emailOpen,         setEmailOpen]         = useState(false)
   const [passwordChangeOpen, setPasswordChangeOpen] = useState(false)
   const [privilegeSettingsOpen, setPrivilegeSettingsOpen] = useState(false)
-  const [salesViewerOpen,       setSalesViewerOpen]       = useState(false)
-  const [counterCloseViewerOpen, setCounterCloseViewerOpen] = useState(false)
-  const [cashInOutViewerOpen,    setCashInOutViewerOpen]    = useState(false)
   const subOpen = counterReadingOpen || staffWiseOpen || groupWiseOpen || cashierChangeOpen || clearHoldBillOpen
-    || passwordChangeOpen || privilegeSettingsOpen || salesViewerOpen || counterCloseViewerOpen || cashInOutViewerOpen || readingNeeded || downloadOpen || uploadOpen || clearAllOpen || emailOpen
+    || passwordChangeOpen || privilegeSettingsOpen || readingNeeded || downloadOpen || uploadOpen || clearAllOpen || emailOpen
 
   // Cashier Change needs the counter reading (Z-Report) first when the session has bills.
   async function openCashierChange() {
@@ -108,9 +96,6 @@ export default function ReportsModal({
     if (itemKey === 11) { setEmailOpen(true); return }
     if (itemKey === 3) { setPasswordChangeOpen(true); return }
     if (itemKey === 12) { setPrivilegeSettingsOpen(true); return }
-    if (itemKey === 14) { setSalesViewerOpen(true); return }
-    if (itemKey === 15) { setCounterCloseViewerOpen(true); return }
-    if (itemKey === 16) { setCashInOutViewerOpen(true); return }
     onSelect?.(itemKey)
     onClose()
   }
@@ -161,15 +146,6 @@ export default function ReportsModal({
       <StaffWiseReportModal onClose={() => setStaffWiseOpen(false)} reportFn={staffReportFn} historyFn={closeHistoryFn} />
     )}
    
-    {salesViewerOpen && (
-      <SalesViewerModal
-        onClose={() => setSalesViewerOpen(false)}
-        salesListFn={salesListFn}
-        customerSearchFn={customerSearchFn}
-        billDetailFn={billDetailFn}
-        printFn={billPrintFn}
-      />
-    )}
      {groupWiseOpen && (
       <GroupWiseReportModal onClose={() => setGroupWiseOpen(false)} reportFn={groupReportFn} historyFn={closeHistoryFn} />
     )}
@@ -210,16 +186,6 @@ export default function ReportsModal({
   />
 )}
 
-    {counterCloseViewerOpen && (
-      <CounterCloseViewerModal
-        onClose={() => setCounterCloseViewerOpen(false)}
-        historyFn={closeHistoryFn}
-        closeDetailFn={closeDetailFn}
-      />
-    )}
-    {cashInOutViewerOpen && (
-      <CashInOutViewerModal onClose={() => setCashInOutViewerOpen(false)} reportFn={cashInOutReportFn} />
-    )}
     </>
   )
 }
