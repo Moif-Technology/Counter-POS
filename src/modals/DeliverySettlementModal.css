@@ -1,0 +1,85 @@
+/* Delivery Settlement — Pending / Settlement tabs */
+.ds-tabs { display: flex; gap: 6px; padding: 12px 16px 0; background: #f7f7f8; flex-shrink: 0; }
+.ds-tabs button {
+  height: 40px; padding: 0 18px; border-radius: 11px 11px 0 0; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 800;
+  display: flex; align-items: center; gap: 8px; border: 1px solid transparent; border-bottom: none; background: transparent; color: #71717a;
+}
+.ds-tabs button span { min-width: 22px; padding: 1px 7px; border-radius: 99px; background: #ececee; color: #52525b; font-size: 12px; }
+.ds-tabs button.is-on { background: #fff; border-color: #ececee; color: var(--brand); }
+.ds-tabs button.is-on span { background: var(--brand); color: #fff; }
+
+.ds-error { margin: 0 16px; padding: 8px 12px; border-radius: 0 0 9px 9px; background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; font-size: 12.5px; font-weight: 700; }
+
+/* Pending */
+.ds-pending { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 14px; background: #f7f7f8; }
+.ds-bar { display: flex; gap: 10px; }
+.ds-scan {
+  flex: 1; display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px;
+  border: 1.5px solid #e4e4e7; border-radius: 11px; background: #fff; color: var(--text-4); cursor: text;
+}
+.ds-scan:focus-within { border-color: var(--brand); color: var(--brand); box-shadow: 0 0 0 3px rgba(120, 8, 41, 0.08); }
+.ds-scan input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 14px; font-weight: 700; color: #18181b; }
+.ds-btn {
+  height: 44px; padding: 0 18px; border-radius: 11px; cursor: pointer; font-family: inherit; font-size: 13.5px; font-weight: 800;
+  display: flex; align-items: center; gap: 7px; border: 1.5px solid var(--brand-border); background: var(--brand-bg); color: var(--brand);
+}
+.ds-btn:disabled { opacity: 0.5; cursor: wait; }
+.ds-table { flex: 1; min-height: clamp(260px, 50vh, 520px); display: flex; flex-direction: column; }
+.ds-table > .ui-table { flex: 1; min-height: 0; background: #fff; }
+.ds-check { width: 18px; height: 18px; cursor: pointer; accent-color: var(--brand); }
+.ds-cust { display: flex; flex-direction: column; line-height: 1.25; }
+.ds-cust small { font-size: 11px; font-weight: 600; color: var(--text-4); }
+
+/* Settlement */
+.ds-settle { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 320px; grid-template-rows: minmax(0, 1fr); gap: 14px; padding: 12px 16px 14px; background: #f7f7f8; }
+.ds-list { min-height: clamp(260px, 50vh, 520px); overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.ds-empty { padding: 50px 20px; text-align: center; border-radius: 14px; background: #fff; border: 1px dashed #e4e4e7; font-size: 13.5px; font-weight: 600; color: var(--text-4); }
+.ds-empty button { border: none; background: none; padding: 0; cursor: pointer; font-family: inherit; font-size: inherit; font-weight: 800; color: var(--brand); text-decoration: underline; }
+.ds-row { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 13px; background: #fff; border: 1px solid #ececee; flex-shrink: 0; }
+.ds-row-top { display: flex; align-items: baseline; gap: 10px; }
+.ds-row-top b { font-size: 15px; font-weight: 800; color: var(--brand); }
+.ds-row-top span { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; color: #18181b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds-row-top em { font-style: normal; font-size: 16px; font-weight: 800; color: #18181b; font-variant-numeric: tabular-nums; }
+.ds-modes { display: flex; flex-wrap: wrap; gap: 6px; }
+.ds-modes button {
+  height: 34px; padding: 0 12px; border-radius: 99px; cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 800;
+  display: flex; align-items: center; gap: 6px; border: 1px solid #e4e4e7; background: #fff; color: #52525b;
+}
+.ds-modes button:hover { border-color: var(--brand-border); color: var(--brand); }
+.ds-modes button.is-on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.ds-modes .ds-split { border-style: dashed; border-color: var(--brand-border); color: var(--brand); }
+
+.ds-sum { min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px; background: #fff; border: 1px solid #ececee; overflow-y: auto; }
+.ds-lines { display: flex; flex-direction: column; }
+.ds-lines > div { display: flex; justify-content: space-between; gap: 10px; padding: 5px 2px; }
+.ds-lines span { font-size: 13px; font-weight: 600; color: #52525b; }
+.ds-lines b { font-size: 14px; font-weight: 800; color: #18181b; font-variant-numeric: tabular-nums; }
+.ds-lines .is-total { margin-top: 2px; padding-top: 7px; border-top: 1px dashed #e4e4e7; }
+.ds-lines .is-total b { color: var(--brand); font-size: 16px; }
+.ds-collect, .ds-field, .ds-diff { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: 10px; }
+.ds-collect span, .ds-field span, .ds-diff span { font-size: 12px; font-weight: 800; }
+.ds-collect b, .ds-field b, .ds-diff b { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.ds-collect { background: var(--brand-bg); border: 1px solid var(--brand-border); color: var(--brand); }
+.ds-field { border: 1.5px solid #e4e4e7; background: #fafafa; color: #a1a1aa; }
+.ds-field span { color: #52525b; }
+.ds-field.has-value { border-color: var(--brand); background: #fff; color: var(--brand); }
+.ds-diff { background: #f4f4f5; color: #52525b; }
+.ds-diff.is-short { background: #fef2f2; color: #b91c1c; }
+.ds-diff.is-over { background: #ecfdf3; color: #15803d; }
+
+/* Footer */
+.ds-foot { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); background: #fff; flex-shrink: 0; }
+.ds-total { margin-right: auto; display: flex; align-items: baseline; gap: 8px; font-size: 14px; font-weight: 700; color: #3f3f46; }
+.ds-total b { font-size: 20px; font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; }
+.ds-total small { font-size: 12px; font-weight: 600; color: var(--text-4); }
+.ds-close, .ds-go {
+  height: 46px; padding: 0 24px; border-radius: 11px; cursor: pointer; font-family: inherit; font-size: 14.5px; font-weight: 800;
+  display: flex; align-items: center; gap: 7px;
+}
+.ds-close { border: 1px solid #e4e4e7; background: #fff; color: #3f3f46; }
+.ds-go { border: none; min-width: 180px; justify-content: center; background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%); color: #fff; }
+.ds-go:disabled { opacity: 0.45; cursor: not-allowed; }
+
+@media (max-width: 860px) {
+  .ds-settle { grid-template-columns: 1fr; grid-template-rows: none; overflow-y: auto; }
+}

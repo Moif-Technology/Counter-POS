@@ -8,3 +8,5 @@
   font-family: inherit; font-size: 15px; font-weight: 800; color: #fff;
   background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
 }
+.ui-notice-ico.is-success { background: #ecfdf3; color: #16a34a; }
+.ui-notice-ico.is-error { background: #fef2f2; color: #dc2626; }

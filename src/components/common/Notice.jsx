@@ -7,13 +7,14 @@ import './Notice.css'
  *
  *   {noData && <Notice title="No data to print" message="…" onClose={() => setNoData(false)} />}
  *
- * Props: title, message (optional), icon (lucide, default Info), okLabel, onClose, zIndex
+ * Props: title, message (optional), icon (lucide, default Info), tone ('info' | 'success' | 'error'),
+ *        okLabel, onClose, zIndex
  */
-export default function Notice({ title, message, icon: Icon = Info, okLabel = 'OK', onClose, zIndex = 1300 }) {
+export default function Notice({ title, message, icon: Icon = Info, tone = 'info', okLabel = 'OK', onClose, zIndex = 1300 }) {
   return (
     <Modal onClose={onClose} header={false} width={380} zIndex={zIndex}>
       <div className="ui-notice">
-        <span className="ui-notice-ico"><Icon size={28} /></span>
+        <span className={`ui-notice-ico is-${tone}`}><Icon size={28} /></span>
         <h3>{title}</h3>
         {message && <p>{message}</p>}
         <button type="button" className="ui-notice-ok" onClick={onClose} autoFocus>{okLabel}</button>
