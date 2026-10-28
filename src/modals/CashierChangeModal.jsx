@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { UserCheck, ShieldCheck, RefreshCw } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import Modal from '../components/common/Modal'
+import { posNotifySuccess } from '../lib/posNotify'
 
 export default function CashierChangeModal({ onClose }) {
   const setAuthStaff = usePosStore(s => s.setAuthStaff)
@@ -57,6 +58,7 @@ export default function CashierChangeModal({ onClose }) {
         role: chosenStaff.role
       })
       setLoading(false)
+      posNotifySuccess(`Cashier changed to ${chosenStaff.name}`, { title: 'Cashier Change', duration: 1500 })
       onClose()
     }, 600)
   }

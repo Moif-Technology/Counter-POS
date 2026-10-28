@@ -12,6 +12,7 @@ import { fmtMoney } from '../lib/currencyFormat'
 import { getGvTax } from '../lib/gvtax'
 import Numpad from '../components/common/Numpad'
 import Modal from '../components/common/Modal'
+import { posNotifySuccess } from '../lib/posNotify'
 
 export default function PriceChangeModal({ onClose, rowKey: rowKeyProp, zIndex = 1000 }) {
   const cartItems      = usePosStore(s => s.cartItems)
@@ -64,6 +65,7 @@ export default function PriceChangeModal({ onClose, rowKey: rowKeyProp, zIndex =
       discountMode: item.discountMode ?? 'pct',
       ...(item.discountMode === 'amt' ? { discountAmt: Number(item.discountAmt) || 0 } : {}),
     })
+    posNotifySuccess(`${item.description} — price updated`, { title: 'Price Change', duration: 1500 })
     onClose()
   }
 

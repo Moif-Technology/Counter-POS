@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Truck, ScanLine, RotateCcw, Check, CheckCircle2, XCircle, Layers, Banknote, CreditCard, UserRound, LayoutGrid,
+  Truck, ScanLine, RotateCcw, Check, XCircle, Layers, Banknote, CreditCard, UserRound, LayoutGrid,
   ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { api } from '../lib/api'
@@ -13,6 +13,7 @@ import Modal from '../components/common/Modal'
 import Table from '../components/common/Table'
 import Numpad from '../components/common/Numpad'
 import Notice from '../components/common/Notice'
+import { posNotifyError, posNotifySuccess, posNotifyWarning } from '../lib/posNotify'
 import MultiPaymentModal from './MultiPaymentModal'
 import './DeliverySettlementModal.css'
 
@@ -66,20 +67,19 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
   const [tab, setTab]             = useState('pending')
   const [rows, setRows]           = useState([])
   const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState(null)
   const [scan, setScan]           = useState('')
   const [recalling, setRecalling] = useState(false)
   const [settling, setSettling]   = useState(false)
   const [collected, setCollected] = useState('')
   const [multiRow, setMultiRow]   = useState(null)
-  const [notice, setNotice]       = useState(null)       // { ok, title, message }
+  const [notice, setNotice]       = useState(null)       // "Unable to Save" popup: { title, message }
 
   useEffect(() => {
     let alive = true
     const doLoad = loadDeliveriesFn ?? (() => api.counterPos.getDeliveryBills(accessToken))
     Promise.resolve(doLoad())
       .then(data => { if (alive) setRows((Array.isArray(data) ? data : []).map(mapDeliveryRow)) })
-      .catch(e => { if (alive) setError(e.message) })
+      .catch(e => { if (alive) posNotifyError(e.message, { title: 'Delivery Settlement' }) })
       .finally(() => { if (alive) setLoading(false) })
     return () => { alive = false }
   }, [accessToken, loadDeliveriesFn])
@@ -104,23 +104,21 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
     e.preventDefault()
     const no = parseDeliveryBarcode(scan)
     const hit = no != null && rows.find(r => String(r.holdNo) === String(no))
-    if (!hit) { setError(no == null ? 'Scan the delivery slip or type its number' : `Delivery ${no} not found`); return }
+    if (!hit) { posNotifyWarning(no == null ? 'Scan the delivery slip or type its number' : `Delivery ${no} not found`, { title: 'Delivery Settlement' }); return }
     patchRow(hit.salesId, { selected: true })
     setScan('')
-    setError(null)
   }
 
   async function bringToCounter() {
     const no = selected.length === 1 ? selected[0].holdNo : parseDeliveryBarcode(scan)
-    if (no == null) { setError('Tick one delivery (or scan it) to bring it to the counter'); return }
+    if (no == null) { posNotifyWarning('Tick one delivery (or scan it) to bring it to the counter', { title: 'Delivery Settlement' }); return }
     if (recalling) return
     setRecalling(true)
-    setError(null)
     try {
       await (recallFn ?? ((n) => usePosStore.getState().recallDeliveryByNo(n)))(no)
       onClose()
     } catch (e) {
-      setError(e.message)
+      posNotifyError(e.message, { title: 'Bring to Counter' })
     } finally {
       setRecalling(false)
     }
@@ -129,9 +127,8 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
   async function settle() {
     if (!selected.length || settling) return
     const noSplit = selected.find(r => isMultiPaymentMode(r.paymentMode) && !r.paymentSplits?.length)
-    if (noSplit) { setError(`Delivery ${noSplit.holdNo}: set the Multi Pay split`); return }
+    if (noSplit) { posNotifyWarning(`Delivery ${noSplit.holdNo}: set the Multi Pay split`, { title: 'Delivery Settlement' }); return }
     setSettling(true)
-    setError(null)
     try {
       const items = selected.map(r => ({
         salesId: r.salesId,
@@ -146,9 +143,10 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
       const settledIds = new Set((result?.results ?? items).map(x => x.salesId))
       setRows(prev => prev.filter(r => !settledIds.has(r.salesId)))
       setCollected('')
-      setNotice({ ok: true, title: 'Settlement Done', message: result?.message ?? `${settledIds.size} invoice(s) posted` })
+      posNotifySuccess(result?.message ?? `${settledIds.size} invoice(s) posted`, { title: 'Settlement Done', duration: 2000 })
+      setTab('pending')
     } catch (e) {
-      setNotice({ ok: false, title: 'Unable to Save', message: e.message ?? 'The settlement was not saved. Please try again.' })
+      setNotice({ title: 'Unable to Save', message: e.message ?? 'The settlement was not saved. Please try again.' })
     } finally {
       setSettling(false)
     }
@@ -189,8 +187,6 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
           <i>2</i> Settlement <span>{selected.length}</span>
         </button>
       </div>
-
-      {error && <div className="ds-error">{error}</div>}
 
       {tab === 'pending' ? (
         <div className="ds-pending">
@@ -303,11 +299,11 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
     )}
     {notice && (
       <Notice
-        icon={notice.ok ? CheckCircle2 : XCircle}
-        tone={notice.ok ? 'success' : 'error'}
+        icon={XCircle}
+        tone="error"
         title={notice.title}
         message={notice.message}
-        onClose={() => { const ok = notice.ok; setNotice(null); if (ok) setTab('pending') }}
+        onClose={() => setNotice(null)}
       />
     )}
     </>

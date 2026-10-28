@@ -7,6 +7,7 @@ import { applyAmountKey, useAmountNumpadKeyboard } from '../lib/posNumpadKeys'
 import Modal from '../components/common/Modal'
 import WheelPicker from '../components/common/WheelPicker'
 import Numpad from '../components/common/Numpad'
+import { posNotifySuccess } from '../lib/posNotify'
 
 const MAX_QTY = 999
 const WHEEL_VALUES = Array.from({ length: MAX_QTY }, (_, i) => i + 1)
@@ -46,6 +47,7 @@ export default function QtyWheelModal({ item, onClose }) {
   const apply = () => {
     if (!liveItem || !valid) return
     updateLine(rowKey, { qty: isReturn ? -qty : qty })
+    posNotifySuccess(`Quantity set to ${isReturn ? -qty : qty}`, { title: 'Quantity Change', duration: 1500 })
     onClose()
   }
 

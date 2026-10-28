@@ -4,6 +4,7 @@ import Table from '../components/common/Table'
 import Numpad from '../components/common/Numpad'
 import TouchKeyboard from '../components/common/Keyboard'
 import Modal from '../components/common/Modal'
+import { posNotifySuccess } from '../lib/posNotify'
 
 const SAMPLE_STAFF = [
   { code: '001', name: 'AHMED ALI' },
@@ -59,6 +60,7 @@ export default function SalesManModal({ onClose, onApply }) {
   const handleApply = () => {
     if (!staffCode && !selectedStaff) return
     onApply?.({ code: staffCode, name: staffName })
+    posNotifySuccess(`Sales man: ${staffName || staffCode}`, { title: 'Sales Man', duration: 1500 })
     onClose()
   }
 

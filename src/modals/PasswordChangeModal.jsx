@@ -3,6 +3,7 @@ import { KeyRound, ShieldCheck, RefreshCw } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
 import Modal from '../components/common/Modal'
+import { posNotifySuccess } from '../lib/posNotify'
 
 export default function PasswordChangeModal({ onClose }) {
   const accessToken = usePosStore(s => s.accessToken)
@@ -45,6 +46,7 @@ export default function PasswordChangeModal({ onClose }) {
 
       if (res.success || res.ok) {
         setSuccessMsg('Password updated successfully!')
+        posNotifySuccess('Password updated', { title: 'Password Change', duration: 1500 })
         setTimeout(() => onClose(), 1200)
       } else {
         setError(res.message || 'Failed to update password')

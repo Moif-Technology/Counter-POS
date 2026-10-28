@@ -5,6 +5,7 @@ import { usePosStore } from '../store/posStore'
 import Modal from '../components/common/Modal'
 import Numpad from '../components/common/Numpad'
 import Table from '../components/common/Table'
+import { posNotifySuccess } from '../lib/posNotify'
 
 
 export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = null }) {
@@ -75,6 +76,7 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
   const handleApply = () => {
     if (selectedIdx < 0) return
     onApply?.(customers[selectedIdx])
+    posNotifySuccess(`${customers[selectedIdx].customerName} applied`, { title: 'Privilege Customer', duration: 1500 })
     onClose()
   }
 
@@ -119,7 +121,7 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
             rowKey="customerId"
             selected={selected?.customerId}
             onRowClick={(c, i) => selectRow(c, i)}
-            onRowDoubleClick={(c, i) => { selectRow(c, i); onApply?.(c); onClose() }}
+            onRowDoubleClick={(c, i) => { selectRow(c, i); onApply?.(c); posNotifySuccess(`${c.customerName} applied`, { title: 'Privilege Customer', duration: 1500 }); onClose() }}
             loading={loading}
             error={error}
             emptyText="No customers found"

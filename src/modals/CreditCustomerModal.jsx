@@ -6,6 +6,7 @@ import { usePosStore } from '../store/posStore'
 import { fmtMoney } from '../lib/currencyFormat'
 import Modal from '../components/common/Modal'
 import Table from '../components/common/Table'
+import { posNotifySuccess } from '../lib/posNotify'
 
 const NUM_KEYS = [
   ['7','8','9'],
@@ -74,6 +75,7 @@ export default function CreditCustomerModal({ onClose, onApply }) {
   const handleApply = () => {
     if (selectedIdx < 0) return
     onApply?.(customers[selectedIdx])
+    posNotifySuccess(`${customers[selectedIdx].customerName} selected for credit`, { title: 'Credit Customer', duration: 1500 })
     onClose()
   }
 

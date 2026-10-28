@@ -5,6 +5,7 @@ import { resolveDiscountOnTaxable } from '../lib/discountCalc'
 import Modal from '../components/common/Modal'
 import Numpad from '../components/common/Numpad'
 import './BillDiscountModal.css'
+import { posNotifySuccess } from '../lib/posNotify'
 
 /*
  * DiscountScreen — the shared Bill / Line discount popup: Total / Taxable / Tax
@@ -67,6 +68,7 @@ export default function DiscountScreen({
   const handleApply = () => {
     const { discountAmt, pct } = resolveDiscountOnTaxable(base, mode, discPct, taxableAmtStr)
     onApply({ mode, discountAmt, pct })
+    posNotifySuccess(discountAmt > 0 ? `${title} of ${fmtMoney(roundMoney(discountAmt * factor))} applied` : `${title} removed`, { title: 'Discount', duration: 1500 })
     onClose()
   }
 

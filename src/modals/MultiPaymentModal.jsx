@@ -6,6 +6,7 @@ import { usePosStore } from '../store/posStore'
 import { PM } from '../lib/paymentModes'
 import { fmtMoney, moneyInputRegex, roundMoney } from '../lib/currencyFormat'
 import './MultiPaymentModal.css'
+import { posNotifySuccess } from '../lib/posNotify'
 
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0 }
 
@@ -99,11 +100,12 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
       cashPart       > 0 && { payMode: PM.CASH,       amount: cashPart,                   tip: 0, refNo: '' },
     ].filter(Boolean)
 
-    if (standalone) { onConfirm(splits); onClose?.(); return }
+    if (standalone) { onConfirm(splits); posNotifySuccess('Payment split saved', { title: 'Multi Payment', duration: 1500 }); onClose?.(); return }
     const st = usePosStore.getState()
     st.setPaymentMode(PM.MULTIPAYMENT)
     st.setPaymentSplits(splits)
     st.setPayment(tendered)                               // paid = everything handed over → balance = change
+    posNotifySuccess('Multi payment set', { title: 'Multi Payment', duration: 1500 })
     onClose?.()
   }
 

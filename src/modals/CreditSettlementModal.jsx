@@ -11,6 +11,7 @@ import { fmt3 } from '../lib/utils'
 import { applyAmountKey, useAmountNumpadKeyboard } from '../lib/posNumpadKeys'
 import { PM } from '../lib/paymentModes'
 import { printCreditReceiptVoucher, receiptFromSettlementResult } from '../lib/printCreditReceiptVoucher'
+import { posNotifySuccess } from '../lib/posNotify'
 
 const STEP_TITLES = {
   list:    'Credit Settlement',
@@ -131,6 +132,7 @@ export default function CreditSettlementModal({
         counterNo,
       })
       setSuccess(result)
+      posNotifySuccess(`Settled — RCV #${result.transactionNo ?? ''}`, { title: 'Receipt', duration: 1500 })
       try {
         await printCreditReceiptVoucher(receiptFromSettlementResult(result), {
           companyName: shopName,

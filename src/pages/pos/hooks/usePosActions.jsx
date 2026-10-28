@@ -176,6 +176,7 @@ export function usePosActions({ onSave }) {
     usePosStore.getState().setDeliveryInfo(details)
     close()
     if (deliverySavePending) doSaveDelivery(details)
+    else posNotifySuccess(`Delivery to ${details.customerName}`, { title: 'Delivery', duration: 1500 })
   }
 
   /* ── Customer display (second screen) ───────────────────── */

@@ -3,6 +3,7 @@ import { MessageSquare, Keyboard, Check, Trash2 } from 'lucide-react'
 import TouchKeyboard from '../components/common/Keyboard'
 import { usePosStore } from '../store/posStore'
 import Modal from '../components/common/Modal'
+import { posNotifySuccess } from '../lib/posNotify'
 
 export default function CommentsModal({ onClose, onSave }) {
   const billComment    = usePosStore(s => s.billComment)
@@ -22,6 +23,7 @@ export default function CommentsModal({ onClose, onSave }) {
 
   const handleDone = () => {
     onSave?.(billComment.trim())
+    posNotifySuccess(billComment.trim() ? 'Bill comment saved' : 'Bill comment cleared', { title: 'Comments', duration: 1500 })
     onClose()
   }
 

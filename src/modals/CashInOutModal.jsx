@@ -7,6 +7,7 @@ import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import { fmtMoney } from '../lib/currencyFormat'
 import './CashInOutModal.css'
+import { posNotifySuccess } from '../lib/posNotify'
 
 const CATEGORIES = {
   in:  ['Cash', 'Petty Cash'],
@@ -77,6 +78,7 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
         const remarks = [e.category, e.note].filter(Boolean).join(' — ')
         await doSave({ counterNo, transactionType, amount: e.amount, remarks: remarks || null })
       }
+      posNotifySuccess(`${entries.length} cash ${isIn ? 'in' : 'out'} entr${entries.length === 1 ? 'y' : 'ies'} saved`, { title: 'Cash In / Out', duration: 1500 })
       onClose()
     } catch (err) {
       setError(err.message ?? 'Failed to save cash in/out')

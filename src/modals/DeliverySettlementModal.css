@@ -8,7 +8,6 @@
 .ds-tabs button.is-on { background: #fff; border-color: #ececee; color: var(--brand); }
 .ds-tabs button.is-on span { background: var(--brand); color: #fff; }
 
-.ds-error { margin: 0 16px; padding: 8px 12px; border-radius: 0 0 9px 9px; background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; font-size: 12.5px; font-weight: 700; }
 
 /* Pending */
 .ds-pending { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 14px; background: #f7f7f8; }

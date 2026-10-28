@@ -6,7 +6,7 @@ import { fmt3 } from '../lib/utils'
 import { fmtMoney, moneyPlaceholder } from '../lib/currencyFormat'
 import { printCounterReport } from '../lib/printCounterReport'
 import { getReceiptPrintMetaFromStore } from '../lib/receiptPrintTheme'
-import { posNotifyWarning } from '../lib/posNotify'
+import { posNotifyWarning, posNotifySuccess } from '../lib/posNotify'
 import Modal from '../components/common/Modal'
 import Numpad from '../components/common/Numpad'
 import { applyAmountKey } from '../lib/posNumpadKeys'
@@ -122,6 +122,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
         })
       }
       setCloseResult({ ...result, reportType })
+      posNotifySuccess(reportType === 'Z' ? `Z-Report saved${result.closeNo ? ` — ${result.closeNo}` : ''}` : 'X-Report printed', { title: 'Counter Reading', duration: 1500 })
       if (reportType === 'Z') {
         setCounts(initCounts())
         setManualInput('')
