@@ -13,7 +13,8 @@ import { usePosStore } from '../../../store/posStore'
 const TABS = [
   {
     key: 'Page 1',
-    // Clear All, Price Change and Repeat live under the cart (action bar / item strip);
+    // Clear All and Repeat live under the cart (action bar / item strip); Price Change is
+    // here and under the cart (Edit Price);
     // Clear Line is the bin on each cart line.
     buttons: [
       { label: 'Qty',            icon: Hash,    text: 'Qty', toggle: true },
@@ -25,6 +26,7 @@ const TABS = [
       { label: 'Bill Print',     icon: Printer },
       { label: 'Bill Reprint',   icon: Printer },
       { label: 'Qty Change',     icon: Tag, text: 'Qty Chan' },
+      { label: 'Price Change',   icon: CircleDollarSign },
       { label: 'Price Enquiry',  icon: Search },
       { label: 'Packet Scan',    icon: ScanBarcode },
     ],

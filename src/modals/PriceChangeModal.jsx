@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Tag } from 'lucide-react'
+import { Tag, Check } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import {
   calcLineTotals,
@@ -8,11 +8,13 @@ import {
   resolveUnitPricesFromInput,
   unitPricePatchFromInput,
 } from '../lib/cartLine'
-import { fmtMoney } from '../lib/currencyFormat'
+import { fmtMoney, moneyPlaceholder, roundMoney } from '../lib/currencyFormat'
+import { useAmountNumpadKeyboard } from '../lib/posNumpadKeys'
 import { getGvTax } from '../lib/gvtax'
 import Numpad from '../components/common/Numpad'
 import Modal from '../components/common/Modal'
 import { posNotifySuccess } from '../lib/posNotify'
+import './PriceChangeModal.css'
 
 export default function PriceChangeModal({ onClose, rowKey: rowKeyProp, zIndex = 1000 }) {
   const cartItems      = usePosStore(s => s.cartItems)
@@ -23,6 +25,9 @@ export default function PriceChangeModal({ onClose, rowKey: rowKeyProp, zIndex =
 
   const [editMode, setEditMode] = useState('net')
   const [newPrice, setNewPrice] = useState('')
+
+  // Hardware keyboard: digits / . / Backspace / Enter (handleDone is hoisted below)
+  useAmountNumpadKeyboard(setNewPrice, { onEnter: () => { if (item) handleDone() } })
 
   if (!item) return null
 
@@ -56,7 +61,7 @@ export default function PriceChangeModal({ onClose, rowKey: rowKeyProp, zIndex =
     setNewPrice(v => v + k)
   }
 
-  const handleDone = () => {
+  function handleDone() {
     const patch = unitPricePatchFromInput(editMode, parsedInput, vatPer)
     if (!patch) return
     updateLine(activeKey, {
@@ -78,167 +83,52 @@ export default function PriceChangeModal({ onClose, rowKey: rowKeyProp, zIndex =
     setEditMode(mode)
   }
 
-  const fieldRow = (label, value, accent) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0' }}>
-      <span style={{
-        width: 108, flexShrink: 0, textAlign: 'right',
-        fontSize: 10.5, fontWeight: 700,
-        color: accent ? 'var(--brand)' : 'var(--text-2)',
-      }}>{label}</span>
-      <div style={{
-        flex: 1, height: 30, borderRadius: 7,
-        border: `1.5px solid ${accent ? 'var(--brand-border)' : 'var(--border)'}`,
-        background: accent ? 'var(--brand-bg)' : '#fff',
-        display: 'flex', alignItems: 'center', padding: '0 10px',
-        fontSize: 12, fontWeight: 700,
-        color: accent ? 'var(--brand)' : 'var(--text-1)',
-        fontFamily: 'inherit',
-      }}>
-        {value}
-      </div>
-    </div>
-  )
-
-  const modeBtn = (mode, label) => (
-    <button
-      type="button"
-      onClick={() => switchMode(mode)}
-      style={{
-        flex: 1, height: 28, borderRadius: 7, border: 'none', cursor: 'pointer',
-        fontSize: 9.5, fontWeight: 800, letterSpacing: 0.3, textTransform: 'uppercase',
-        background: editMode === mode ? 'var(--brand)' : 'var(--surface-2)',
-        color: editMode === mode ? '#fff' : 'var(--text-3)',
-        transition: 'all 0.12s',
-      }}
-    >
-      {label}
-    </button>
-  )
+  const vatAmt   = preview ? roundMoney(preview.unitPriceGross - preview.unitPrice) : 0
+  const otherLbl = editMode === 'net' ? 'Price with VAT' : 'Price ex VAT'
+  const otherVal = preview ? (editMode === 'net' ? preview.unitPriceGross : preview.unitPrice) : null
 
   return (
-    <Modal
-      onClose={onClose}
-      icon={Tag}
-      kicker="Price Change"
-      title={item.description}
-      zIndex={zIndex}
-      width={500}
-    >
-
-      <div style={{ display: 'flex', overflow: 'hidden', minHeight: 0 }}>
-
-        <div style={{
-          flex: 1, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 0,
-          borderRight: '1px solid var(--border)', overflowY: 'auto',
-        }}>
-          {fieldRow('BarCode', item.barcode)}
-          <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
-          {fieldRow('Current Price', currentNet)}
-          {fieldRow('Current With VAT', fmtMoney(currentGross))}
-          {fieldRow(`Line Total (×${item.qty})`, fmtMoney(currentLine.lineTotal))}
-          {fieldRow('Discount (fixed)', fmtMoney(currentDisc))}
-
-          <div style={{ display: 'flex', gap: 6, margin: '6px 0 2px 118px' }}>
-            {modeBtn('net', 'Unit Price')}
-            {modeBtn('gross', 'Price With VAT')}
+    <Modal onClose={onClose} icon={Tag} kicker="Price Change" title={item.description} zIndex={zIndex} width={720}>
+      <div className="pc">
+        <div className="pc-left">
+          <div className="pc-now">
+            <div><span>Barcode</span><b className="is-mono">{item.barcode || item.productCode || '—'}</b></div>
+            <div><span>Now ex VAT</span><b>{currentNet}</b></div>
+            <div><span>Now incl VAT</span><b>{fmtMoney(currentGross)}</b></div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0' }}>
-            <span style={{ width: 108, flexShrink: 0, textAlign: 'right', fontSize: 10.5, fontWeight: 700, color: 'var(--text-2)' }}>
-              {editMode === 'gross' ? 'New Price (VAT)' : 'New Price'}
-            </span>
-            <div style={{
-              flex: 1, height: 30, borderRadius: 7,
-              border: '1.5px solid var(--brand)',
-              background: 'var(--brand-bg)',
-              display: 'flex', alignItems: 'center', padding: '0 10px',
-              fontSize: 13, fontWeight: 800,
-              color: 'var(--text-1)',
-              fontFamily: 'inherit',
-            }}>
-              {newPrice || <span style={{ color: 'var(--text-4)', fontWeight: 500, fontSize: 11 }}>Enter new price…</span>}
+          <div className="pc-seg">
+            <button type="button" className={editMode === 'net' ? 'is-on' : ''} onClick={() => switchMode('net')}>Ex VAT</button>
+            <button type="button" className={editMode === 'gross' ? 'is-on' : ''} onClick={() => switchMode('gross')}>Incl VAT</button>
+          </div>
+
+          <div className={`pc-new${newPrice ? ' has-value' : ''}`}>
+            <span>New Unit Price <em>{editMode === 'net' ? '(Ex VAT)' : '(Incl VAT)'}</em></span>
+            <b>{newPrice || moneyPlaceholder()}</b>
+          </div>
+
+          <div className="pc-calc">
+            <div><span>VAT %</span><b>{vatPer}</b></div>
+            <div><span>VAT</span><b>{preview ? fmtMoney(vatAmt) : '—'}</b></div>
+            <div className="is-main"><span>{otherLbl}</span><b>{otherVal != null ? fmtMoney(otherVal) : '—'}</b></div>
+          </div>
+
+          {previewLine && (
+            <div className="pc-line">
+              Line total <b>{fmtMoney(currentLine.lineTotal)}</b> → <b className="is-new">{fmtMoney(previewLine.lineTotal)}</b>
+              {currentDisc > 0 && <small> · discount kept</small>}
             </div>
-          </div>
-
-          <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
-
-          {/* Fixed-height preview — modal does not grow when typing */}
-          <div style={{ minHeight: 108, flexShrink: 0 }}>
-            {preview ? (
-              <>
-                <div style={{ display: 'flex', gap: 8, padding: '2px 0', marginLeft: 118 }}>
-                  {[
-                    { label: 'VAT %', value: vatPer },
-                    { label: 'VAT Amount', value: fmtMoney(preview.unitVat) },
-                  ].map(f => (
-                    <div key={f.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase' }}>{f.label}</span>
-                      <div style={{
-                        height: 28, borderRadius: 7,
-                        border: '1px solid var(--border)', background: 'var(--surface-2)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 11, fontWeight: 700,
-                        fontFamily: 'inherit',
-                      }}>{f.value}</div>
-                    </div>
-                  ))}
-                </div>
-                {fieldRow(
-                  editMode === 'net' ? 'Price With VAT' : 'Unit Price',
-                  editMode === 'net' ? fmtMoney(preview.unitPriceGross) : fmtMoney(preview.unitNet),
-                  true,
-                )}
-                {fieldRow(`New Line Total (×${item.qty})`, fmtMoney(previewLine.lineTotal), true)}
-              </>
-            ) : (
-              <div style={{
-                height: 108, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '0 10px', fontSize: 10.5, color: 'var(--text-4)', textAlign: 'center',
-              }}>
-                Enter a price to preview VAT and line total
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
-        <div style={{ width: 200, flexShrink: 0, padding: '12px 12px' }}>
-          <Numpad
-            onKey={pressKey}
-            showDot
-            showClear
-            showBackspace={false}
-            btnHeight={40}
-            fontSize={15}
-            gap={5}
-            extraRows={[[
-              {
-                label: 'Done',
-                flex: 2,
-                style: {
-                  background: parsedInput > 0
-                    ? 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)'
-                    : 'var(--border)',
-                  color: parsedInput > 0 ? '#fff' : 'var(--text-4)',
-                  border: 'none',
-                  fontSize: 12,
-                  boxShadow: parsedInput > 0 ? '0 4px 12px rgba(120,8,41,0.2)' : 'none',
-                },
-                onClick: handleDone,
-              },
-              {
-                label: 'Cancel',
-                flex: 1,
-                style: {
-                  background: 'var(--red-bg)',
-                  color: 'var(--red)',
-                  borderColor: 'var(--red-border)',
-                  fontSize: 12,
-                },
-                onClick: onClose,
-              },
-            ]]}
-          />
+        <div className="pc-pad">
+          <Numpad onKey={pressKey} showDot showClear showBackspace fontSize={20} gap={8} />
         </div>
+      </div>
+
+      <div className="pc-foot">
+        <button type="button" className="pc-cancel" onClick={onClose}>Cancel</button>
+        <button type="button" className="pc-ok" onClick={handleDone} disabled={!preview}><Check size={17} /> Update Price</button>
       </div>
     </Modal>
   )
