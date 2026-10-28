@@ -50,7 +50,6 @@ const TABS = [
       { label: 'Cust Display',  icon: Monitor,      toggle: true, onlyIf: 'customerDisplayEnabled' },
     ],
   },
-  { key: 'Groups' },   // product group buttons
   {
     key: 'Delivery',
     buttons: [
