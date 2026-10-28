@@ -25,14 +25,14 @@ const TABS = [
       { label: 'Bill Print',     icon: Printer },
       { label: 'Bill Reprint',   icon: Printer },
       { label: 'Qty Change',     icon: Tag, text: 'Qty Chan' },
+      { label: 'Price Enquiry',  icon: Search },
+      { label: 'Packet Scan',    icon: ScanBarcode },
     ],
   },
   {
     key: 'Page 2',
     buttons: [
       { label: 'Privilege',     icon: User,         text: 'Privilege Customer' },
-      { label: 'Price Enquiry', icon: Search },
-      { label: 'Packet Scan',   icon: ScanBarcode },
       { label: 'Cash In/Out',   icon: Wallet,       text: 'CashIn / CashOut' },
       { label: 'Comments',      icon: MessageSquare },
       { label: 'Currency',      icon: CircleDollarSign },
