@@ -604,3 +604,12 @@
   .ph-txn-total > span { display: none; }
   .ph-txn-total strong { font-size: clamp(18px, 2vw, 24px); }
 }
+
+/* Checkout card: compact — shorter tiles and BILLING buttons, tighter padding */
+.ph-checkout { gap: 6px; padding: 6px; border-radius: 14px; }
+.ph-checkout .ph-pay { gap: 6px; }
+.ph-checkout .ph-pay-tile { height: clamp(36px, 4.6vh, 44px); border-radius: 10px; }
+.ph-checkout .ph-billing { gap: 6px; }
+.ph-checkout .ph-bill { height: clamp(42px, 5.8vh, 56px); border-radius: 11px; gap: 10px; }
+.ph-checkout .ph-bill span { line-height: 1.15; }
+.ph-checkout .ph-bill svg { width: 22px; height: 22px; }
