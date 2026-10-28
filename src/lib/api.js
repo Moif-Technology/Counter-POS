@@ -84,6 +84,7 @@ export const api = {
       const qs = q.toString()
       return request('GET', `/counter-pos/counter/cash-in-out/report${qs ? `?${qs}` : ''}`, null, token)
     },
+    groupWiseReport:   (counterNo, token, closeId) => request('GET',  `/counter-pos/sales/group-wise?counterNo=${counterNo}${closeId ? `&closeId=${closeId}` : ''}`, null, token),
     staffWiseReport:   (counterNo, token, closeId) => request('GET',  `/counter-pos/sales/staff-wise?counterNo=${counterNo}${closeId ? `&closeId=${closeId}` : ''}`, null, token),
     salesViewerList:   (params, token) => {
       const q = new URLSearchParams()

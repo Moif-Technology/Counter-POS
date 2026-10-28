@@ -165,7 +165,7 @@ export default function ReportsModal({
       />
     )}
      {groupWiseOpen && (
-      <GroupWiseReportModal onClose={() => setGroupWiseOpen(false)} reportFn={groupReportFn} />
+      <GroupWiseReportModal onClose={() => setGroupWiseOpen(false)} reportFn={groupReportFn} historyFn={closeHistoryFn} />
     )}
     {readingNeeded && (
       <Modal onClose={() => setReadingNeeded(false)} header={false} width={420} zIndex={1200}>

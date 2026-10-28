@@ -1,13 +1,20 @@
 import { useCallback, useEffect, useState } from 'react'
-import { X, Grid, RefreshCw, Download } from 'lucide-react'
+import { X, Grid, RefreshCw, Printer } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
 import { fmt3 } from '../lib/utils'
 import { buildReportPrintFontCss, escReceipt, openReceiptPrintWindow } from '../lib/receiptPrintTheme'
-import { IS_ANDROID_POS } from '../lib/androidPosPrinter'
 import Modal from '../components/common/Modal'
+import './StaffWiseReportModal.css'   // shared Counter Close # picker + Print
 
-export default function GroupWiseReportModal({ onClose, reportFn = null }) {
+function fmtCloseDate(d) {
+  if (!d) return ''
+  const dt = new Date(d)
+  if (Number.isNaN(dt.getTime())) return ''
+  return dt.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+export default function GroupWiseReportModal({ onClose, reportFn = null, historyFn = null }) {
   const accessToken = usePosStore(s => s.accessToken)
   const counterNo   = usePosStore(s => s.counterNo)
   const authStaff   = usePosStore(s => s.authStaff)
@@ -15,13 +22,24 @@ export default function GroupWiseReportModal({ onClose, reportFn = null }) {
   const [rows,    setRows]    = useState([])
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
+  const [closes,  setCloses]  = useState([])
+  const [closeId, setCloseId] = useState('')      // '' = current (open) session
+
+  // Counter closes for the "Counter Close #" picker
+  useEffect(() => {
+    const doHistory = historyFn ?? ((params) => api.counterPos.counterHistory(params, accessToken))
+    Promise.resolve(doHistory({ counterNo, limit: 100 }))
+      .then(r => setCloses(Array.isArray(r?.closes) ? r.closes : []))
+      .catch(() => setCloses([]))
+  }, [counterNo, accessToken, historyFn])
+  const pickedClose = closes.find(c => String(c.closeId) === String(closeId)) ?? null
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const doReport = reportFn ?? (() => api.counterPos.groupWiseReport(counterNo, accessToken))
-      const data = await doReport()
+      const doReport = reportFn ?? ((id) => api.counterPos.groupWiseReport(counterNo, accessToken, id))
+      const data = await doReport(closeId || null)
       // Accept a plain list or a list wrapped in an object; anything else = no rows (never crash).
       setRows(Array.isArray(data) ? data : (Array.isArray(data?.rows) ? data.rows : Array.isArray(data?.data) ? data.data : []))
     } catch (err) {
@@ -29,7 +47,7 @@ export default function GroupWiseReportModal({ onClose, reportFn = null }) {
     } finally {
       setLoading(false)
     }
-  }, [counterNo, accessToken, reportFn])
+  }, [counterNo, accessToken, reportFn, closeId])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -140,26 +158,24 @@ export default function GroupWiseReportModal({ onClose, reportFn = null }) {
           <RefreshCw size={13} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
           Refresh
         </button>
-        <button
-          onClick={handleDownloadPdf}
-          disabled={loading || rows.length === 0}
-          style={{
-            height: 32, padding: '0 14px', borderRadius: 8,
-            background: rows.length === 0 ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.20)',
-            border: '1px solid rgba(255,255,255,0.25)',
-            color: '#fff', fontSize: 12, fontWeight: 600,
-            cursor: rows.length === 0 ? 'default' : 'pointer',
-            display: 'flex', alignItems: 'center', gap: 6,
-          }}
-        >
-          <Download size={13} /> {IS_ANDROID_POS ? 'Print' : 'Download PDF'}
-        </button>
       </>}
       zIndex={1100}
       width={760}
       maxHeight="88vh"
     >
       <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
+
+        {/* Counter Close # */}
+        <div className="sw-pick">
+          <label htmlFor="gw-close">Counter Close #</label>
+          <select id="gw-close" value={closeId} onChange={e => setCloseId(e.target.value)}>
+            <option value="">Current session (open)</option>
+            {closes.map(c => (
+              <option key={c.closeId} value={c.closeId}>{c.closeNo ?? `#${c.closeId}`}</option>
+            ))}
+          </select>
+          <div className="sw-pick-date">{pickedClose ? fmtCloseDate(pickedClose.closeDate) : 'Not closed yet'}</div>
+        </div>
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 18 }}>
@@ -184,7 +200,7 @@ export default function GroupWiseReportModal({ onClose, reportFn = null }) {
           {!loading && !error && rows.length === 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 160, color: 'var(--text-4)', gap: 8 }}>
               <Grid size={32} />
-              <p style={{ fontSize: 13, fontWeight: 600 }}>No group sales data for current session</p>
+              <p style={{ fontSize: 13, fontWeight: 600 }}>{closeId ? 'No group sales data for this counter close' : 'No group sales data for current session'}</p>
             </div>
           )}
 
@@ -257,10 +273,13 @@ export default function GroupWiseReportModal({ onClose, reportFn = null }) {
           padding: '10px 18px', borderTop: '1px solid var(--border)',
           background: 'var(--surface-2)', flexShrink: 0, gap: 8,
         }}>
+          <button type="button" className="sw-print" onClick={handleDownloadPdf} disabled={loading || rows.length === 0}>
+            <Printer size={15} /> Print
+          </button>
           <button
             onClick={onClose}
             style={{
-              height: 34, padding: '0 20px', borderRadius: 9,
+              height: 40, padding: '0 20px', borderRadius: 10,
               border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
               color: 'var(--red)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
