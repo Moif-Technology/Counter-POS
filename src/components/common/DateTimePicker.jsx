@@ -6,7 +6,8 @@ import './DateTimePicker.css'
 
 /*
  * DateTimePicker — a date + time field; tap it for a small popover with the
- * common Calendar and one compact time row (hour · minute · AM/PM), then Done.
+ * common Calendar and one compact time row (hour · minute · AM/PM — tap the
+ * arrows or type the number), then Done.
  * Same look as DatePicker.
  *
  *   <DateTimePicker label="Delivery Time" value={when} onChange={setWhen} />
@@ -45,7 +46,13 @@ export default function DateTimePicker({ value, onChange, label, minuteStep = 5 
     const place = () => setRect(fieldRef.current?.getBoundingClientRect() ?? null)
     const onDown = e => { if (!fieldRef.current?.contains(e.target) && !popRef.current?.contains(e.target)) setOpen(false) }
     // Capture so Escape closes only this popover, not the modal around it.
-    const onKey = e => { if (e.key === 'Escape') { e.stopImmediatePropagation(); setOpen(false) } }
+    // Escape in a time box only cancels the typing there.
+    const onKey = e => {
+      if (e.key !== 'Escape') return
+      e.stopImmediatePropagation()
+      if (e.target?.classList?.contains('ui-dtp-num')) { e.target.dataset.cancel = '1'; e.target.blur(); return }
+      setOpen(false)
+    }
     document.addEventListener('pointerdown', onDown)
     window.addEventListener('keydown', onKey, true)
     window.addEventListener('resize', place)
@@ -79,6 +86,16 @@ export default function DateTimePicker({ value, onChange, label, minuteStep = 5 
   const pm = h >= 12
   const setPm = want => { if (want !== pm) setTime((h + 12) % 24, m) }
 
+  // Typed hour (1–12, keeps AM/PM) / minute (0–59); applied on Enter, Tab or leaving the box
+  const commitHour = raw => {
+    const n = parseInt(raw, 10)
+    if (n >= 1 && n <= 12) setTime((n % 12) + (pm ? 12 : 0), m)
+  }
+  const commitMin = raw => {
+    const n = parseInt(raw, 10)
+    if (n >= 0 && n <= 59) setTime(h, n)
+  }
+
   return (
     <div className="ui-dtp">
       {label && <label className="ui-dtp-label">{label}</label>}
@@ -99,13 +116,13 @@ export default function DateTimePicker({ value, onChange, label, minuteStep = 5 
           <div className="ui-dtp-time">
             <div className="ui-dtp-step">
               <button type="button" onClick={() => stepHour(-1)} aria-label="Hour down"><ChevronLeft size={16} /></button>
-              <b>{pad(h % 12 || 12)}</b>
+              <TimeBox value={pad(h % 12 || 12)} onCommit={commitHour} label="Hour" />
               <button type="button" onClick={() => stepHour(1)} aria-label="Hour up"><ChevronRight size={16} /></button>
             </div>
             <span className="ui-dtp-colon">:</span>
             <div className="ui-dtp-step">
               <button type="button" onClick={() => stepMin(-1)} aria-label="Minute down"><ChevronLeft size={16} /></button>
-              <b>{pad(m)}</b>
+              <TimeBox value={pad(m)} onCommit={commitMin} label="Minute" />
               <button type="button" onClick={() => stepMin(1)} aria-label="Minute up"><ChevronRight size={16} /></button>
             </div>
             <div className="ui-dtp-ampm">
@@ -118,5 +135,28 @@ export default function DateTimePicker({ value, onChange, label, minuteStep = 5 
         document.body,
       )}
     </div>
+  )
+}
+
+/** Two-digit box: shows the value, accepts typing; commits on Enter / blur (Escape restores — see onKey above). */
+function TimeBox({ value, onCommit, label }) {
+  const [draft, setDraft] = useState(null)   // null = not editing
+  const commit = () => { if (draft != null && draft !== '') onCommit(draft); setDraft(null) }
+  return (
+    <input
+      className="ui-dtp-num"
+      data-system-keyboard
+      inputMode="numeric"
+      aria-label={label}
+      maxLength={2}
+      value={draft ?? value}
+      onFocus={e => { setDraft(''); e.target.select() }}
+      onChange={e => setDraft(e.target.value.replace(/D/g, '').slice(0, 2))}
+      onBlur={e => { if (e.target.dataset.cancel) { delete e.target.dataset.cancel; setDraft(null) } else commit() }}
+      onKeyDown={e => {
+        if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); e.currentTarget.blur() }
+      }}
+      placeholder={value}
+    />
   )
 }
