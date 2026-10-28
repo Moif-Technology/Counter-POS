@@ -46,6 +46,36 @@ function countRow(label, count, amount = 0) {
   </tr>`
 }
 
+function staffSalesHtml(staffSales) {
+  if (!Array.isArray(staffSales) || staffSales.length === 0) return ''
+  let totalBills = 0
+  let totalSales = 0
+  const rows = staffSales.map((r) => {
+    const name = String(r.staffName ?? r.staff_name ?? 'Unknown')
+    const bills = Number(r.billCount ?? r.bill_count ?? 0) || 0
+    const sale = Number(r.saleAmount ?? r.sale_amount ?? 0) || 0
+    totalBills += bills
+    totalSales += sale
+    return countRow(name.toUpperCase(), bills, sale)
+  }).join('')
+  return `
+  <hr class="dash" />
+  <div class="xr-section">STAFF / USER WISE SALES</div>
+  <table class="xr-table">
+    <thead>
+      <tr><th>Staff</th><th class="c">Bills</th><th class="r">Sale Amt</th></tr>
+    </thead>
+    <tbody>
+      ${rows}
+      <tr class="xr-total">
+        <td>TOTAL</td>
+        <td class="c">${totalBills}</td>
+        <td class="r">${fmtMoney(totalSales)}</td>
+      </tr>
+    </tbody>
+  </table>`
+}
+
 /**
  * Build thermal X / Z counter report HTML (80mm).
  * @param {object} data — summary + close fields from counter API
@@ -188,6 +218,8 @@ export function buildCounterReportHtml(data, meta = {}) {
   <div class="xr-row"><span class="xr-lbl">CREDIT BILL</span><span class="xr-val">${creditBillCount}</span></div>
   <div class="xr-row"><span class="xr-lbl">MULTI PAYMENT BILL</span><span class="xr-val">${multiBillCount}</span></div>
   <div class="xr-row"><span class="xr-lbl">COMPLIMENT BILL</span><span class="xr-val">${complimentBillCount}</span></div>
+
+  ${staffSalesHtml(data.staffSales)}
 
   <hr class="dash" />
   <div class="xr-section">CARD SALES DETAILS</div>
