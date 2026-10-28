@@ -259,13 +259,15 @@ export default function DeliverySettlementModal({ onClose, loadDeliveriesFn = nu
               <div className="is-total"><span>Total Sales</span><b>{fmtMoney(selectedTotal)}</b></div>
             </div>
             <div className="ds-collect"><span>Cash to be Collected</span><b>{fmtMoney(totals.cash)}</b></div>
-            <div className={`ds-field${collected ? ' has-value' : ''}`}><span>Collected Cash</span><b>{collected || fmtMoney(0)}</b></div>
-            <div className={`ds-diff${cashDiff < 0 ? ' is-short' : cashDiff > 0 ? ' is-over' : ''}`}>
-              <span>Cash Difference</span>
-              <b>{collected ? `${cashDiff > 0 ? '+' : ''}${fmtMoney(cashDiff)}` : '—'}</b>
+            <div className="ds-cash">
+              <div className={`ds-field${collected ? ' has-value' : ''}`}><span>Collected Cash</span><b>{collected || fmtMoney(0)}</b></div>
+              <div className={`ds-diff${!collected ? '' : cashDiff < 0 ? ' is-short' : cashDiff > 0 ? ' is-over' : ''}`}>
+                <span>Cash Difference</span>
+                <b>{collected ? `${cashDiff > 0 ? '+' : ''}${fmtMoney(cashDiff)}` : '—'}</b>
+              </div>
             </div>
             <div className="ds-pad">
-              <Numpad onKey={k => setCollected(v => applyAmountKey(v, k))} showDot showClear showBackspace btnHeight={42} fontSize={17} gap={6} />
+              <Numpad onKey={k => setCollected(v => applyAmountKey(v, k))} showDot showClear showBackspace btnHeight={40} fontSize={17} gap={5} />
             </div>
           </aside>
         </div>

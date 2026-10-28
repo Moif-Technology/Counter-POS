@@ -83,3 +83,32 @@
 @media (max-width: 860px) {
   .ds-settle { grid-template-columns: 1fr; grid-template-rows: none; overflow-y: auto; }
 }
+
+/* ─── Fit the screen: one-line delivery rows, summary scales with height ─── */
+.ds-settle { --ds-gap: clamp(4px, 0.9vh, 8px); }
+.ds-list { min-height: 0; gap: var(--ds-gap); }
+.ds-row { flex-direction: row; align-items: center; gap: 12px; padding: clamp(6px, 1vh, 10px) 12px; }
+.ds-row-top { flex: 1; min-width: 0; }
+.ds-row-top em { order: 3; }
+.ds-modes { flex-wrap: nowrap; }
+.ds-modes button { height: clamp(28px, 4.4vh, 34px); padding: 0 10px; }
+.ds-sum { overflow: hidden; gap: var(--ds-gap); padding: clamp(8px, 1.4vh, 12px); }
+.ds-lines > div { padding: clamp(1px, 0.45vh, 5px) 2px; }
+.ds-collect, .ds-field, .ds-diff { padding: clamp(4px, 0.9vh, 9px) 12px; }
+.ds-collect b, .ds-field b, .ds-diff b { font-size: clamp(15px, 2.3vh, 18px); }
+.ds-pad { flex: 1; min-height: 0; display: flex; }
+.ds-pad > div { flex: 1; }
+.ds-pad > div > div { flex: 1; min-height: 0; }
+.ds-pad .ui-key { height: auto !important; min-height: clamp(30px, 5.2vh, 48px); border-radius: 9px !important; }
+.ds-table { min-height: 0; }
+.ds-pending, .ds-settle { min-height: clamp(320px, 64vh, 620px); }
+.ds-cash { display: flex; flex-direction: column; gap: var(--ds-gap); }
+
+/* Short screens: totals in two columns, collected cash + difference side by side */
+@media (max-height: 680px) {
+  .ds-lines { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; }
+  .ds-lines .is-total { margin-top: 0; padding-top: 1px; border-top: none; }
+  .ds-lines span { font-size: 12px; }
+  .ds-cash { display: grid; grid-template-columns: 1fr 1fr; }
+  .ds-field, .ds-diff { flex-direction: column; align-items: flex-start; gap: 0; }
+}
