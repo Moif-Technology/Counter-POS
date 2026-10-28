@@ -1,195 +1,202 @@
-import { useState, useEffect, useCallback } from 'react'
-import { ShieldAlert, Save, RefreshCw } from 'lucide-react'
-import { usePosStore } from '../store/posStore'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  ShieldCheck, Search, Save, Loader2, Tag, Crown, ScanBarcode, PackageSearch, Repeat, Percent,
+  PauseCircle, RotateCcw, Undo2, Ban, Printer, BarChart2, Receipt, UserRound, FileText, Trash2, ArrowLeftRight,
+} from 'lucide-react'
 import { api } from '../lib/api'
+import { usePosStore } from '../store/posStore'
+import { posNotifySuccess } from '../lib/posNotify'
 import Modal from '../components/common/Modal'
+import './PrivilegeSettingsModal.css'
 
-export default function PrivilegeSettingsModal({ onClose }) {
+/*
+ * Privilege Settings — pick a staff member, then switch each feature on or off
+ * for the Counter Page and the Main Page. Search, per-page "Allow all / Block all".
+ *
+ *   loadFn()          → { [staffId]: { counter: { key: bool }, main: { key: bool } } }
+ *   saveFn(staffId, privileges) → saves one staff member
+ * Without them the settings are kept on this counter (localStorage).
+ */
+const FEATURES = [
+  { key: 'priceChange',       label: 'Price Change',       icon: Tag },
+  { key: 'privilegeCustomer', label: 'Privilege Customer', icon: Crown },
+  { key: 'packetScan',        label: 'Packet Scan',        icon: ScanBarcode },
+  { key: 'productLookup',     label: 'Product Lookup',     icon: PackageSearch },
+  { key: 'repeat',            label: 'Repeat',             icon: Repeat },
+  { key: 'discount',          label: 'Discount',           icon: Percent },
+  { key: 'hold',              label: 'Hold',               icon: PauseCircle },
+  { key: 'holdRecall',        label: 'Hold Recall',        icon: RotateCcw },
+  { key: 'return',            label: 'Return',             icon: Undo2 },
+  { key: 'noSale',            label: 'No Sale',            icon: Ban },
+  { key: 'billReprint',       label: 'Bill Reprint',       icon: Printer },
+  { key: 'report',            label: 'Report',             icon: BarChart2 },
+  { key: 'receipt',           label: 'Receipt',            icon: Receipt },
+  { key: 'salesMan',          label: 'Sales Man',          icon: UserRound },
+  { key: 'billPrint',         label: 'Bill Print',         icon: FileText },
+  { key: 'clearAll',          label: 'Clear All',          icon: Trash2 },
+  { key: 'cashInOut',         label: 'Cash In / Cash Out', icon: ArrowLeftRight, pages: ['counter'] },
+]
+const PAGES = [
+  { key: 'counter', label: 'Counter Page' },
+  { key: 'main',    label: 'Main Page' },
+]
+const onPage = (f, page) => !f.pages || f.pages.includes(page)
+const TOTAL = FEATURES.reduce((n, f) => n + PAGES.filter(p => onPage(f, p.key)).length, 0)
+
+const LS_KEY = 'pos.privileges'
+const localLoad = async () => { try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}') } catch { return {} } }
+const localSave = async (staffId, priv) => {
+  const all = await localLoad()
+  localStorage.setItem(LS_KEY, JSON.stringify({ ...all, [staffId]: priv }))
+}
+
+const staffOf = r => (Array.isArray(r) ? r : r?.members ?? r?.staff ?? r?.data ?? [])
+  .map(s => ({ id: String(s.staffId ?? s.id ?? s.staff_id), name: s.staffName ?? s.name ?? s.staff_name ?? '—', role: s.roleName ?? s.role_name ?? s.role ?? '' }))
+  .filter(s => s.id !== 'undefined')
+const initials = n => n.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?'
+const emptyPriv = () => ({ counter: {}, main: {} })
+
+export default function PrivilegeSettingsModal({ onClose, loadFn = null, saveFn = null }) {
   const accessToken = usePosStore(s => s.accessToken)
+  const cashier     = usePosStore(s => s.cashier)
+  const [staff, setStaff]     = useState(null)        // null = loading
+  const [all, setAll]         = useState({})          // saved privileges by staffId
+  const [userId, setUserId]   = useState(null)
+  const [draft, setDraft]     = useState(emptyPriv)
+  const [query, setQuery]     = useState('')
+  const [saving, setSaving]   = useState(false)
+  const [error, setError]     = useState(null)
 
-  const [roles, setRoles] = useState([])
-  const [selectedRole, setSelectedRole] = useState('cashier')
-  const [privileges, setPrivileges] = useState({})
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
-  const [successMsg, setSuccessMsg] = useState(null)
+  useEffect(() => {
+    let alive = true
+    const self = cashier ? [{ id: String(cashier.staffId), name: cashier.staffName ?? 'Cashier', role: cashier.roleName ?? '' }] : []
+    Promise.all([
+      api.staff.list(accessToken).then(staffOf).catch(() => []),
+      (loadFn ?? localLoad)().catch(e => { setError(e.message); return {} }),
+    ]).then(([list, saved]) => {
+      if (!alive) return
+      const people = list.length ? list : self
+      setStaff(people)
+      setAll(saved ?? {})
+      const first = people[0]?.id ?? null
+      setUserId(first)
+      setDraft(first && saved?.[first] ? saved[first] : emptyPriv())
+    })
+    return () => { alive = false }
+  }, [accessToken, cashier, loadFn])
 
-  const fetchPrivileges = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await api.counterPos.getPrivileges(accessToken)
-      // Expecting data format: { roles: ['cashier', 'supervisor', ...], permissions: { cashier: { allowDiscount: true, ... }, ... } }
-      setRoles(data.roles ?? ['cashier', 'supervisor'])
-      setPrivileges(data.permissions ?? {})
-    } catch (err) {
-      setError(err.message ?? 'Failed to load privilege settings')
-    } finally {
-      setLoading(false)
-    }
-  }, [accessToken])
+  const pickUser = id => { setUserId(id); setDraft(all[id] ?? emptyPriv()) }
+  const isOn = (page, key) => !!draft[page]?.[key]
+  const toggle = (page, key) => setDraft(d => ({ ...d, [page]: { ...d[page], [key]: !d[page]?.[key] } }))
+  const setPage = (page, value) => setDraft(d => ({
+    ...d, [page]: Object.fromEntries(FEATURES.filter(f => onPage(f, page)).map(f => [f.key, value])),
+  }))
 
-  useEffect(() => { fetchPrivileges() }, [fetchPrivileges])
-
-  const handleToggle = (permissionKey) => {
-    setPrivileges(prev => ({
-      ...prev,
-      [selectedRole]: {
-        ...(prev[selectedRole] ?? {}),
-        [permissionKey]: !(prev[selectedRole]?.[permissionKey] ?? false)
-      }
-    }))
-  }
+  const allowed = PAGES.reduce((n, p) => n + FEATURES.filter(f => onPage(f, p.key) && isOn(p.key, f.key)).length, 0)
+  const dirty = JSON.stringify(draft) !== JSON.stringify(all[userId] ?? emptyPriv())
+  const shown = useMemo(() => FEATURES.filter(f => f.label.toLowerCase().includes(query.trim().toLowerCase())), [query])
+  const user = staff?.find(s => s.id === userId)
 
   async function handleSave() {
+    if (!userId || saving) return
     setSaving(true)
     setError(null)
-    setSuccessMsg(null)
     try {
-      await api.counterPos.updatePrivileges({ role: selectedRole, permissions: privileges[selectedRole] }, accessToken)
-      setSuccessMsg('Privileges saved successfully!')
-      setTimeout(() => setSuccessMsg(null), 2500)
-    } catch (err) {
-      setError(err.message ?? 'Failed to save privileges')
+      await (saveFn ?? localSave)(userId, draft)
+      setAll(a => ({ ...a, [userId]: draft }))
+      posNotifySuccess(`Privileges saved for ${user?.name ?? 'staff'}`, { title: 'Privilege Settings' })
+    } catch (e) {
+      setError(e.message ?? 'Failed to save')
     } finally {
       setSaving(false)
     }
   }
 
-  const permissionLabels = [
-    { key: 'allowDiscount', label: 'Allow Item & Bill Discounts', desc: 'Permit staff to apply custom discount percentages or amounts' },
-    { key: 'allowItemDelete', label: 'Allow Deleting Cart Items', desc: 'Permit removal of added line items before final billing' },
-    { key: 'allowPriceOverride', label: 'Allow Price Override', desc: 'Permit altering preset item prices directly on terminal' },
-    { key: 'allowCounterReading', label: 'View Counter Reading / Z-Report', desc: 'Access financial session summaries and print close reports' },
-    { key: 'allowHoldBills', label: 'Manage Hold Bills', desc: 'Hold, recall, or clear pending customer transaction holds' },
-  ]
-
   return (
-    <Modal
-      onClose={onClose}
-      icon={ShieldAlert}
-      kicker="Settings • Admin Access Required"
-      title="Privilege Settings"
-      zIndex={1100}
-      width={650}
-      maxHeight="88vh"
-    >
-      <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
+    <Modal onClose={onClose} icon={ShieldCheck} kicker="Settings" title="Privilege Settings" width={980} maxHeight="94vh" zIndex={1100}>
+      {error && <div className="pv-error">{error}</div>}
 
-      {/* Body */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {loading && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 160, color: 'var(--text-3)', fontSize: 13 }}>
-            <RefreshCw size={18} style={{ marginRight: 8, animation: 'spin 1s linear infinite' }} />
-            Loading privileges...
-          </div>
-        )}
+      <div className="pv">
+        {/* Staff */}
+        <aside className="pv-staff">
+          <h4>Staff</h4>
+          {staff === null && <div className="pv-empty"><Loader2 size={18} className="pv-spin" /> Loading…</div>}
+          {staff?.length === 0 && <div className="pv-empty">No staff found</div>}
+          {staff?.map(s => {
+            const saved = all[s.id]
+            const count = saved ? PAGES.reduce((n, p) => n + Object.values(saved[p.key] ?? {}).filter(Boolean).length, 0) : 0
+            return (
+              <button key={s.id} type="button" className={`pv-user${s.id === userId ? ' is-on' : ''}`} onClick={() => pickUser(s.id)}>
+                <span className="pv-avatar">{initials(s.name)}</span>
+                <span className="pv-user-text">
+                  <b>{s.name}</b>
+                  <small>{s.role || 'Staff'} · {count}/{TOTAL} allowed</small>
+                </span>
+              </button>
+            )
+          })}
+        </aside>
 
-        {error && !loading && (
-          <div style={{ padding: 12, borderRadius: 8, background: 'var(--red-bg)', border: '1px solid var(--red-border)', color: 'var(--red)', fontSize: 12, fontWeight: 600 }}>
-            {error}
-          </div>
-        )}
-
-        {successMsg && (
-          <div style={{ padding: 12, borderRadius: 8, background: 'var(--green-bg, var(--green-bg))', border: '1px solid var(--green-border, var(--green-border))', color: 'var(--green, var(--green))', fontSize: 12, fontWeight: 600 }}>
-            {successMsg}
-          </div>
-        )}
-
-        {!loading && !error && (
-          <>
-            {/* Role Selector Tabs */}
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 6 }}>
-                Select Staff Role to Configure
-              </label>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {roles.map(r => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setSelectedRole(r)}
-                    style={{
-                      padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                      background: selectedRole === r ? 'var(--brand)' : 'var(--surface-2)',
-                      color: selectedRole === r ? '#fff' : 'var(--text-2)',
-                      border: '1.5px solid var(--border)', textTransform: 'capitalize',
-                    }}
-                  >
-                    {r}
-                  </button>
-                ))}
-              </div>
+        {/* Features */}
+        <section className="pv-main">
+          <div className="pv-top">
+            <div className="pv-who">
+              <b>{user?.name ?? '—'}</b>
+              <span className="pv-count"><i style={{ width: `${(allowed / TOTAL) * 100}%` }} />{allowed} of {TOTAL} allowed</span>
             </div>
+            <label className="pv-search">
+              <Search size={15} />
+              <input data-system-keyboard value={query} onChange={e => setQuery(e.target.value)} placeholder="Find a feature" />
+            </label>
+          </div>
 
-            {/* Toggles list */}
-            <div style={{ border: '1.5px solid var(--border)', borderRadius: 10, overflow: 'hidden', background: 'var(--surface)' }}>
-              {permissionLabels.map((p, idx) => {
-                const isChecked = privileges[selectedRole]?.[p.key] ?? false
+          <div className="pv-table">
+            <div className="pv-head">
+              <span>Feature</span>
+              {PAGES.map(p => (
+                <span key={p.key} className="pv-col">
+                  {p.label}
+                  <span className="pv-bulk">
+                    <button type="button" onClick={() => setPage(p.key, true)}>All</button>
+                    <button type="button" onClick={() => setPage(p.key, false)}>None</button>
+                  </span>
+                </span>
+              ))}
+            </div>
+            <div className="pv-rows">
+              {shown.map(f => {
+                const Icon = f.icon
                 return (
-                  <div
-                    key={p.key}
-                    onClick={() => handleToggle(p.key)}
-                    style={{
-                      padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      cursor: 'pointer', borderBottom: idx < permissionLabels.length - 1 ? '1px solid var(--border)' : 'none',
-                      background: isChecked ? 'rgba(var(--brand-rgb, 0,0,0), 0.02)' : 'transparent',
-                    }}
-                  >
-                    <div>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>{p.label}</p>
-                      <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 0' }}>{p.desc}</p>
-                    </div>
-                    <div style={{
-                      width: 42, height: 24, borderRadius: 12, background: isChecked ? 'var(--brand)' : 'var(--border)',
-                      position: 'relative', transition: 'background 0.2s', display: 'flex', alignItems: 'center',
-                      padding: '0 2px', flexShrink: 0,
-                    }}>
-                      <div style={{
-                        width: 20, height: 20, borderRadius: '50%0', background: '#fff',
-                        transform: isChecked ? 'translateX(18px)' : 'translateX(0)',
-                        transition: 'transform 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                      }} />
-                    </div>
+                  <div key={f.key} className="pv-row">
+                    <span className="pv-feat"><span className="pv-ico"><Icon size={16} /></span>{f.label}</span>
+                    {PAGES.map(p => (
+                      <span key={p.key} className="pv-col">
+                        {onPage(f, p.key) ? (
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={isOn(p.key, f.key)}
+                            aria-label={`${f.label} — ${p.label}`}
+                            className={`pv-switch${isOn(p.key, f.key) ? ' is-on' : ''}`}
+                            onClick={() => toggle(p.key, f.key)}
+                          ><i /></button>
+                        ) : <span className="pv-na">—</span>}
+                      </span>
+                    ))}
                   </div>
                 )
               })}
+              {shown.length === 0 && <div className="pv-empty">No feature matches “{query}”</div>}
             </div>
-          </>
-        )}
+          </div>
+        </section>
       </div>
 
-      {/* Footer */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-        padding: '10px 18px', borderTop: '1px solid var(--border)',
-        background: 'var(--surface-2)', flexShrink: 0, gap: 8,
-      }}>
-        <button
-          type="button"
-          onClick={onClose}
-          style={{
-            height: 34, padding: '0 16px', borderRadius: 9,
-            border: '1.5px solid var(--border)', background: 'var(--surface)',
-            color: 'var(--text-2)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-          }}
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving || loading}
-          style={{
-            height: 34, padding: '0 20px', borderRadius: 9, border: 'none',
-            background: 'var(--brand)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 6,
-          }}
-        >
-          {saving ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={14} />}
-          Save Privileges
+      <div className="pv-foot">
+        {dirty && <span className="pv-dirty">Unsaved changes</span>}
+        <button type="button" className="pv-close" onClick={onClose}>Close</button>
+        <button type="button" className="pv-save" onClick={handleSave} disabled={!userId || saving || !dirty}>
+          {saving ? <Loader2 size={16} className="pv-spin" /> : <Save size={16} />} {saving ? 'Saving…' : 'Save'}
         </button>
       </div>
     </Modal>
