@@ -356,7 +356,7 @@ export function usePosActions({ onSave }) {
       {modal === 'billDiscount' && <BillDiscountModal onClose={done()} />}
       {modal === 'delivery' && (
         <DeliveryCustomerModal
-          title={deliverySavePending ? 'Save Delivery — Customer Details' : 'Delivery — Customer Details'}
+          title={deliverySavePending ? 'Save Delivery' : 'Delivery'}
           onClose={done(() => { close(); setDeliverySavePending(false) })}
           onConfirm={done(handleDeliveryConfirm)}
         />

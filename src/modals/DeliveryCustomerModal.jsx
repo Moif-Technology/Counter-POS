@@ -9,9 +9,9 @@ import DateTimePicker from '../components/common/DateTimePicker'
 import './DeliveryCustomerModal.css'
 
 /*
- * Delivery — find the customer on the left (search by name / code / area /
- * telephone / mobile), fill the delivery phone, time and address on the right,
- * then Confirm Delivery. onConfirm receives the same payload as before.
+ * Delivery — one search box finds the customer by name, code, area, telephone
+ * or mobile; fill the delivery phone, time and address, then Confirm Delivery.
+ * onConfirm receives the same payload as before.
  */
 function defaultDeliveryTime() {
   const d = new Date()
@@ -22,13 +22,8 @@ function defaultDeliveryTime() {
 }
 
 const areaOf = c => c?.area ?? c?.areaName ?? ''
-const SEARCH_BY = [
-  { key: 'name',      label: 'Name',      server: true,  get: c => c.customerName },
-  { key: 'code',      label: 'Code',      server: true,  get: c => c.customerCode },
-  { key: 'area',      label: 'Area',      server: false, get: areaOf },
-  { key: 'telephone', label: 'Telephone', server: false, get: c => c.telephone },
-  { key: 'mobile',    label: 'Mobile',    server: true,  get: c => c.mobileNo },
-]
+/** Fields the search box matches. */
+const searchText = c => [c.customerName, c.customerCode, areaOf(c), c.telephone, c.mobileNo].filter(Boolean).join(' ').toLowerCase()
 const COLUMNS = [
   { key: 'customerCode', label: 'Code',          width: 72, mono: true },
   { key: 'customerName', label: 'Customer Name', render: v => <b>{v}</b> },
@@ -37,7 +32,7 @@ const COLUMNS = [
   { key: 'mobileNo',     label: 'Mobile',        width: 100, mono: true, render: v => v || '—' },
 ]
 
-export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Delivery Details', searchFn = null }) {
+export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Delivery', searchFn = null }) {
   const accessToken          = usePosStore(s => s.accessToken)
   const storeCustomerId      = usePosStore(s => s.customerId)
   const storeCustomerName    = usePosStore(s => s.customerName)
@@ -46,7 +41,6 @@ export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Del
   const storeDeliveryAddress = usePosStore(s => s.deliveryAddress)
   const storeDeliveryTime    = usePosStore(s => s.deliveryTime)
 
-  const [by, setBy]               = useState('name')
   const [query, setQuery]         = useState('')
   const [customers, setCustomers] = useState([])
   const [selected, setSelected]   = useState(null)
@@ -56,8 +50,6 @@ export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Del
   const [address, setAddress]     = useState(storeDeliveryAddress || '')
   const [deliveryTime, setDeliveryTime] = useState(storeDeliveryTime || defaultDeliveryTime())
   const debounceRef = useRef()
-
-  const field = SEARCH_BY.find(s => s.key === by)
 
   const doSearch = useCallback(async (q) => {
     setLoading(true)
@@ -75,17 +67,21 @@ export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Del
 
   useEffect(() => { doSearch('') }, [doSearch])
 
-  // Name / code / mobile search on the server; area and telephone filter the loaded list.
-  const onQuery = (q, f = field) => {
+  // The server searches name / code / mobile; the list loaded first also matches area and telephone.
+  const allRef = useRef(null)
+  useEffect(() => { if (!query && customers.length && !allRef.current) allRef.current = customers }, [customers, query])
+  const onQuery = (q) => {
     setQuery(q)
     clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => doSearch(f.server ? q : ''), 280)
+    debounceRef.current = setTimeout(() => doSearch(q), 280)
   }
   const shown = useMemo(() => {
     const term = query.trim().toLowerCase()
     if (!term) return customers
-    return customers.filter(c => String(field.get(c) ?? '').toLowerCase().includes(term))
-  }, [customers, query, field])
+    const seen = new Set(customers.map(c => c.customerId))
+    const more = (allRef.current ?? []).filter(c => !seen.has(c.customerId) && searchText(c).includes(term))
+    return [...customers, ...more]
+  }, [customers, query])
 
   // Pre-select the customer already on the bill
   useEffect(() => {
@@ -123,19 +119,13 @@ export default function DeliveryCustomerModal({ onClose, onConfirm, title = 'Del
   const os = Number(selected?.osAmount)
 
   return (
-    <Modal onClose={onClose} icon={Truck} kicker="Delivery" title={title} width={1040} maxHeight="94vh">
+    <Modal onClose={onClose} icon={Truck} title={title} width={1000} maxHeight="94vh">
       <div className="dlv">
         {/* Find customer */}
         <section className="dlv-find">
-          <div className="dlv-by">
-            <span>Search by</span>
-            {SEARCH_BY.map(s => (
-              <button key={s.key} type="button" className={by === s.key ? 'is-on' : ''} onClick={() => { setBy(s.key); onQuery(query, s) }}>{s.label}</button>
-            ))}
-          </div>
           <label className="dlv-search">
             <Search size={16} />
-            <input data-system-keyboard value={query} onChange={e => onQuery(e.target.value)} placeholder={`Search by ${field.label.toLowerCase()}…`} autoFocus />
+            <input data-system-keyboard value={query} onChange={e => onQuery(e.target.value)} placeholder="Search customer — name, code, area or phone" autoFocus />
           </label>
           <div className="dlv-table">
             <Table

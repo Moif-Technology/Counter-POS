@@ -97,7 +97,7 @@ export default function LiteModals({
         <DeliveryCustomerModal
           onClose={onClose}
           onConfirm={onDeliveryConfirm}
-          title={deliverySavePending ? 'Save Delivery' : 'Delivery Details'}
+          title={deliverySavePending ? 'Save Delivery' : 'Delivery'}
           searchFn={customerSearch(80)}
         />
       )
