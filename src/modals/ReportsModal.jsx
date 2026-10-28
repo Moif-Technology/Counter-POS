@@ -7,6 +7,7 @@ import ClearHoldBillModal from './ClearHoldBillModal'
 import DownloadDataModal from './DownloadDataModal'
 import UploadDataModal from './UploadDataModal'
 import ClearAllHoldsModal from './ClearAllHoldsModal'
+import EmailSettingsModal from './EmailSettingsModal'
 import PasswordChangeModal from './PasswordChangeModal'
 import PrivilegeSettingsModal from './PrivilegeSettingsModal'
 import SalesViewerModal from './SalesViewerModal'
@@ -70,13 +71,14 @@ export default function ReportsModal({
   const [downloadOpen,      setDownloadOpen]      = useState(false)
   const [uploadOpen,        setUploadOpen]        = useState(false)
   const [clearAllOpen,      setClearAllOpen]      = useState(false)
+  const [emailOpen,         setEmailOpen]         = useState(false)
   const [passwordChangeOpen, setPasswordChangeOpen] = useState(false)
   const [privilegeSettingsOpen, setPrivilegeSettingsOpen] = useState(false)
   const [salesViewerOpen,       setSalesViewerOpen]       = useState(false)
   const [counterCloseViewerOpen, setCounterCloseViewerOpen] = useState(false)
   const [cashInOutViewerOpen,    setCashInOutViewerOpen]    = useState(false)
   const subOpen = counterReadingOpen || staffWiseOpen || groupWiseOpen || cashierChangeOpen || clearHoldBillOpen
-    || passwordChangeOpen || privilegeSettingsOpen || salesViewerOpen || counterCloseViewerOpen || cashInOutViewerOpen || readingNeeded || downloadOpen || uploadOpen || clearAllOpen
+    || passwordChangeOpen || privilegeSettingsOpen || salesViewerOpen || counterCloseViewerOpen || cashInOutViewerOpen || readingNeeded || downloadOpen || uploadOpen || clearAllOpen || emailOpen
 
   // Cashier Change needs the counter reading (Z-Report) first when the session has bills.
   async function openCashierChange() {
@@ -103,6 +105,7 @@ export default function ReportsModal({
     if (itemKey === 6) { setDownloadOpen(true); return }
     if (itemKey === 7) { setUploadOpen(true); return }
     if (itemKey === 10) { setClearAllOpen(true); return }
+    if (itemKey === 11) { setEmailOpen(true); return }
     if (itemKey === 3) { setPasswordChangeOpen(true); return }
     if (itemKey === 12) { setPrivilegeSettingsOpen(true); return }
     if (itemKey === 14) { setSalesViewerOpen(true); return }
@@ -186,6 +189,7 @@ export default function ReportsModal({
     {downloadOpen && <DownloadDataModal onClose={() => setDownloadOpen(false)} />}
     {uploadOpen && <UploadDataModal onClose={() => setUploadOpen(false)} />}
     {clearAllOpen && <ClearAllHoldsModal onClose={() => setClearAllOpen(false)} />}
+    {emailOpen && <EmailSettingsModal onClose={() => setEmailOpen(false)} />}
     {cashierChangeOpen && (
   <CashierChangeModal onClose={() => setCashierChangeOpen(false)} />
 )}
