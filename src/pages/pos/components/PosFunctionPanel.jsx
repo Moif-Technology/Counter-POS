@@ -102,6 +102,9 @@ export default function PosFunctionPanel({ actions }) {
   const flags = { customerDisplayEnabled }
   const tab = TABS.find(t => t.key === tabKey)
 
+  // Rows fill the panel: as many as the page needs (min 4, so short pages keep normal-size keys)
+  const shown = tab?.buttons?.filter(btn => !btn.onlyIf || flags[btn.onlyIf]) ?? []
+
   return (
     <div className="ph-card ph-fnpanel">
       <div className="ph-tabs">
@@ -116,10 +119,13 @@ export default function PosFunctionPanel({ actions }) {
         ))}
       </div>
 
-      <div className={`ph-fn-grid${tabKey === 'Groups' ? ' is-groups' : ''}`}>
+      <div
+        className={`ph-fn-grid${tabKey === 'Groups' ? ' is-groups' : ''}`}
+        style={tabKey === 'Groups' ? undefined : { '--fn-rows': Math.max(4, Math.ceil(shown.length / 3)) }}
+      >
         {tabKey === 'Groups'
           ? <GroupsPage actions={actions} />
-          : tab.buttons.filter(btn => !btn.onlyIf || flags[btn.onlyIf]).map(btn => <ActionButton key={btn.label} btn={btn} actions={actions} />)}
+          : shown.map(btn => <ActionButton key={btn.label} btn={btn} actions={actions} />)}
       </div>
     </div>
   )
