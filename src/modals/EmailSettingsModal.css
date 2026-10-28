@@ -1,67 +1,18 @@
-/* eMail Settings — three cards (Send from · Send to · Attachment) + Save / Close */
-.es { display: flex; flex-direction: column; gap: 12px; padding: 16px; background: #f7f7f8; overflow-y: auto; }
-
-.es-card { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 14px; background: #fff; border: 1px solid #ececee; }
-.es-card > header { display: flex; align-items: center; gap: 10px; }
-.es-card > header b { font-size: 14.5px; font-weight: 800; color: #18181b; }
-.es-card > header small { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--text-4); }
-.es-badge { width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: var(--brand-bg); color: var(--brand); }
-
-/* Label left, input right, one row */
-.es-row {
-  display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 12px; box-sizing: border-box;
-  border: 1.5px solid #ececee; border-radius: 11px; background: #fafafa; cursor: text;
-  transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
+/* eMail Settings — same simple form as Password Change */
+.es { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.es-error { padding: 12px; border-radius: 8px; background: var(--red-bg); border: 1px solid var(--red-border); color: var(--red); font-size: 12px; font-weight: 600; }
+.es-field label { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; }
+.es-field input {
+  width: 100%; height: 40px; padding: 0 12px; box-sizing: border-box; outline: none;
+  border: 1.5px solid var(--border); border-radius: 9px; background: var(--surface);
+  font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-1);
 }
-.es-row > span { width: 104px; flex-shrink: 0; font-size: 13px; font-weight: 700; color: #71717a; }
-.es-row input {
-  flex: 1; min-width: 0; height: 100%; border: none; outline: none; background: transparent;
-  font-family: inherit; font-size: 14.5px; font-weight: 700; color: #18181b;
+.es-field input:focus { border-color: var(--brand); }
+.es-hint { margin: 5px 0 0; font-size: 11px; font-weight: 600; color: var(--text-4); }
+.es-btns { display: flex; gap: 10px; margin-top: 10px; }
+.es-btns button {
+  flex: 1; height: 38px; border-radius: 9px; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
 }
-.es-row input::placeholder, .es-chips input::placeholder { color: #b4b4bb; font-weight: 600; }
-.es-row:focus-within { border-color: var(--brand); background: #fff; box-shadow: 0 0 0 3px rgba(120, 8, 41, 0.08); }
-.es-row:focus-within > span { color: var(--brand); }
-.es-row.has-error { border-color: #fca5a5; background: #fff; }
-
-.es-eye {
-  display: flex; align-items: center; gap: 5px; height: 30px; padding: 0 10px; border-radius: 8px; cursor: pointer;
-  border: none; background: #f1f1f3; color: #52525b; font-family: inherit; font-size: 12px; font-weight: 800;
-}
-.es-eye:hover { background: var(--brand-bg); color: var(--brand); }
-
-.es-err { margin-top: -4px; padding-left: 4px; font-style: normal; font-size: 12px; font-weight: 700; color: #b91c1c; }
-
-/* Recipients */
-.es-chips {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 84px; padding: 10px; box-sizing: border-box; align-content: flex-start;
-  border: 1.5px dashed #e4cdd4; border-radius: 11px; background: #fcf8f9; cursor: text;
-  transition: border-color 0.12s, background 0.12s;
-}
-.es-chips:focus-within { border-style: solid; border-color: var(--brand); background: #fff; }
-.es-card.has-error .es-chips { border-color: #fca5a5; }
-.es-chips input { flex: 1 1 180px; height: 32px; border: none; outline: none; background: transparent; font-family: inherit; font-size: 14px; font-weight: 700; color: #18181b; }
-.es-chip {
-  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 6px 0 12px; border-radius: 99px;
-  background: #fff; border: 1px solid var(--brand-border); color: var(--brand); font-size: 13px; font-weight: 700;
-  box-shadow: 0 1px 2px rgba(120, 8, 41, 0.06);
-}
-.es-chip button {
-  width: 20px; height: 20px; border-radius: 50%; border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; background: var(--brand-bg); color: var(--brand);
-}
-.es-chip button:hover { background: var(--brand); color: #fff; }
-
-/* Footer */
-.es-foot { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); background: #fff; flex-shrink: 0; }
-.es-note { margin-right: auto; display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-4); }
-.es-close, .es-save {
-  height: 46px; padding: 0 24px; border-radius: 11px; cursor: pointer; font-family: inherit; font-size: 14.5px; font-weight: 800;
-  display: flex; align-items: center; gap: 7px;
-}
-.es-close { border: 1px solid #e4e4e7; background: #fff; color: #3f3f46; }
-.es-save { border: none; min-width: 120px; justify-content: center; background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%); color: #fff; }
-
-@media (max-width: 520px) {
-  .es-row > span { width: 80px; }
-  .es-note { display: none; }
-}
+.es-cancel { border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text-2); }
+.es-save { border: none; background: var(--brand); color: #fff; }
