@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { fmt3 } from '../lib/utils'
 import { buildReportPrintFontCss, escReceipt, openReceiptPrintWindow } from '../lib/receiptPrintTheme'
 import Modal from '../components/common/Modal'
+import Notice from '../components/common/Notice'
 import './StaffWiseReportModal.css'   // shared Counter Close # picker + Print
 
 function fmtCloseDate(d) {
@@ -23,6 +24,7 @@ export default function GroupWiseReportModal({ onClose, reportFn = null, history
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
   const [closes,  setCloses]  = useState([])
+  const [noData,  setNoData]  = useState(false)   // "No data to print" notice
   const [closeId, setCloseId] = useState('')      // '' = current (open) session
 
   // Counter closes for the "Counter Close #" picker
@@ -273,7 +275,7 @@ export default function GroupWiseReportModal({ onClose, reportFn = null, history
           padding: '10px 18px', borderTop: '1px solid var(--border)',
           background: 'var(--surface-2)', flexShrink: 0, gap: 8,
         }}>
-          <button type="button" className="sw-print" onClick={handleDownloadPdf} disabled={loading || rows.length === 0}>
+          <button type="button" className="sw-print" onClick={() => (rows.length ? handleDownloadPdf() : setNoData(true))} disabled={loading}>
             <Printer size={15} /> Print
           </button>
           <button
@@ -290,6 +292,7 @@ export default function GroupWiseReportModal({ onClose, reportFn = null, history
             <X size={13} /> Close
           </button>
         </div>
+    {noData && <Notice title="No data to print" message={closeId ? "There are no sales for this counter close." : "There are no sales in the current session."} onClose={() => setNoData(false)} />}
     </Modal>
   )
 }
