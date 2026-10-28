@@ -1,21 +1,21 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { CalendarClock } from 'lucide-react'
+import { CalendarClock, ChevronLeft, ChevronRight } from 'lucide-react'
 import Calendar from './Calendar'
-import TimePicker from './TimePicker'
 import './DateTimePicker.css'
 
 /*
- * DateTimePicker — a date + time field that opens a calendar, a time picker
- * and quick picks in one popover (replaces the browser's datetime-local box).
+ * DateTimePicker — a date + time field; tap it for a small popover with the
+ * common Calendar and one compact time row (hour · minute · AM/PM), then Done.
+ * Same look as DatePicker.
  *
  *   <DateTimePicker label="Delivery Time" value={when} onChange={setWhen} />
  *
  * Props:
- *   value     — 'YYYY-MM-DDTHH:mm' (same format as <input type="datetime-local">)
- *   onChange  — (value) => void
- *   label     — optional caption above the field
- *   quick     — show the quick picks (default true)
+ *   value      — 'YYYY-MM-DDTHH:mm' (same format as <input type="datetime-local">)
+ *   onChange   — (value) => void
+ *   label      — optional caption above the field
+ *   minuteStep — minutes per tap (default 5)
  */
 const pad = n => String(n).padStart(2, '0')
 const toValue = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
@@ -29,20 +29,16 @@ function display(v) {
   return `${pad(day)} ${MONTHS[m - 1]} ${y} · ${pad(h % 12 || 12)}:${pad(min)} ${h < 12 ? 'AM' : 'PM'}`
 }
 
-const QUICK = [
-  { label: 'In 30 min', at: () => new Date(Date.now() + 30 * 60e3) },
-  { label: 'In 1 hr',   at: () => new Date(Date.now() + 60 * 60e3) },
-  { label: 'In 2 hrs',  at: () => new Date(Date.now() + 120 * 60e3) },
-  { label: 'Tomorrow 10 AM', at: () => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(10, 0, 0, 0); return d } },
-]
+const POP_MIN_W = 300
 
-export default function DateTimePicker({ value, onChange, label, quick = true }) {
+export default function DateTimePicker({ value, onChange, label, minuteStep = 5 }) {
   const [open, setOpen] = useState(false)
   const [rect, setRect] = useState(null)
   const [top, setTop] = useState(null)
   const fieldRef = useRef(null)
   const popRef = useRef(null)
   const [date, time = '12:00'] = (value || toValue(new Date())).split('T')
+  const [h, m] = time.split(':').map(Number)
 
   useEffect(() => {
     if (!open) return undefined
@@ -60,19 +56,28 @@ export default function DateTimePicker({ value, onChange, label, quick = true })
     }
   }, [open])
 
-  // Popover: below the field if it fits, else above it, else as high as needed to stay on screen.
+  // Below the field if it fits, else above it, else as high as needed to stay on screen.
   useLayoutEffect(() => {
     if (!open || !rect || !popRef.current) return
-    const h = popRef.current.offsetHeight
-    const below = rect.bottom + 6, above = rect.top - 6 - h
-    setTop(below + h <= window.innerHeight - 12 ? below : above >= 12 ? above : Math.max(12, window.innerHeight - h - 12))
+    const ph = popRef.current.offsetHeight
+    const below = rect.bottom + 6, above = rect.top - 6 - ph
+    setTop(below + ph <= window.innerHeight - 12 ? below : above >= 12 ? above : Math.max(12, window.innerHeight - ph - 12))
   }, [open, rect])
-  const W = 560
+  const width = rect ? Math.max(rect.width, POP_MIN_W) : POP_MIN_W
   const pop = rect && {
-    left: Math.min(Math.max(rect.left, 12), window.innerWidth - W - 12),
-    top: top ?? rect.bottom + 6, width: W,
+    left: Math.min(Math.max(rect.left, 12), window.innerWidth - width - 12),
+    top: top ?? rect.bottom + 6, width,
     visibility: top == null ? 'hidden' : 'visible',   // measured first, then shown in place
   }
+
+  const setTime = (hh, mm) => onChange?.(`${date}T${pad(hh)}:${pad(mm)}`)
+  const stepHour = d => setTime((h + d + 24) % 24, m)
+  const stepMin  = d => {
+    const total = (h * 60 + Math.round(m / minuteStep) * minuteStep + d * minuteStep + 1440) % 1440
+    setTime(Math.floor(total / 60), total % 60)
+  }
+  const pm = h >= 12
+  const setPm = want => { if (want !== pm) setTime((h + 12) % 24, m) }
 
   return (
     <div className="ui-dtp">
@@ -88,26 +93,27 @@ export default function DateTimePicker({ value, onChange, label, quick = true })
       </button>
 
       {open && pop && createPortal(
+        // data-pos-overlay: POS screens treat clicks here as modal clicks (no barcode refocus).
         <div ref={popRef} className="ui-dtp-pop" data-pos-overlay style={pop}>
-          <div className="ui-dtp-cal">
-            <Calendar value={date} onChange={d => onChange?.(`${d}T${time}`)} />
+          <Calendar value={date} onChange={d => onChange?.(`${d}T${time}`)} />
+          <div className="ui-dtp-time">
+            <div className="ui-dtp-step">
+              <button type="button" onClick={() => stepHour(-1)} aria-label="Hour down"><ChevronLeft size={16} /></button>
+              <b>{pad(h % 12 || 12)}</b>
+              <button type="button" onClick={() => stepHour(1)} aria-label="Hour up"><ChevronRight size={16} /></button>
+            </div>
+            <span className="ui-dtp-colon">:</span>
+            <div className="ui-dtp-step">
+              <button type="button" onClick={() => stepMin(-1)} aria-label="Minute down"><ChevronLeft size={16} /></button>
+              <b>{pad(m)}</b>
+              <button type="button" onClick={() => stepMin(1)} aria-label="Minute up"><ChevronRight size={16} /></button>
+            </div>
+            <div className="ui-dtp-ampm">
+              <button type="button" className={!pm ? 'is-on' : ''} onClick={() => setPm(false)}>AM</button>
+              <button type="button" className={pm ? 'is-on' : ''} onClick={() => setPm(true)}>PM</button>
+            </div>
           </div>
-          <div className="ui-dtp-side">
-            <span className="ui-dtp-cap">Time</span>
-            <TimePicker value={time} onChange={t => onChange?.(`${date}T${t}`)} minuteStep={5} />
-            {quick && (
-              <>
-                <span className="ui-dtp-cap">Quick pick</span>
-                <div className="ui-dtp-quick">
-                  {QUICK.map(q => (
-                    <button key={q.label} type="button" onClick={() => onChange?.(toValue(q.at()))}>{q.label}</button>
-                  ))}
-                </div>
-              </>
-            )}
-            <div className="ui-dtp-sel">{value ? display(value) : '—'}</div>
-            <button type="button" className="ui-dtp-done" onClick={() => setOpen(false)}>Done</button>
-          </div>
+          <button type="button" className="ui-dtp-done" onClick={() => setOpen(false)}>Done</button>
         </div>,
         document.body,
       )}

@@ -1,4 +1,4 @@
-/* DateTimePicker — field + calendar / time / quick-pick popover */
+/* DateTimePicker — field + small popover (calendar, one time row, Done) */
 .ui-dtp { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .ui-dtp-label { font-size: 10px; font-weight: 700; color: var(--text-4); letter-spacing: 0.6px; text-transform: uppercase; }
 .ui-dtp-field {
@@ -14,24 +14,30 @@
 .ui-dtp-field.is-open { border-color: var(--brand); background: var(--brand-bg); }
 
 .ui-dtp-pop {
-  position: fixed; z-index: 5000; display: flex; gap: 0; overflow: hidden;
-  background: #fff; border: 1px solid #f1e6e9; border-radius: 16px;
-  box-shadow: 0 18px 44px rgba(120, 8, 41, 0.18), 0 2px 8px rgba(0, 0, 0, 0.06);
-  animation: ui-dtp-in 0.14s ease-out;
+  position: fixed; z-index: 5000; display: flex; flex-direction: column; overflow: hidden;
+  background: #fff; border-radius: 12px; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.14);
+  animation: ui-dtp-in 0.12s ease-out;
 }
 @keyframes ui-dtp-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-.ui-dtp-cal { width: 290px; flex-shrink: 0; border-right: 1px solid #f1e6e9; }
-.ui-dtp-side { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 14px; background: #fcf8f9; }
-.ui-dtp-cap { font-size: 10px; font-weight: 700; color: var(--text-4); letter-spacing: 0.6px; text-transform: uppercase; }
-.ui-dtp-side > div:first-of-type { align-self: flex-start; }
-.ui-dtp-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.ui-dtp-quick button {
-  height: 32px; border-radius: 99px; cursor: pointer; font-family: inherit; font-size: 11.5px; font-weight: 700;
-  border: 1px solid var(--brand-border); background: #fff; color: var(--brand); white-space: nowrap;
+
+/* Time row: ‹ 10 › : ‹ 25 ›  AM | PM */
+.ui-dtp-time { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-top: 1px solid #f1e6e9; }
+.ui-dtp-step { display: flex; align-items: center; border: 1.5px solid #ececee; border-radius: 10px; overflow: hidden; }
+.ui-dtp-step button {
+  width: 30px; height: 36px; border: none; background: #fafafa; color: var(--brand); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
 }
-.ui-dtp-quick button:hover { background: var(--brand-bg); }
-.ui-dtp-sel { margin-top: auto; padding: 8px 10px; border-radius: 10px; background: #fff; border: 1px solid #f1e6e9; font-size: 12.5px; font-weight: 800; color: var(--brand); text-align: center; font-variant-numeric: tabular-nums; }
+.ui-dtp-step button:hover { background: var(--brand-bg); }
+.ui-dtp-step b { min-width: 34px; text-align: center; font-size: 17px; font-weight: 800; color: #18181b; font-variant-numeric: tabular-nums; }
+.ui-dtp-colon { font-size: 17px; font-weight: 800; color: #a1a1aa; }
+.ui-dtp-ampm { margin-left: auto; display: flex; padding: 3px; gap: 2px; border-radius: 10px; background: #f1e6e9; }
+.ui-dtp-ampm button {
+  height: 30px; padding: 0 10px; border: none; border-radius: 7px; cursor: pointer; background: transparent;
+  font-family: inherit; font-size: 12.5px; font-weight: 800; color: #71717a;
+}
+.ui-dtp-ampm button.is-on { background: var(--brand); color: #fff; }
+
 .ui-dtp-done {
-  height: 40px; border: none; border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 13.5px; font-weight: 800;
+  height: 42px; margin: 0 12px 12px; border: none; border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 800;
   background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%); color: #fff;
 }
