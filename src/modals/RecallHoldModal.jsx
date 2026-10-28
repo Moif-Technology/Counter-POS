@@ -1,502 +1,197 @@
-import { useEffect, useRef, useState } from 'react'
-import { Archive, RotateCcw, Trash2, AlertCircle, MessageSquare } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Archive, RotateCcw, Trash2, MessageSquare, Clock, Hash, Loader2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
-import { fmtMoney, moneyPlaceholder } from '../lib/currencyFormat'
-import { posConfirm } from '../lib/posNotify'
+import { fmtMoney } from '../lib/currencyFormat'
+import { posConfirm, posNotifyError, posNotifySuccess, usePosNotify } from '../lib/posNotify'
 import { parseHoldBarcode } from '../lib/holdBarcode'
 import Modal from '../components/common/Modal'
+import Table from '../components/common/Table'
+import './ClearHoldBillModal.css'
+import './RecallHoldModal.css'
+
+/*
+ * Recall Hold — held bills as cards (left), the selected bill's items (right),
+ * Recall puts it back on the counter. Type / scan the Hold No to jump to it;
+ * ↑ / ↓ move, Enter recalls, Escape closes.
+ */
+const DAY_MS = 24 * 60 * 60 * 1000
+const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+/** → 'Today 14:20' · 'Yesterday 09:05' · '3 days ago' · '31 Dec 2024' (older than a week) */
+function holdAge(value) {
+  const d = new Date(value)
+  if (!value || Number.isNaN(d.getTime())) return { label: '—', old: false }
+  const days = Math.round((startOfDay(new Date()) - startOfDay(d)) / DAY_MS)
+  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  const label = days <= 0 ? `Today ${time}` : days === 1 ? `Yesterday ${time}` : days <= 7 ? `${days} days ago`
+    : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  return { label, old: Date.now() - d.getTime() > DAY_MS }
+}
+const salesMan = h => h.staff_name || h.sales_man || h.staff_code || ''
 
 const ITEM_COLS = [
-  { key: 'sl', label: 'SL', w: 36, align: 'center' },
-  { key: 'product_code', label: 'Barcode', w: 110 },
-  { key: 'short_description', label: 'Short Description', flex: true },
-  { key: 'qty', label: 'Qty', w: 48, align: 'center' },
-  { key: 'unit_price', label: 'Unit', w: 70, align: 'right', money: true },
-  { key: 'discount_amount', label: 'Disc', w: 50, align: 'right', money: true },
-  { key: 'line_total', label: 'Total', w: 72, align: 'right', money: true },
+  { key: 'sl',                label: 'SL',          width: 36, align: 'center', render: (_, __, i) => i + 1 },
+  { key: 'product_code',      label: 'Barcode',     width: 100, mono: true },
+  { key: 'short_description', label: 'Description' },
+  { key: 'qty',               label: 'Qty',         width: 48, align: 'center', mono: true },
+  { key: 'unit_price',        label: 'Unit Price',  width: 78, align: 'right', mono: true, render: v => fmtMoney(v) },
+  { key: 'discount_amount',   label: 'Disc',        width: 58, align: 'right', mono: true, render: v => fmtMoney(v) },
+  { key: 'line_total',        label: 'Total',       width: 78, align: 'right', mono: true, render: v => <b>{fmtMoney(v)}</b> },
 ]
 
-function fmtDateTime(value) {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return String(value)
-  return date.toLocaleString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function getSalesMan(hold) {
-  return hold.staff_name || hold.sales_man || hold.staff_code || hold.staff_id || ''
-}
-
-function getCustomerLabel(hold) {
-  return hold.customer_name || hold.customer_code || (hold.customer_id ? `#${hold.customer_id}` : 'Walk-in')
-}
-
-function getHoldComment(hold) {
-  return String(hold?.remarks ?? '').trim()
-}
-
 export default function RecallHoldModal({ onClose, onRecall }) {
-  const [holds, setHolds] = useState([])
-  const [selectedIdx, setSelectedIdx] = useState(0)
-  const [holdNoInput, setHoldNoInput] = useState('')
-  const [itemsBySalesId, setItemsBySalesId] = useState({})
-  const [loading, setLoading] = useState(true)
-  const [itemsLoading, setItemsLoading] = useState(false)
-  const [recalling, setRecalling] = useState(false)
-  const [cancelling, setCancelling] = useState(null)
-  const [error, setError] = useState(null)
-  const holdInputRef = useRef()
   const accessToken = usePosStore(s => s.accessToken)
-  const recallHold = usePosStore(s => s.recallHold)
-
-  const selected = holds[selectedIdx] ?? null
-  const selectedItems = selected ? itemsBySalesId[selected.sales_id] || [] : []
-  const selectedComment = getHoldComment(selected)
+  const recallHold  = usePosStore(s => s.recallHold)
+  const [holds, setHolds]           = useState(null)    // null = loading
+  const [selectedId, setSelectedId] = useState(null)
+  const [itemsById, setItemsById]   = useState({})
+  const [holdNo, setHoldNo]         = useState('')
+  const [busy, setBusy]             = useState(false)
+  const inputRef = useRef(null)
 
   useEffect(() => {
-    holdInputRef.current?.focus()
+    let alive = true
+    api.counterPos.getHeldBills(accessToken)
+      .then(d => { if (!alive) return; const list = Array.isArray(d) ? d : []; setHolds(list); setSelectedId(list[0]?.sales_id ?? null) })
+      .catch(e => { if (alive) { setHolds([]); posNotifyError(e.message, { title: 'Recall Hold' }) } })
+    return () => { alive = false }
+  }, [accessToken])
+
+  // Items of the selected hold (loaded once per hold)
+  useEffect(() => {
+    if (!selectedId || itemsById[selectedId]) return
+    let alive = true
+    api.counterPos.recallBill(selectedId, accessToken)
+      .then(list => { if (alive) setItemsById(prev => ({ ...prev, [selectedId]: Array.isArray(list) ? list : [] })) })
+      .catch(() => { if (alive) setItemsById(prev => ({ ...prev, [selectedId]: [] })) })
+    return () => { alive = false }
+  }, [selectedId, accessToken, itemsById])
+
+  const list = useMemo(() => holds ?? [], [holds])
+  const selected = list.find(h => h.sales_id === selectedId) ?? null
+  const items = selected ? itemsById[selected.sales_id] ?? [] : []
+  const itemsLoading = !!selected && !itemsById[selected.sales_id]
+  const total = selected?.amount != null ? Number(selected.amount) : items.reduce((s, it) => s + (Number(it.line_total) || 0), 0)
+
+  // Typed / scanned Hold No selects that hold
+  const onHoldNo = raw => {
+    setHoldNo(raw)
+    const no = parseHoldBarcode(raw) ?? raw.trim()
+    const hit = list.find(h => String(h.hold_no) === String(no))
+    if (hit) setSelectedId(hit.sales_id)
+  }
+
+  async function recall() {
+    if (!selected || busy) return
+    setBusy(true)
+    try {
+      const recalled = await api.counterPos.recallHeldBill(selected.sales_id, accessToken)
+      recallHold(selected, Array.isArray(recalled) ? recalled : [])
+      posNotifySuccess(`Hold ${selected.hold_no} recalled`, { title: 'Recall Hold', duration: 1500 })
+      onRecall?.(selected)
+      onClose()
+    } catch (e) {
+      posNotifyError(e.message, { title: 'Recall Hold' })
+      setBusy(false)
+    }
+  }
+
+  async function cancelHold() {
+    if (!selected || busy) return
+    const ok = await posConfirm({ title: 'Cancel Hold', message: `Cancel hold ${selected.hold_no}? This cannot be undone.`, confirmLabel: 'Cancel Hold', cancelLabel: 'Keep', danger: true })
+    if (!ok) return
+    setBusy(true)
+    try {
+      await api.counterPos.cancelHold(selected.sales_id, accessToken)
+      const idx = list.findIndex(h => h.sales_id === selected.sales_id)
+      const next = list.filter(h => h.sales_id !== selected.sales_id)
+      setHolds(next)
+      setSelectedId(next[Math.min(idx, next.length - 1)]?.sales_id ?? null)
+      posNotifySuccess(`Hold ${selected.hold_no} cancelled`, { title: 'Cancel Hold', duration: 1500 })
+    } catch (e) {
+      posNotifyError(e.message, { title: 'Cancel Hold' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Keyboard: ↑ / ↓ select, Enter recalls, Escape closes
+  useEffect(() => {
     const onKey = e => {
-      if (e.key === 'Escape') {
-        onClose()
-        return
-      }
-      if (e.key === 'ArrowUp') moveSelection(-1)
-      if (e.key === 'ArrowDown') moveSelection(1)
-      if (e.key === 'Enter') handleRecall()
+      const n = usePosNotify.getState()
+      if (n.confirm || n.alerts.some(a => !a.timer)) return
+      if (e.key === 'Escape') { onClose(); return }
+      if (e.key === 'Enter') { e.preventDefault(); recall(); return }
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+      e.preventDefault()
+      const idx = list.findIndex(h => h.sales_id === selectedId)
+      const next = list[Math.max(0, Math.min(list.length - 1, idx + (e.key === 'ArrowDown' ? 1 : -1)))]
+      if (next) setSelectedId(next.sales_id)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectedIdx, holds, selectedItems, recalling])
-
-  useEffect(() => {
-    fetchHolds()
-  }, [])
-
-  useEffect(() => {
-    if (selected?.sales_id) fetchItems(selected)
-  }, [selected?.sales_id])
-
-  async function fetchHolds() {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await api.counterPos.getHeldBills(accessToken)
-      setHolds(Array.isArray(data) ? data : [])
-      setSelectedIdx(0)
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function fetchItems(hold) {
-    if (!hold?.sales_id || itemsBySalesId[hold.sales_id]) return itemsBySalesId[hold.sales_id] || []
-
-    setItemsLoading(true)
-    setError(null)
-    try {
-      const items = await api.counterPos.recallBill(hold.sales_id, accessToken)
-      const safeItems = Array.isArray(items) ? items : []
-      setItemsBySalesId(prev => ({ ...prev, [hold.sales_id]: safeItems }))
-      return safeItems
-    } catch (e) {
-      setError(e.message)
-      return []
-    } finally {
-      setItemsLoading(false)
-    }
-  }
-
-  function moveSelection(dir) {
-    setSelectedIdx(i => Math.max(0, Math.min(holds.length - 1, i + dir)))
-  }
-
-  async function handleRecall(hold = selected) {
-    if (!hold || recalling) return
-
-    setRecalling(true)
-    setError(null)
-    try {
-      const recalledItems = await api.counterPos.recallHeldBill(hold.sales_id, accessToken)
-      const items = Array.isArray(recalledItems) ? recalledItems : []
-      recallHold(hold, items)
-      onRecall?.(hold)
-      onClose()
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setRecalling(false)
-    }
-  }
-
-  async function handleCancel(hold) {
-    if (!hold || cancelling) return
-    const ok = await posConfirm({
-      title: 'Cancel Hold',
-      message: `Cancel hold ${hold.hold_no}? This cannot be undone.`,
-      confirmLabel: 'Cancel Hold',
-      cancelLabel: 'Keep',
-      danger: true,
-    })
-    if (!ok) return
-
-    setCancelling(hold.sales_id)
-    setError(null)
-    try {
-      await api.counterPos.cancelHold(hold.sales_id, accessToken)
-      setHolds(prev => {
-        const next = prev.filter(x => x.sales_id !== hold.sales_id)
-        setSelectedIdx(i => Math.max(0, Math.min(next.length - 1, i)))
-        return next
-      })
-      setItemsBySalesId(prev => {
-        const next = { ...prev }
-        delete next[hold.sales_id]
-        return next
-      })
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setCancelling(null)
-    }
-  }
-
-  const thStyle = (col) => ({
-    width: col.w,
-    flex: col.flex ? 1 : undefined,
-    flexShrink: 0,
-    fontSize: 10,
-    fontWeight: 700,
-    color: 'var(--brand)',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    textAlign: col.align || 'left',
-    paddingRight: 6,
   })
 
-  const tdStyle = (col) => ({
-    width: col.w,
-    flex: col.flex ? 1 : undefined,
-    flexShrink: 0,
-    fontSize: 11.5,
-    fontWeight: 400,
-    color: 'var(--text-1)',
-    textAlign: col.align || 'left',
-    paddingRight: 6,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  })
+  useEffect(() => { inputRef.current?.focus() }, [])
 
   return (
-    <Modal
-      closeOnEsc={false}
-      onClose={onClose}
-      icon={Archive}
-      kicker="Bills"
-      title="Recall Hold"
-      width={900}
-      maxHeight="88vh"
-      cardStyle={{ height: 620 }}
-    >
-      <style>{`
-        .rh-hold-row:hover { background: var(--surface-2) !important; }
-      `}</style>
-
-      {error && (
-        <div style={{
-          margin: '10px 16px 0',
-          padding: '8px 12px',
-          borderRadius: 9,
-          border: '1px solid var(--red-border)',
-          background: 'var(--red-bg)',
-          color: 'var(--red)',
-          fontSize: 12,
-          fontWeight: 700,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 7,
-        }}>
-          <AlertCircle size={13} />
-          {error}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
-        <div style={{ width: 440, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center',
-            padding: '0 12px', height: 34, flexShrink: 0,
-            background: 'var(--table-head-bg)', borderBottom: '1.5px solid var(--brand-border)',
-          }}>
-            {[
-              { label: 'Hold No',   w: 52 },
-              { label: 'Bill Time', w: 100 },
-              { label: 'Sales Man', w: 72 },
-              { label: 'Customer',  w: 88 },
-              { label: 'Comments',  flex: true },
-            ].map(col => (
-              <div key={col.label} style={{
-                width: col.w, flex: col.flex ? 1 : undefined, flexShrink: 0,
-                fontSize: 10, fontWeight: 700, color: 'var(--brand)',
-                textTransform: 'uppercase', letterSpacing: 0.5, paddingRight: 6,
-              }}>{col.label}</div>
-            ))}
+    <Modal closeOnEsc={false} onClose={onClose} icon={Archive} title="Recall Hold" width={1040} maxHeight="94vh">
+      <div className="chb">
+        <section className="chb-left">
+          <div className="chb-left-head">
+            <h4>Held Bills <span>{list.length}</span></h4>
+            <label className="chb-find rh-holdno">
+              <Hash size={15} />
+              <input ref={inputRef} data-system-keyboard value={holdNo} onChange={e => onHoldNo(e.target.value)} placeholder="Hold No / scan" />
+            </label>
           </div>
-
-          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-            {loading ? (
-              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-4)', fontSize: 12, fontWeight: 600 }}>
-                Loading held bills...
-              </div>
-            ) : holds.length === 0 ? (
-              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-4)', fontSize: 12, fontWeight: 600 }}>
-                No held bills
-              </div>
-            ) : holds.map((h, i) => {
-              const active = i === selectedIdx
-              const comment = getHoldComment(h)
+          <div className="chb-cards">
+            {holds === null && <div className="chb-empty"><Loader2 size={16} className="chb-spin" /> Loading held bills…</div>}
+            {holds?.length === 0 && <div className="chb-empty">No held bills</div>}
+            {list.map(h => {
+              const age = holdAge(h.bill_date)
+              const note = String(h.remarks ?? '').trim()
               return (
-                <div
-                  key={h.sales_id}
-                  className="rh-hold-row"
-                  onClick={() => setSelectedIdx(i)}
-                  title={comment || undefined}
-                  style={{
-                    display: 'flex', alignItems: 'center',
-                    padding: '0 12px', height: 34,
-                    borderBottom: '1px solid var(--border)',
-                    background: active ? 'var(--brand-bg)' : i % 2 === 0 ? '#fff' : 'var(--surface-2)',
-                    cursor: 'pointer', transition: 'background 0.1s',
-                    borderLeft: active ? '3px solid var(--brand)' : '3px solid transparent',
-                  }}
-                >
-                  <div style={{ width: 52, flexShrink: 0, fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--brand)' : 'var(--text-1)' }}>
-                    {h.hold_no}
-                  </div>
-                  <div style={{ width: 100, flexShrink: 0, fontSize: 11, color: active ? 'var(--brand)' : 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 6 }}>
-                    {fmtDateTime(h.bill_date)}
-                  </div>
-                  <div style={{ width: 72, flexShrink: 0, fontSize: 10.5, color: active ? 'var(--brand)' : 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 6 }}>
-                    {getSalesMan(h)}
-                  </div>
-                  <div
-                    title={getCustomerLabel(h)}
-                    style={{
-                      width: 88, flexShrink: 0,
-                      fontSize: 11, fontWeight: h.customer_name ? 600 : 400,
-                      color: active
-                        ? 'var(--brand)'
-                        : h.customer_name ? 'var(--text-2)' : 'var(--text-4)',
-                      fontStyle: h.customer_name ? 'normal' : 'italic',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      paddingRight: 6,
-                    }}
-                  >
-                    {getCustomerLabel(h)}
-                  </div>
-                  <div style={{
-                    flex: 1, minWidth: 0,
-                    display: 'flex', alignItems: 'center', gap: 4,
-                    fontSize: 10.5,
-                    color: comment ? (active ? 'var(--brand)' : 'var(--text-2)') : 'var(--text-4)',
-                    fontStyle: comment ? 'normal' : 'italic',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
-                    {comment ? (
-                      <>
-                        <MessageSquare size={11} style={{ flexShrink: 0, opacity: 0.7 }} />
-                        <span>{comment}</span>
-                      </>
-                    ) : '—'}
-                  </div>
-                </div>
+                <button key={h.sales_id} type="button" className={`chb-card${h.sales_id === selectedId ? ' is-on' : ''}`} onClick={() => setSelectedId(h.sales_id)} onDoubleClick={recall}>
+                  <span className="chb-card-no"><small>Hold</small>{h.hold_no}</span>
+                  <span className="chb-card-main">
+                    <span className="chb-card-top">
+                      <b>{h.customer_name || 'Walk-in'}</b>
+                      {h.amount != null && <strong className="rh-amt">{fmtMoney(h.amount)}</strong>}
+                    </span>
+                    <span className="chb-card-meta"><Clock size={12} /> {age.label}{salesMan(h) ? ` · ${salesMan(h)}` : ''}</span>
+                    {note && <span className="chb-card-note"><MessageSquare size={12} /> {note}</span>}
+                  </span>
+                </button>
               )
             })}
           </div>
-        </div>
+        </section>
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
-          <div style={{
-            display: 'flex', alignItems: 'center',
-            padding: '0 12px', height: 34, flexShrink: 0,
-            background: 'var(--table-head-bg)', borderBottom: '1.5px solid var(--brand-border)',
-          }}>
-            {ITEM_COLS.map(col => (
-              <div key={col.key} style={thStyle(col)}>{col.label}</div>
-            ))}
+        <section className="chb-right">
+          <h4>{selected ? <>Hold <b>{selected.hold_no}</b> · {selected.customer_name || 'Walk-in'}</> : 'Bill items'}</h4>
+          <div className="chb-table">
+            <Table
+              columns={ITEM_COLS}
+              rows={items}
+              rowKey="sl"
+              loading={itemsLoading && !items.length}
+              emptyText={selected ? 'No items on this hold' : 'Select a held bill'}
+            />
           </div>
-
-          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-            {itemsLoading ? (
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                height: '100%', minHeight: 120,
-                color: 'var(--text-4)', fontSize: 12, fontWeight: 600,
-              }}>
-                Loading items...
-              </div>
-            ) : selectedItems.length > 0 ? selectedItems.map((item, i) => (
-              <div
-                key={item.sales_child_id ?? i}
-                style={{
-                  display: 'flex', alignItems: 'center',
-                  padding: '0 12px', height: 34,
-                  borderBottom: '1px solid var(--border)',
-                  background: i % 2 === 0 ? '#fff' : 'var(--surface-2)',
-                }}
-              >
-                {ITEM_COLS.map(col => (
-                  <div key={col.key} style={tdStyle(col)}>
-                    {col.key === 'sl' ? i + 1 : col.money ? fmtMoney(item[col.key]) : item[col.key] ?? '-'}
-                  </div>
-                ))}
-              </div>
-            )) : (
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                height: '100%', minHeight: 120,
-                color: 'var(--text-4)', fontSize: 12, fontWeight: 500,
-              }}>
-                {selected ? 'No items on this bill' : 'Select a hold bill'}
-              </div>
-            )}
+          <div className="chb-total">
+            <span>Bill Total <small>{items.length} item{items.length !== 1 ? 's' : ''}</small></span>
+            <b>{fmtMoney(total)}</b>
           </div>
-        </div>
+        </section>
       </div>
 
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 16px', borderTop: '1.5px solid var(--border)',
-        background: 'var(--surface-2)', flexShrink: 0, flexWrap: 'wrap',
-      }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 180 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Comments</span>
-          <input
-            readOnly
-            value={selectedComment}
-            placeholder={selected ? 'No comment on this hold' : 'Select a hold bill'}
-            title={selectedComment || undefined}
-            style={{
-              height: 32, borderRadius: 8,
-              border: '1.5px solid var(--border)', background: 'var(--surface)',
-              padding: '0 10px', fontSize: 12, color: selectedComment ? 'var(--text-1)' : 'var(--text-4)',
-              fontFamily: 'inherit', outline: 'none',
-              fontStyle: selectedComment ? 'normal' : 'italic',
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, color: 'transparent', letterSpacing: 0.7 }}>_</span>
-          <button
-            type="button"
-            onClick={() => handleRecall()}
-            disabled={!selected || recalling}
-            style={{
-              height: 32, padding: '0 20px', borderRadius: 8, border: 'none',
-              background: selected
-                ? 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)'
-                : 'var(--surface-3)',
-              color: selected ? '#fff' : 'var(--text-4)',
-              fontSize: 12, fontWeight: 800,
-              cursor: selected && !recalling ? 'pointer' : 'default',
-              display: 'flex', alignItems: 'center', gap: 6,
-              boxShadow: selected ? '0 4px 14px rgba(120,8,41,0.22)' : 'none',
-              transition: 'all 0.12s',
-              opacity: recalling ? 0.7 : 1,
-            }}
-          >
-            <RotateCcw size={13} /> {recalling ? 'Recalling' : 'Recall'}
-          </button>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: 100 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Hold No</span>
-          <input
-            ref={holdInputRef}
-            value={holdNoInput}
-            onChange={e => {
-              const raw = e.target.value
-              setHoldNoInput(raw)
-              const holdNo = parseHoldBarcode(raw)
-              const idx = holdNo != null
-                ? holds.findIndex(h => String(h.hold_no) === String(holdNo))
-                : holds.findIndex(h => String(h.hold_no) === raw)
-              if (idx >= 0) setSelectedIdx(idx)
-            }}
-            onKeyDown={e => e.key === 'Enter' && handleRecall()}
-            placeholder={selected?.hold_no ?? '-'}
-            style={{
-              height: 32, borderRadius: 8,
-              border: '1.5px solid var(--border)', background: 'var(--surface)',
-              padding: '0 10px', fontSize: 13, fontWeight: 700,
-              color: 'var(--text-1)', fontFamily: 'inherit',
-              outline: 'none', textAlign: 'center',
-            }}
-            onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
-            onBlur={e => { e.target.style.borderColor = 'var(--border)' }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>Bill Total</span>
-          <div style={{
-            height: 32, minWidth: 110, borderRadius: 8,
-            border: '1.5px solid var(--brand-border)', background: 'var(--brand-bg)',
-            padding: '0 14px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-          }}>
-            <span style={{
-              fontSize: 15, fontWeight: 800, color: 'var(--brand)',
-              fontFamily: 'inherit', fontVariantNumeric: 'tabular-nums',
-            }}>
-              {selected ? fmtMoney(selected.amount) : moneyPlaceholder()}
-            </span>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, color: 'transparent', letterSpacing: 0.7 }}>_</span>
-          <button
-            type="button"
-            onClick={() => selected && handleCancel(selected)}
-            disabled={!selected || cancelling === selected?.sales_id}
-            style={{
-              height: 32, padding: '0 16px', borderRadius: 8,
-              border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
-              color: 'var(--red)', fontSize: 12, fontWeight: 700,
-              cursor: selected ? 'pointer' : 'default', transition: 'background 0.1s, color 0.1s',
-              opacity: cancelling === selected?.sales_id ? 0.6 : 1,
-              display: 'flex', alignItems: 'center', gap: 6,
-            }}
-          >
-            <Trash2 size={12} /> Cancel Hold
-          </button>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginLeft: 'auto' }}>
-          <span style={{ fontSize: 9, fontWeight: 700, color: 'transparent', letterSpacing: 0.7 }}>_</span>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              height: 32, padding: '0 16px', borderRadius: 8,
-              border: '1.5px solid var(--border)', background: 'var(--surface)',
-              color: 'var(--text-2)', fontSize: 12, fontWeight: 700,
-              cursor: 'pointer',
-            }}
-          >
-            Close
-          </button>
-        </div>
+      <div className="chb-foot">
+        <button type="button" className="rh-cancel" onClick={cancelHold} disabled={!selected || busy}><Trash2 size={15} /> Cancel Hold</button>
+        <button type="button" className="chb-close" onClick={onClose}>Close</button>
+        <button type="button" className="rh-recall" onClick={recall} disabled={!selected || busy}>
+          {busy ? <Loader2 size={17} className="chb-spin" /> : <RotateCcw size={17} />} {busy ? 'Recalling…' : 'Recall'}
+        </button>
       </div>
     </Modal>
   )

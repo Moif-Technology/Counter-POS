@@ -1,0 +1,18 @@
+/* Recall Hold — builds on ClearHoldBillModal.css (cards, items, total) */
+.rh-holdno { width: 170px; }
+.rh-amt { margin-left: auto; font-size: 14px; font-weight: 800; color: #18181b; font-variant-numeric: tabular-nums; }
+.chb-card.is-on .rh-amt { color: var(--brand); }
+
+.rh-cancel {
+  margin-right: auto; height: 44px; padding: 0 14px; border-radius: 11px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 800;
+  display: flex; align-items: center; gap: 6px; border: 1px solid transparent; background: transparent; color: #b91c1c;
+}
+.rh-cancel:hover { background: #fef2f2; border-color: #fecaca; }
+.rh-cancel:disabled { opacity: 0.4; cursor: not-allowed; }
+.rh-recall {
+  height: 44px; min-width: 170px; padding: 0 24px; border: none; border-radius: 11px; cursor: pointer;
+  font-family: inherit; font-size: 15px; font-weight: 800; color: #fff;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+}
+.rh-recall:disabled { opacity: 0.45; cursor: not-allowed; }
