@@ -1,0 +1,133 @@
+import { useEffect, useState } from 'react'
+import {
+  Hash, Undo2, Monitor, Search, Pause, FileText, Printer, Tag,
+  Package, ScanBarcode, BarChart2, Wallet, Receipt,
+  MessageSquare, Truck, Save, CircleDollarSign, Lock, Ban, User, TrendingUp,
+} from 'lucide-react'
+import { usePosStore } from '../../../store/posStore'
+
+/*
+ * Tab → buttons, shown as equal boxes (3 across).
+ * `accent` buttons use the brand colour (destructive / session keys).
+ */
+const TABS = [
+  {
+    key: 'Page 1',
+    // Clear All and Repeat live under the cart (action bar / item strip); Price Change is
+    // here and under the cart (Edit Price);
+    // Clear Line is the bin on each cart line.
+    buttons: [
+      { label: 'Qty',            icon: Hash,    text: 'Qty', toggle: true },
+      { label: 'Return',         icon: Undo2,   accent: true, toggle: true },   // return mode on/off
+      { label: 'Groups',         icon: Monitor },
+      { label: 'Product Lookup', icon: Search },
+      { label: 'Hold',           icon: Pause },
+      { label: 'Recall Hold Bill', icon: FileText },
+      { label: 'Bill Print',     icon: Printer },
+      { label: 'Bill Reprint',   icon: Printer },
+      { label: 'Qty Change',     icon: Tag, text: 'Qty Chan' },
+      { label: 'Price Change',   icon: CircleDollarSign },
+      { label: 'Price Enquiry',  icon: Search },
+      { label: 'Packet Scan',    icon: ScanBarcode },
+    ],
+  },
+  {
+    key: 'Page 2',
+    buttons: [
+      { label: 'Privilege',     icon: User,         text: 'Privilege Customer' },
+      { label: 'Cash In/Out',   icon: Wallet,       text: 'CashIn / CashOut' },
+      { label: 'Comments',      icon: MessageSquare },
+      { label: 'Currency',      icon: CircleDollarSign },
+      { label: 'Sub Total',     icon: Hash,         text: 'SubTotal' },
+      { label: 'Report',        icon: BarChart2 },
+      { label: 'Discount',      icon: Tag,          text: 'Disc' },
+      { label: 'Lock',          icon: Lock },
+      { label: 'Receipt',       icon: Receipt },
+      { label: 'No Sale',       icon: Ban },
+      { label: 'Sales Man',     icon: User },
+      { label: 'Top Move',      icon: TrendingUp },
+      // Shown only when the customer display feature is enabled (as before)
+      { label: 'Cust Display',  icon: Monitor,      toggle: true, onlyIf: 'customerDisplayEnabled' },
+    ],
+  },
+  {
+    key: 'Delivery',
+    buttons: [
+      { label: 'Delivery',      icon: Truck },
+      { label: 'Save Delivery', icon: Save },
+      { label: 'Settlement',    icon: Package, text: 'Delivery Settlement' },
+    ],
+  },
+]
+
+function ActionButton({ btn, actions }) {
+  const Icon = btn.icon
+  const active = btn.toggle && actions.isActive(btn.label)
+  const busy = btn.label === 'Hold' && actions.holdLoading
+  return (
+    <button
+      className={`ph-fn${btn.accent ? ' is-accent' : ''}${active ? ' is-active' : ''}`}
+      onClick={() => actions.run(btn.label)}
+      disabled={busy}
+    >
+      <Icon size={24} strokeWidth={1.8} />
+      <span>{busy ? 'Holding…' : (btn.text ?? btn.label)}</span>
+    </button>
+  )
+}
+
+function GroupsPage({ actions }) {
+  const productGroups      = usePosStore(s => s.productGroups)
+  const groupsLoading      = usePosStore(s => s.groupsLoading)
+  const accessToken        = usePosStore(s => s.accessToken)
+  const fetchProductGroups = usePosStore(s => s.fetchProductGroups)
+
+  useEffect(() => {
+    if (accessToken && !productGroups.length) fetchProductGroups()
+  }, [accessToken, productGroups.length, fetchProductGroups])
+
+  if (groupsLoading && !productGroups.length) return <div className="ph-fn-empty">Loading groups…</div>
+  if (!productGroups.length) return <div className="ph-fn-empty">No product groups</div>
+
+  return productGroups.map(g => (
+    <button key={g.groupId} className="ph-fn ph-fn-group" onClick={() => actions.openGroup(g)}>
+      <span>{g.groupDescription}</span>
+    </button>
+  ))
+}
+
+/** Tabbed function keys: Page 1 / Page 2 / Groups / Delivery (Log Out, Exit, Add New are in the user menu). */
+export default function PosFunctionPanel({ actions }) {
+  const [tabKey, setTabKey] = useState('Page 1')
+  const customerDisplayEnabled = usePosStore(s => s.customerDisplayEnabled)
+  const flags = { customerDisplayEnabled }
+  const tab = TABS.find(t => t.key === tabKey)
+
+  // Rows fill the panel: as many as the page needs (min 4, so short pages keep normal-size keys)
+  const shown = tab?.buttons?.filter(btn => !btn.onlyIf || flags[btn.onlyIf]) ?? []
+
+  return (
+    <div className="ph-card ph-fnpanel">
+      <div className="ph-tabs">
+        {TABS.map(t => (
+          <button
+            key={t.key}
+            className={`ph-tab${tabKey === t.key ? ' is-active' : ''}`}
+            onClick={() => setTabKey(t.key)}
+          >
+            {t.key}
+          </button>
+        ))}
+      </div>
+
+      <div
+        className={`ph-fn-grid${tabKey === 'Groups' ? ' is-groups' : ''}`}
+        style={tabKey === 'Groups' ? undefined : { '--fn-rows': Math.max(4, Math.ceil(shown.length / 3)) }}
+      >
+        {tabKey === 'Groups'
+          ? <GroupsPage actions={actions} />
+          : shown.map(btn => <ActionButton key={btn.label} btn={btn} actions={actions} />)}
+      </div>
+    </div>
+  )
+}

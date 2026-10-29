@@ -1,4 +1,4 @@
-import { ShoppingCart } from 'lucide-react'
+import BrandLogo from '../../../components/common/BrandLogo'
 
 export default function LiteHeader({ onExit }) {
   return (
@@ -8,18 +8,16 @@ export default function LiteHeader({ onExit }) {
       borderBottom: '1px solid var(--border)',
       background: 'var(--surface)', flexShrink: 0, flexWrap: 'wrap', gap: 8,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: 9, flexShrink: 0,
-          background: 'linear-gradient(145deg, var(--brand) 0%, var(--brand-2) 100%)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+        <BrandLogo variant="horizontal" height={40} />
+        <span style={{
+          padding: '3px 9px', borderRadius: 99,
+          background: 'var(--brand-bg)', border: '1px solid var(--brand-border)',
+          color: 'var(--brand)', fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8,
+          textTransform: 'uppercase',
         }}>
-          <ShoppingCart size={16} color="#fff" />
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 'clamp(14px, 1.6vw, 17px)', fontWeight: 800, color: 'var(--text-1)' }}>MOIF POS · Lite</div>
-          <div style={{ fontSize: 'clamp(10px, 0.9vw, 11px)', color: 'var(--text-3)' }}>Simplified billing mode</div>
-        </div>
+          Lite
+        </span>
       </div>
 
       <button

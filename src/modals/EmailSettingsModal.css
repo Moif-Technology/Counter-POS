@@ -1,0 +1,31 @@
+/* eMail Settings — same simple form as Password Change */
+.es { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.es-error { padding: 12px; border-radius: 8px; background: var(--red-bg); border: 1px solid var(--red-border); color: var(--red); font-size: 12px; font-weight: 600; }
+.es-field label { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; }
+.es-field input {
+  width: 100%; height: 40px; padding: 0 12px; box-sizing: border-box; outline: none;
+  border: 1.5px solid var(--border); border-radius: 9px; background: var(--surface);
+  font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-1);
+}
+.es-field input:focus { border-color: var(--brand); }
+.es-btns { display: flex; gap: 10px; margin-top: 10px; }
+.es-btns button {
+  flex: 1; height: 38px; border-radius: 9px; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.es-cancel { border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text-2); }
+.es-save { border: none; background: var(--brand); color: #fff; }
+
+/* Input with a button at the end (password eye, To + / ✕) */
+.es-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; max-height: 88px; overflow-y: auto; padding-right: 2px; }   /* 2 extra boxes (3 in all), then scroll */
+.es-list .es-box { flex-shrink: 0; }
+.es-box { position: relative; }
+.es-box input { padding-right: 46px; }
+.es-icon {
+  position: absolute; top: 5px; right: 5px; width: 30px; height: 30px; border-radius: 7px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; border: none; background: transparent; color: var(--text-4);
+}
+.es-icon:hover { background: var(--surface-2); color: var(--brand); }
+.es-icon.is-add { background: var(--brand); color: #fff; }
+.es-icon.is-add:hover { background: var(--brand-2); color: #fff; }
+.es-icon.is-remove:hover { background: var(--red-bg); color: var(--red); }

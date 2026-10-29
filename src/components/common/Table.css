@@ -1,0 +1,42 @@
+/* Table — the shared table look, same as the cart table on the POS home screen:
+   white card, rose header with maroon caps, plain rows split by hairlines,
+   light hover, selected row = faint rose tint + maroon bar on the left. */
+.ui-table {
+  display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+  background: #fff; border: 1px solid var(--border); border-radius: 14px;
+}
+.ui-table.is-fill { flex: 1; }
+
+.ui-table-row {
+  display: grid; align-items: center; column-gap: 6px;
+  padding: 0 12px; border-left: 3px solid transparent;
+}
+.ui-table-head {
+  flex-shrink: 0; min-height: 36px;
+  background: var(--table-head-bg); border-bottom: 1px solid var(--brand-border);
+}
+.ui-table-head > span {
+  font-size: 10.5px; font-weight: 700; color: var(--brand);
+  text-transform: uppercase; letter-spacing: 0.4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.ui-table-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.ui-table-body .ui-table-row {
+  min-height: 42px; border-bottom: 1px solid var(--border);
+  font-size: 12.5px; color: var(--text-1); transition: background 0.1s;
+}
+.ui-table-body .ui-table-row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-table-body .ui-table-row.is-click { cursor: pointer; user-select: none; }
+.ui-table-body .ui-table-row.is-click:hover { background: #fafafa; }
+.ui-table-body .ui-table-row.is-selected,
+.ui-table-body .ui-table-row.is-selected:hover { background: #fcf8f9; border-left-color: var(--brand); font-weight: 700; }
+.ui-table .is-num { font-variant-numeric: tabular-nums; }
+
+.ui-table-msg {
+  padding: 32px 16px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  text-align: center; font-size: 12.5px; font-weight: 500; color: var(--text-4);
+}
+.ui-table-msg.is-error { color: var(--red); font-weight: 600; justify-content: flex-start; padding: 16px; }
+.ui-table-spin { color: var(--brand); animation: ui-table-spin 0.8s linear infinite; }
+@keyframes ui-table-spin { to { transform: rotate(360deg); } }

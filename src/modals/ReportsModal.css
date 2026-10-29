@@ -1,0 +1,53 @@
+/* Reports — simple tiles (4 across) + Close */
+.rpt { padding: clamp(8px, 2.2vh, 18px); background: #f7f7f8; overflow-y: auto; }
+.rpt-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(6px, 1.5vh, 12px); }
+
+.rpt-tile {
+  --h: clamp(64px, 13vh, 104px);
+  height: var(--h); padding: clamp(4px, 1.4vh, 12px) 8px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  border: 1px solid transparent; border-radius: 16px; background: #fff; font-family: inherit;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.08s;
+}
+.rpt-ico {
+  width: clamp(30px, 6vh, 46px); height: clamp(30px, 6vh, 46px); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--brand-bg); color: var(--brand);
+  transition: background 0.15s, color 0.15s;
+}
+.rpt-label {
+  max-width: 100%; font-size: 13px; font-weight: 700; color: #27272a; text-align: center; line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rpt-tile:hover { border-color: var(--brand-border); box-shadow: 0 6px 18px rgba(120, 8, 41, 0.1); }
+.rpt-tile:hover .rpt-ico { background: var(--brand); color: #fff; }
+.rpt-tile:active { transform: scale(0.97); }
+
+.rpt-tile.is-danger .rpt-ico { background: #fef2f2; color: #dc2626; }
+.rpt-tile.is-danger .rpt-label { color: #b91c1c; }
+.rpt-tile.is-danger:hover { border-color: #fecaca; }
+.rpt-tile.is-danger:hover .rpt-ico { background: #dc2626; color: #fff; }
+
+.rpt-foot {
+  display: flex; justify-content: flex-end; padding: 12px 18px; flex-shrink: 0;
+  border-top: 1px solid var(--border); background: #fff;
+}
+.rpt-close {
+  height: 42px; padding: 0 28px; border-radius: 11px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 800;
+  border: 1px solid #fbd5d5; background: #fff5f5; color: #dc2626;
+}
+
+@media (max-width: 640px) {
+  .rpt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* "Take the counter reading first" notice */
+.rpt-note { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 24px 20px; text-align: center; }
+.rpt-note-ico { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--brand-bg); color: var(--brand); margin-bottom: 4px; }
+.rpt-note h3 { margin: 0; font-size: 18px; font-weight: 800; color: #18181b; }
+.rpt-note p { margin: 0; font-size: 14.5px; font-weight: 600; color: #52525b; line-height: 1.45; }
+.rpt-note-btns { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.rpt-note-btns button { height: 46px; border-radius: 11px; cursor: pointer; font-family: inherit; font-size: 14.5px; font-weight: 800; }
+.rpt-note-alt { border: 1.5px solid var(--brand-border); background: #fff; color: var(--brand); }
+.rpt-note-ok { border: none; background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%); color: #fff; }

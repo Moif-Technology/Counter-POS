@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Trash2, X, Check } from 'lucide-react'
+import { Trash2, X, Check, ShoppingCart } from 'lucide-react'
 import { getCartRowKey } from '../../../lib/cartLine'
 import { fmtMoney } from '../../../lib/currencyFormat'
 import { thStyle, tdStyle, qtyBtnStyle, removeBtnStyle } from '../liteStyles'
@@ -62,11 +62,22 @@ export default function LiteCartTable({
   }
 
   return (
-    <div className="lite-panel-center lite-scroll" style={{ flex: 1, overflowY: 'auto', padding: 'clamp(10px, 1.6vw, 16px)', minWidth: 0, minHeight: 0 }}>
+    <div 
+      className="lite-panel-center lite-scroll" 
+      style={{ 
+        flex: 1, 
+        height: '100%',
+        overflowY: 'auto', 
+        paddingBottom: '80px', 
+        minWidth: 0, 
+        minHeight: 0,
+        position: 'relative'
+      }}
+    >
       {selectMode && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
-          padding: '10px 12px', marginBottom: 10, borderRadius: 10,
+          margin: '12px 16px 0 16px', padding: '10px 12px', borderRadius: 10,
           background: 'var(--brand-bg)', border: '1.5px solid var(--brand-border)',
         }}>
           <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--brand)' }}>
@@ -99,15 +110,23 @@ export default function LiteCartTable({
         </div>
       )}
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'clamp(11.5px, 0.9vw, 13px)' }}>
+      <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 'clamp(11.5px, 0.9vw, 13px)', tableLayout: 'fixed' }}>
+        <colgroup>
+          <col style={{ width: '36px' }} />
+          <col style={{ width: 'auto' }} />
+          <col style={{ width: '90px' }} />
+          <col style={{ width: '75px' }} />
+          <col style={{ width: '85px' }} />
+          <col style={{ width: '40px' }} />
+        </colgroup>
         <thead>
-          <tr style={{ borderBottom: '1px solid var(--border)' }}>
-            <th style={thStyle}>#</th>
-            <th style={{ ...thStyle, textAlign: 'left' }}>Item</th>
-            <th style={thStyle}>Qty</th>
-            <th style={thStyle}>Price</th>
-            <th style={thStyle}>Total</th>
-            <th style={thStyle}></th>
+          <tr>
+            <th style={{ ...thStyle, position: 'sticky', top: 0, zIndex: 3, background: 'var(--surface, #fff)', paddingLeft: 'clamp(10px, 1.6vw, 16px)' }}>#</th>
+            <th style={{ ...thStyle, textAlign: 'left', position: 'sticky', top: 0, zIndex: 3, background: 'var(--surface, #fff)' }}>Item</th>
+            <th style={{ ...thStyle, position: 'sticky', top: 0, zIndex: 3, background: 'var(--surface, #fff)' }}>Qty</th>
+            <th className="lite-col-price" style={{ ...thStyle, color: 'var(--text-3)', fontWeight: 500, position: 'sticky', top: 0, zIndex: 3, background: 'var(--surface, #fff)' }}>Price</th>
+            <th style={{ ...thStyle, color: 'var(--text-1)', fontWeight: 700, position: 'sticky', top: 0, zIndex: 3, background: 'var(--surface, #fff)' }}>Total</th>
+            <th style={{ ...thStyle, position: 'sticky', top: 0, zIndex: 3, background: 'var(--surface, #fff)', paddingRight: 'clamp(10px, 1.6vw, 16px)' }}></th>
           </tr>
         </thead>
         <tbody>
@@ -132,14 +151,18 @@ export default function LiteCartTable({
                   WebkitUserSelect: 'none',
                   opacity: isRemoving ? 0.2 : 1,
                   transform: isRemoving ? 'translateX(8px)' : 'translateX(0)',
+                  // സെലക്ട് ചെയ്ത റോയ്ക്ക് പ്രത്യേക കളറും ഇടതുവശത്ത് കട്ടിയുള്ള ബോർഡറും നൽകിയിരിക്കുന്നു
                   background: checked
                     ? 'var(--brand-bg)'
-                    : selected ? 'rgba(107,0,0,0.06)' : idx % 2 === 0 ? 'transparent' : 'var(--surface-2)',
-                  borderBottom: `1px solid ${selected || checked ? 'rgba(107,0,0,0.12)' : 'var(--border)'}`,
-                  transition: 'background 0.1s, opacity 0.14s ease, transform 0.14s ease',
+                    : selected 
+                      ? 'rgba(120,8,41, 0.08)' 
+                      : idx % 2 === 0 ? 'transparent' : 'var(--surface-2)',
+                  boxShadow: selected ? 'inset 4px 0 0 var(--brand, var(--brand))' : 'none',
+                  borderBottom: `1px solid ${selected || checked ? 'rgba(120,8,41,0.12)' : 'var(--border)'}`,
+                  transition: 'background 0.1s, box-shadow 0.1s, opacity 0.14s ease, transform 0.14s ease',
                 }}
               >
-                <td style={tdStyle}>
+                <td style={{ ...tdStyle, padding: '6px 4px', paddingLeft: 'clamp(10px, 1.6vw, 16px)' }}>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     width: 20, height: 20, borderRadius: 5, fontSize: 10, fontWeight: 800,
@@ -149,20 +172,30 @@ export default function LiteCartTable({
                     {idx + 1}
                   </span>
                 </td>
-                <td style={{ ...tdStyle, textAlign: 'left', fontWeight: 600 }}>{i.description}</td>
-                <td style={tdStyle}>
+                <td style={{ 
+                  ...tdStyle, 
+                  textAlign: 'left', 
+                  fontWeight: selected ? 700 : 600, 
+                  padding: '6px 8px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap' 
+                }} title={i.description}>
+                  {i.description}
+                </td>
+                <td style={{ ...tdStyle, padding: '6px 4px' }}>
                   <div
                     onClick={e => e.stopPropagation()}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                   >
                     <button className="lite-btn" disabled={selectMode} onClick={() => onAdjustQty(rowKey, -1)} style={qtyBtnStyle}>−</button>
-                    <span style={{ minWidth: 26, textAlign: 'center', fontWeight: 700 }}>{i.qty}</span>
+                    <span style={{ minWidth: 22, textAlign: 'center', fontWeight: 700 }}>{i.qty}</span>
                     <button className="lite-btn" disabled={selectMode} onClick={() => onAdjustQty(rowKey, 1)} style={qtyBtnStyle}>+</button>
                   </div>
                 </td>
-                <td style={tdStyle}>{fmtMoney(i.unitPriceGross ?? i.unitPrice)}</td>
-                <td style={{ ...tdStyle, fontWeight: 700 }}>{fmtMoney(i.lineTotal)}</td>
-                <td style={tdStyle}>
+                <td className="lite-col-price" style={{ ...tdStyle, padding: '6px 6px', color: 'var(--text-3)' }}>{fmtMoney(i.unitPriceGross ?? i.unitPrice)}</td>
+                <td style={{ ...tdStyle, padding: '6px 6px', fontWeight: 700, color: 'var(--text-1)' }}>{fmtMoney(i.lineTotal)}</td>
+                <td style={{ ...tdStyle, padding: '6px 4px', paddingRight: 'clamp(10px, 1.6vw, 16px)' }}>
                   {selectMode ? (
                     <button
                       className="lite-btn"
@@ -186,8 +219,11 @@ export default function LiteCartTable({
           })}
           {cartItems.length === 0 && (
             <tr>
-              <td colSpan={6} style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 12.5 }}>
-                Cart is empty — search and tap an item to add it
+              <td colSpan={6} style={{ padding: '48px 0', textAlign: 'center', color: 'var(--text-3)', fontSize: 12.5 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <ShoppingCart size={32} strokeWidth={1.5} style={{ opacity: 0.4 }} />
+                  <span>Cart is empty — search and tap an item to add it</span>
+                </div>
               </td>
             </tr>
           )}

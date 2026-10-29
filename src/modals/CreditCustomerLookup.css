@@ -1,0 +1,52 @@
+/* Customer lookup — table left, filters / numpad / actions right */
+.ccl { display: grid; grid-template-columns: 1fr 300px; gap: 14px; padding: 14px 16px; background: #fafafa; min-height: 0; }
+.ccl-table { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.ccl-table > .ui-table { flex: 1; min-height: 0; }
+.ccl.is-kb .ccl-table { max-height: 300px; }
+.ccl-os { font-weight: 800; color: #15803d; }
+.ccl-os.is-due { color: #b91c1c; }
+
+.ccl-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+.ccl-search { display: flex; gap: 8px; }
+.ccl-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.ccl-field { display: flex; flex-direction: column; gap: 3px; cursor: text; }
+.ccl-field span { font-size: 10.5px; font-weight: 700; color: var(--text-4); letter-spacing: 0.5px; text-transform: uppercase; }
+.ccl-field input {
+  height: 38px; width: 100%; box-sizing: border-box; padding: 0 10px; outline: none;
+  border: 1.5px solid #e4e4e7; border-radius: 9px; background: #fff;
+  font-family: inherit; font-size: 14px; font-weight: 700; color: #18181b;
+}
+.ccl-field.is-focus span { color: var(--brand); }
+.ccl-field.is-focus input { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(120, 8, 41, 0.1); }
+
+.ccl-picked {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 38px; padding: 0 12px;
+  border-radius: 9px; border: 1px dashed #e4cdd4; background: #fff;
+}
+.ccl-picked span { font-size: 12px; font-weight: 700; color: var(--text-4); white-space: nowrap; }
+.ccl-picked b { font-size: 13px; font-weight: 800; color: var(--brand); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ccl-picked.has-value { border-style: solid; border-color: var(--brand-border); background: var(--brand-bg); }
+.ccl-picked.has-value span { color: var(--brand); }
+
+.ccl-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.ccl-btn {
+  height: 40px; border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  border: 1px solid #e4e4e7; background: #fff; color: #3f3f46;
+}
+.ccl-btn:hover { border-color: var(--brand-border); color: var(--brand); }
+.ccl-btn.is-on { border-color: var(--brand); background: var(--brand-bg); color: var(--brand); }
+.ccl-btn.is-close { border-color: #fbd5d5; background: #fff5f5; color: #dc2626; }
+.ccl-go {
+  height: 46px; border: none; border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 15px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%); color: #fff;
+}
+.ccl-go:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.ccl-kb { grid-column: 1 / -1; }
+
+@media (max-width: 760px) {
+  .ccl { grid-template-columns: 1fr; }
+}

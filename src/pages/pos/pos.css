@@ -1,0 +1,645 @@
+/* ─── POS home screen — Lite style ─────────────────────────────────
+   Left: the cart (search · lines · selected line).
+   Right: bill summary → numpad | function keys → BILLING.
+   Same visual language as Lite: soft-UI (neumorphic) keys on
+   --surface-2, 12–14px radii, brand-tinted icon chips, pill tabs,
+   gradient primary actions. Sized with clamp()/vh so 1920×1080 →
+   1024×768 terminals fit without scrolling; ≤900px stacks.
+   ───────────────────────────────────────────────────────────────── */
+
+.ph-root {
+  --ph-gap: clamp(8px, 0.9vw, 14px);
+  --ph-radius: 12px;
+  --ph-raised:  4px 4px 8px rgba(0,0,0,0.10), -4px -4px 8px rgba(255,255,255,0.75);   /* = NEU_RAISED  */
+  --ph-pressed: inset 2px 2px 5px rgba(0,0,0,0.12), inset -2px -2px 5px rgba(255,255,255,0.6); /* = NEU_PRESSED */
+  --ph-brand-raised:  0 6px 14px rgba(120,8,41,0.30), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -2px 4px rgba(0,0,0,0.15);
+  --ph-brand-pressed: 0 2px 6px rgba(120,8,41,0.22), inset 0 2px 6px rgba(0,0,0,0.30);
+  --ph-gradient: linear-gradient(145deg, var(--brand) 0%, var(--brand-2) 100%);
+
+  /* Numpad pieces — used to size the square keys */
+  --ph-pay-gap: clamp(6px, 0.6vw, 10px);
+  --ph-kgap:    clamp(6px, 0.7vw, 10px);
+  --ph-enter-h: clamp(46px, 5.8vh, 60px);
+
+  height: 100vh; height: 100dvh;
+  /* touch screens: no double-tap zoom or grey tap flash anywhere on the POS (scrolling still works) */
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);   /* never wider than the screen */
+  grid-template-rows: auto minmax(0, 1fr) auto;   /* top bar · main · status bar */
+  background: var(--bg);
+  color: var(--text-1);
+  overflow: hidden;
+}
+
+.ph-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.ph-label    { color: var(--text-3); font-weight: 500; }
+.ph-brand    { color: var(--brand); }
+.ph-strong   { color: var(--text-1); font-weight: 700; }
+.ph-num      { text-align: right; font-variant-numeric: tabular-nums; }
+.ph-card     { background: var(--surface); }
+
+/* Soft-UI key — shared by numpad, payment tiles and function keys */
+.ph-key, .ph-pay-tile, .ph-fn {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--ph-radius);
+  box-shadow: var(--ph-raised);
+  cursor: pointer;
+  user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: box-shadow 0.1s, transform 0.07s, background 0.1s, color 0.1s, border-color 0.1s;
+}
+/* Number keys: same colour as every popup keypad (--key-bg, styles/keys.css) */
+.ph-key { background: var(--key-bg); border-color: var(--key-border); }
+.ph-key:active, .ph-pay-tile:active, .ph-fn:active {
+  box-shadow: var(--ph-pressed); transform: scale(0.97);
+}
+
+/* ─── Top bar — one quiet line ─────────────────────────────────── */
+.ph-top {
+  display: flex; align-items: center; gap: clamp(14px, 2.4vw, 40px);
+  height: clamp(46px, 5.6vh, 58px);
+  padding: 0 clamp(12px, 1.4vw, 20px);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.ph-top-meta {
+  display: flex; align-items: baseline; gap: 8px; flex-shrink: 0;
+  font-size: clamp(12px, 0.85vw, 14px); color: var(--text-3);
+}
+.ph-top-meta b { color: var(--text-1); font-weight: 700; font-variant-numeric: tabular-nums; margin-left: 2px; }
+.ph-top-dot { color: var(--text-4); }
+.ph-top-right {
+  display: flex; align-items: center; justify-content: flex-end; gap: clamp(12px, 1.6vw, 28px);
+  flex: 1; min-width: 0;
+}
+/* Lite switch — small boxed button */
+.ph-top-lite {
+  display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+  height: 34px; padding: 0 12px; border-radius: var(--r-md);
+  border: 1.5px solid var(--border); background: var(--surface); cursor: pointer;
+  font-size: 12.5px; font-weight: 700; color: var(--text-2);
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.ph-top-lite:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-bg); }
+.ph-top-fullscreen { width: 34px; padding: 0; justify-content: center; }   /* icon-only, same box as Lite */
+
+/* Logged-in user — avatar initial + name over role */
+.ph-top-userwrap { position: relative; display: flex; min-width: 0; border-left: 1px solid var(--border); padding-left: clamp(8px, 1vw, 16px); }
+.ph-top-user {
+  display: flex; align-items: center; gap: 10px; min-width: 0;
+  padding: 4px 8px 4px 6px; border: 1px solid transparent; border-radius: 12px;
+  background: none; cursor: pointer; font-family: inherit; text-align: left;
+}
+.ph-top-user:hover, .ph-top-user[aria-expanded="true"] { background: #fafafa; border-color: #ececee; }
+.ph-top-user-caret { flex-shrink: 0; color: #a1a1aa; }
+.ph-top-usermenu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 901; min-width: 170px; padding: 6px;
+  background: #fff; border: 1px solid #e4e4e7; border-radius: 12px; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+}
+.ph-top-usermenu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: 40px; padding: 0 12px;
+  border: none; border-radius: 8px; background: none; cursor: pointer;
+  font-family: inherit; font-size: 13.5px; font-weight: 700; color: #3f3f46; text-align: left;
+}
+.ph-top-usermenu-item svg { color: #71717a; }
+.ph-top-usermenu-item:hover { background: #f4f4f5; }
+.ph-top-usermenu-item.is-danger, .ph-top-usermenu-item.is-danger svg { color: #dc2626; }
+.ph-top-usermenu-item.is-danger:hover { background: #fef2f2; }
+/* thin line above Log Out, between Add New and the sign-out actions */
+.ph-top-usermenu-item.has-divider { position: relative; margin-top: 7px; }
+.ph-top-usermenu-item.has-divider::before { content: ''; position: absolute; left: 8px; right: 8px; top: -4px; height: 1px; background: #ececee; }
+.ph-top-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ph-gradient); color: #fff;
+  font-size: 14px; font-weight: 800;
+}
+.ph-top-user-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.ph-top-user-text b { font-size: clamp(12.5px, 0.88vw, 14px); font-weight: 700; color: var(--text-1); max-width: 200px; }
+.ph-top-user-text small { font-size: 11px; font-weight: 500; color: var(--text-3); }
+
+/* ─── Main layout ─────────────────────────────────────────────── */
+.ph-main {
+  display: grid;
+  /* cart (45% of the screen) | numpad (centre) | function keys (right) */
+  grid-template-columns: 45% minmax(0, 1fr) minmax(0, 1.35fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "items txn  txn"
+    "items pad  fn"
+    "items bill bill";
+  gap: var(--ph-gap);
+  padding: var(--ph-gap);
+  min-height: 0;
+}
+.ph-col { display: flex; flex-direction: column; gap: var(--ph-gap); min-height: 0; min-width: 0; }
+.ph-col-items { grid-area: items; }
+.ph-col-fn    { grid-area: fn; }
+.ph-col-pad   { grid-area: pad; justify-content: center; align-items: center; }
+
+/* Search row: search box + round scan button outside it */
+.ph-searchrow { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+/* Search (like the Lite search box) */
+.ph-search {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 10px;
+  height: clamp(42px, 5.4vh, 54px); flex-shrink: 0;
+  padding: 0 8px 0 14px;
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r-md);
+  cursor: text;
+}
+.ph-search:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-glow); }
+.ph-search-icon { color: var(--text-3); flex-shrink: 0; }
+.ph-search input {
+  flex: 1; min-width: 0; height: 100%;
+  border: none; outline: none; background: none;
+  font-size: clamp(14px, 1.05vw, 17px); color: var(--text-1); font-family: inherit;
+}
+.ph-search input::placeholder { color: var(--text-4); }
+.ph-search-qty {
+  flex-shrink: 0; user-select: none; padding: 2px 9px; border-radius: 99px;
+  background: var(--brand-bg); border: 1px solid var(--brand-border);
+  color: var(--brand); font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+/* Qty key pressed: the chip shows the qty being typed */
+/* Qty being typed, and return mode, look the same: solid maroon, pulsing */
+.ph-search-qty.is-editing, .ph-search-qty.is-return { background: var(--brand); border-color: var(--brand); color: #fff; animation: ph-qty-pulse 1.2s ease-in-out infinite; }
+@keyframes ph-qty-pulse { 50% { opacity: 0.7; } }
+
+/* Click-away layer for small dropdowns (user menu) */
+.ph-search { position: relative; }
+.ph-mode-backdrop { position: fixed; inset: 0; z-index: 900; }
+
+.ph-search-scan {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: clamp(42px, 5.4vh, 54px); height: clamp(42px, 5.4vh, 54px); border-radius: 50%;
+  border: none; background: var(--ph-gradient); color: #fff; cursor: pointer;
+  box-shadow: var(--ph-brand-raised); transition: box-shadow 0.1s, transform 0.07s;
+}
+.ph-search-scan:active { box-shadow: var(--ph-brand-pressed); transform: scale(0.95); }
+.ph-search-scan:disabled { opacity: 0.5; cursor: wait; }
+
+/* Items table (like the Lite cart) */
+.ph-table {
+  flex: 1; min-height: 0; display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+}
+.ph-table-row {
+  display: grid;
+  grid-template-columns: 7% 13% minmax(0, 1fr) 9% 11% 12% 32px;
+  align-items: center; column-gap: 8px;
+  min-height: clamp(44px, 5.6vh, 58px);
+  padding: 0 12px;
+  font-size: clamp(12.5px, 0.9vw, 15px);
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  cursor: pointer; user-select: none;
+}
+.ph-table-body .ph-table-row:hover { background: #fafafa; }
+.ph-table-row.is-return { color: var(--brand); }
+/* Selected line: a very light tint (not the rose) + the maroon bar on the left */
+.ph-table-row.is-selected,
+.ph-table-body .ph-table-row.is-selected:hover {
+  background: #fcf8f9; border-left-color: var(--brand); font-weight: 700;
+}
+.ph-sl {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 22px; padding: 0 4px; border-radius: 6px;
+  background: var(--surface-2); color: var(--text-3); font-size: 11px; font-weight: 800;
+}
+.ph-table-row.is-selected .ph-sl { background: var(--brand); color: #fff; }
+/* Delete button at the end of each cart line */
+.ph-row-del {
+  justify-self: end; width: 30px; height: 30px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: none; border-radius: 8px; background: none; color: var(--text-4); cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.ph-row-del:hover { background: var(--brand-bg); color: var(--brand); }
+.ph-row-del:active { transform: scale(0.92); }
+
+/* Select mode (hold a line): checkboxes in place of the bins, one Delete for all ticked lines */
+.ph-table.is-selecting .ph-table-body .ph-table-row { -webkit-user-select: none; user-select: none; }
+.ph-row-check {
+  justify-self: end; width: 22px; height: 22px; margin-right: 4px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid #d4d4d8; border-radius: 6px; background: #fff; color: #fff; cursor: pointer;
+}
+.ph-row-check.is-on { background: var(--brand); border-color: var(--brand); }
+.ph-table-row.is-ticked, .ph-table-body .ph-table-row.is-ticked:hover { background: #fcf8f9; }
+.ph-select-bar {
+  flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px 6px 14px; border-bottom: 1px solid var(--border); background: #fafafa;
+  font-size: 13px; color: #52525b;
+}
+.ph-select-bar > span { flex: 1; }
+.ph-select-bar b { color: #18181b; }
+.ph-select-cancel, .ph-select-delete {
+  display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px;
+  border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700;
+}
+.ph-select-cancel { border: 1px solid #e4e4e7; background: #fff; color: #3f3f46; }
+.ph-select-delete { border: none; background: #dc2626; color: #fff; }
+.ph-select-delete:disabled { opacity: 0.45; cursor: not-allowed; }
+.ph-table-head {
+  flex-shrink: 0; cursor: default;
+  min-height: clamp(30px, 3.6vh, 38px);
+  background: var(--table-head-bg); border-bottom: 1px solid var(--brand-border);
+  font-size: clamp(10px, 0.7vw, 11.5px); font-weight: 700; color: var(--brand);
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.ph-table-body  { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+.ph-table-body::-webkit-scrollbar { display: none; }
+.ph-table-empty {
+  height: 100%; min-height: 180px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  padding: 24px 16px; text-align: center; color: var(--text-3); font-size: 12.5px;
+}
+
+/* Status under the table (Saving… / Searching… / Return mode) */
+/* Status (Searching… / Saving… / Return mode) sits at the right end of the search box: no layout shift */
+.ph-search-status {
+  flex-shrink: 0; padding: 2px 10px; border-radius: 99px; background: #f4f4f5;
+  font-size: 11.5px; font-weight: 600; color: #71717a; white-space: nowrap; pointer-events: none;
+}
+
+/* ─── Payment pad (like Lite keypad + payment modes) ───────────── */
+/* Tiles, keys and ENTER fill the whole column: keys share the width (3 across)
+   and the height left between the tiles and ENTER (4 rows). */
+.ph-pad {
+  /* tiles + keys + ENTER as one block, centred in the column */
+  flex: 0 1 auto; min-height: 0; width: 100%; max-width: 440px;
+  display: flex; flex-direction: column;
+  gap: var(--ph-kgap);
+}
+/* ─── Checkout: payment tiles right above BILLING (one card) ───── */
+.ph-checkout {
+  grid-area: bill; display: flex; flex-direction: column; gap: var(--ph-pay-gap);
+  padding: var(--ph-pay-gap); border-radius: 18px; background: #fff; border: 1px solid var(--border);
+  box-shadow: 0 2px 10px rgba(120, 8, 41, 0.05);
+}
+/* Payment tile colours (--pay-*) */
+.ph-checkout {
+  /* simple neumorphism: soft grey tiles with a light pink border; the selected one is pressed in */
+  --pay-bg: #f2f2f4; --pay-border: #ead3da; --pay-on-bg: #e9dde1; --pay-fg: #52525b; --pay-icon: #71717a; --pay-on-fg: var(--brand);
+}
+.ph-pay { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--ph-pay-gap); }
+.ph-pay-tile {
+  height: clamp(44px, 5.6vh, 54px); padding: 0 6px; white-space: nowrap;
+  display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px;
+  font-size: clamp(12px, 0.85vw, 14px); font-weight: 600; color: var(--pay-fg);
+  background: var(--pay-bg); border: 1px solid var(--pay-border);
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.10), -4px -4px 10px #ffffff;   /* raised */
+  transition: box-shadow 0.15s, color 0.15s;
+}
+.ph-pay-tile svg { color: var(--pay-icon); transition: color 0.15s; }
+.ph-pay-tile:hover { border-color: var(--brand-border); }
+.ph-pay-tile:active { box-shadow: inset 3px 3px 7px rgba(0, 0, 0, 0.12), inset -3px -3px 7px #ffffff; transform: none; }
+/* selected payment mode: pressed in, darker background, maroon border, icon and label */
+.ph-pay-tile.is-active {
+  background: var(--pay-on-bg); color: var(--pay-on-fg); font-weight: 800; border: 1.5px solid var(--brand);
+  box-shadow: inset 4px 4px 9px rgba(0, 0, 0, 0.13), inset -4px -4px 9px #ffffff;
+}
+.ph-pay-tile.is-active svg { color: var(--pay-on-fg); }
+.ph-keys {
+  flex: 1; min-height: calc(4 * 44px + 3 * var(--ph-kgap));
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(44px, 92px));
+  gap: var(--ph-kgap);
+}
+.ph-key {
+  width: 100%; height: 100%;
+  font-size: clamp(18px, 1.6vw, 26px); font-weight: 700; color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+/* C (clear): same key, red label */
+.ph-key.is-clear { color: #dc2626; }
+.ph-enter {
+  height: var(--ph-enter-h); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: var(--ph-gradient); color: #fff; border: none; border-radius: 14px;
+  box-shadow: var(--ph-brand-raised);
+  font-size: clamp(13.5px, 0.95vw, 16px); font-weight: 800; letter-spacing: 1px; cursor: pointer;
+  transition: box-shadow 0.1s, transform 0.07s;
+}
+.ph-enter:active { box-shadow: var(--ph-brand-pressed); transform: scale(0.98); }
+
+/* ─── Selected line strip (under the cart) ──────────────────────── */
+.ph-itemcard {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: clamp(14px, 1.8vw, 32px);
+  min-height: clamp(46px, 5.6vh, 58px); padding: 6px 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+}
+.ph-itemcard .ph-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+.ph-itemcard-main { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.ph-itemcard-main strong { font-size: clamp(13.5px, 0.95vw, 16px); font-weight: 800; color: var(--text-1); }
+.ph-itemcard.is-empty .ph-itemcard-main strong { color: var(--text-4); font-weight: 600; }
+.ph-itemcard-stat { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25; }
+.ph-itemcard-stat b { font-size: clamp(13.5px, 0.95vw, 16px); font-weight: 800; color: var(--text-1); font-variant-numeric: tabular-nums; }
+.ph-itemcard-stat.is-total b { color: var(--brand); }
+
+.ph-fnpanel {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface); border: 1px solid #ececee; border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+/* Tabs as pill chips (like the Lite group chips) */
+/* Tabs share the strip width so all five stay visible */
+.ph-tabs { display: flex; gap: 6px; padding: 10px 10px 4px; flex-shrink: 0; overflow-x: auto; scrollbar-width: none; }
+.ph-tabs::-webkit-scrollbar { display: none; }
+.ph-tab {
+  flex: 1 0 auto; padding: clamp(5px, 0.7vh, 7px) clamp(6px, 0.7vw, 12px);
+  border-radius: 99px; border: 1px solid var(--brand-border); background: var(--surface);
+  font-size: clamp(11px, 0.75vw, 12.5px); font-weight: 700; color: var(--brand-light); cursor: pointer; white-space: nowrap;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+.ph-tab:hover { border-color: var(--brand-light); color: var(--brand); }
+/* Tabs are a different shade from the rose keys: white outline, active = solid brand */
+.ph-tab.is-active { background: var(--ph-gradient); border-color: transparent; color: #fff; font-weight: 800; box-shadow: var(--ph-brand-raised); }
+
+.ph-fn-grid {
+  flex: 1; min-height: 0; overflow-y: auto;
+  /* Equal boxes, 3 across; the page's rows (--fn-rows, set per tab) share the panel height — no empty rows */
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(var(--fn-rows, 5), minmax(58px, 1fr)); grid-auto-rows: minmax(58px, 1fr);
+  gap: clamp(7px, 0.8vh, 10px); padding: clamp(8px, 1.1vh, 12px) 10px 10px;
+}
+/* Function key: soft-raised light rose box (neumorphic), bold dark label */
+.ph-fn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(4px, 0.7vh, 8px);
+  padding: 4px 6px; min-width: 0;
+  font-size: clamp(10.5px, 0.75vw, 13px); font-weight: 700; color: #18181b; text-align: center;
+  background: #faf5f6; border: 1px solid #f1e4e8; border-radius: 14px;
+  box-shadow: 4px 4px 10px rgba(120, 8, 41, 0.10), -4px -4px 10px #ffffff;
+  transition: transform 0.07s, border-color 0.12s, background 0.12s, box-shadow 0.12s;
+}
+.ph-fn svg { flex-shrink: 0; width: clamp(22px, 1.8vw, 30px); height: clamp(22px, 1.8vw, 30px); color: var(--brand); }
+/* Labels may wrap to two lines ("Product Lookup", "Privilege Customer"). */
+.ph-fn span {
+  overflow: hidden; line-height: 1.1;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.ph-fn:hover { border-color: var(--brand-border); }
+.ph-fn:active { transform: scale(0.97); box-shadow: inset 3px 3px 7px rgba(120, 8, 41, 0.12), inset -3px -3px 7px #ffffff; }
+/* switched on (Qty, Return): pressed in, maroon border and label */
+.ph-fn.is-active { background: var(--brand-bg); border-color: var(--brand); color: var(--brand); box-shadow: inset 3px 3px 7px rgba(120, 8, 41, 0.12), inset -3px -3px 7px #ffffff; }
+.ph-fn:disabled { opacity: 0.6; cursor: wait; }
+
+/* Groups tab: group name boxes, scroll when there are many */
+.ph-fn-grid.is-groups { grid-template-rows: none; grid-auto-rows: clamp(58px, 9vh, 80px); align-content: start; }
+.ph-fn-grid.is-groups .ph-fn-group {
+  padding: 0 6px; font-size: clamp(10.5px, 0.72vw, 12.5px); font-weight: 800; text-transform: uppercase; color: var(--brand);
+}
+.ph-fn-empty { grid-column: 1 / -1; padding: 24px 8px; text-align: center; color: var(--text-3); font-size: 12.5px; }
+
+/* ─── BILLING (full width of the right side, last step) ────────── */
+.ph-billing { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ph-gap); }
+.ph-bill {
+  height: clamp(54px, 7.4vh, 76px);
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  border-radius: 14px; cursor: pointer;
+  font-size: clamp(13px, 0.95vw, 16px); font-weight: 800; letter-spacing: 0.3px; line-height: 1.3; text-align: left;
+  transition: box-shadow 0.1s, transform 0.07s;
+}
+.ph-bill.is-solid   { background: var(--ph-gradient); color: #fff; border: none; box-shadow: var(--ph-brand-raised); }
+.ph-bill.is-solid:active   { box-shadow: var(--ph-brand-pressed); transform: scale(0.98); }
+.ph-bill.is-outline { background: var(--surface-2); color: var(--text-1); border: 1px solid var(--border); box-shadow: var(--ph-raised); }
+.ph-bill.is-outline svg { color: var(--brand); }
+.ph-bill.is-outline:active { box-shadow: var(--ph-pressed); transform: scale(0.98); }
+.ph-bill:disabled { opacity: 0.6; cursor: wait; }
+
+/* ─── Bill summary card (top of the right side) ────────────────── */
+.ph-txn {
+  grid-area: txn;
+  display: flex; flex-direction: column; gap: clamp(8px, 1.1vh, 12px);
+  padding: clamp(10px, 1.3vh, 14px) clamp(12px, 1.1vw, 16px);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+}
+.ph-txn.is-return { border-color: var(--brand); }
+.ph-txn-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ph-txn-cust { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ph-txn-cust > div { min-width: 0; flex-shrink: 1 !important; }   /* name truncates instead of overflowing */
+.ph-txn-title { font-size: 10.5px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.6px; white-space: nowrap; }
+.ph-txn.is-return .ph-txn-title { color: var(--brand); }
+.ph-txn-mode {
+  padding: 2px 9px; border-radius: 99px; background: var(--brand-bg); border: 1px solid var(--brand-border);
+  color: var(--brand); font-weight: 800; font-size: 10.5px; letter-spacing: 0.4px; white-space: nowrap;
+}
+.ph-txn-count { font-size: 11.5px; font-weight: 600; color: var(--text-3); white-space: nowrap; }
+
+/* Sub total · Discount · Tax · Round off as plain figures with thin dividers; TOTAL in a soft rose box */
+.ph-txn-boxes { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.7fr); gap: 0; align-items: stretch; }
+.ph-txn-stat, .ph-txn-total {
+  display: flex; flex-direction: column; justify-content: center; gap: 3px; min-width: 0;
+  padding: clamp(6px, 1vh, 10px) 12px; border-radius: 12px;
+}
+.ph-txn-stat { background: transparent; border-radius: 0; padding-left: clamp(8px, 0.9vw, 14px); }
+.ph-txn-stat:first-child { padding-left: 2px; }
+.ph-txn-stat + .ph-txn-stat { border-left: 1px solid #f0f0f2; }
+.ph-txn-stat span { font-size: 10.5px; font-weight: 600; color: #71717a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph-txn-stat b { font-size: clamp(15px, 1.1vw, 19px); font-weight: 700; color: #27272a; font-variant-numeric: tabular-nums; }
+/* TOTAL: soft rose box, maroon figure */
+.ph-txn-total { align-items: flex-end; margin-left: 8px; background: var(--brand-bg); border: 1px solid var(--brand-border); color: var(--brand); }
+.ph-txn-total > span { font-size: 10.5px; font-weight: 700; color: var(--brand); opacity: 0.75; letter-spacing: 1px; }
+.ph-txn-total strong { font-size: clamp(24px, 2.1vw, 38px); font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; line-height: 1.05; }
+.ph-txn-paid { display: flex; gap: 10px; font-size: 11px; color: #71717a; white-space: nowrap; }
+.ph-txn-paid b { color: #3f3f46; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Customer name trigger (plain variant of CustomerSearch) */
+.ph-cust-trigger {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  border: none; background: none; padding: 0; cursor: pointer;
+  font-size: clamp(14px, 1vw, 16px); font-weight: 700; color: #18181b;
+  white-space: nowrap; overflow: hidden; max-width: 100%;
+}
+.ph-cust-trigger svg { flex-shrink: 0; color: #a1a1aa; }
+.ph-cust-trigger:hover, .ph-cust-trigger:hover svg { color: var(--brand); }
+/* plain × to clear the customer: no box */
+.ph-cust-clear {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; padding: 0; border: none; border-radius: 50%;
+  background: none; color: #a1a1aa; cursor: pointer;
+}
+.ph-cust-clear:hover { background: #f4f4f5; color: #dc2626; }
+.ph-txn-cust-code { font-size: 12px; font-weight: 500; color: #a1a1aa; white-space: nowrap; }
+
+/* Qty cell: tap to open the qty wheel */
+.ph-qty-tap {
+  min-width: 36px; padding: 3px 9px; border-radius: 8px; cursor: pointer;
+  border: 1px solid #e4e4e7; background: #fff; font: inherit; color: inherit; font-variant-numeric: tabular-nums;
+}
+.ph-qty-tap:hover { border-color: var(--brand); color: var(--brand); }
+
+/* Qty popup: NEW QTY wheel · Current Qty | common keypad */
+.ph-qtyw { display: grid; grid-template-columns: 1fr 1fr; }
+.ph-qtyw-left {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 18px 20px 20px; border-right: 1px solid #ededf0;
+}
+.ph-qtyw-label { font-size: 12px; font-weight: 800; letter-spacing: 0.6px; color: #52525b; }
+.ph-qtyw-wheel { position: relative; width: 100%; }
+.ph-qtyw-typed {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  min-width: min(132px, 80%); height: 44px; padding: 0 10px; border-radius: 10px; background: #ececec;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 800; color: #18181b; font-variant-numeric: tabular-nums; pointer-events: none;
+}
+.ph-qtyw-field { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 12px; width: 100%; }
+.ph-qtyw-field span { font-size: 13px; font-weight: 700; color: #18181b; white-space: nowrap; text-align: right; }
+.ph-qtyw-field b {
+  width: 100%; height: 40px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
+  border: 1px solid #e4e4e7; border-radius: 10px; background: #fff; text-align: center;
+  font-family: inherit; font-size: 15px; font-weight: 700; color: #18181b; font-variant-numeric: tabular-nums;
+}
+.ph-qtyw-right { display: flex; flex-direction: column; gap: 12px; padding: 16px 14px 18px; }
+.ph-qtyw-foot { display: grid; grid-template-columns: 1.15fr 1fr; gap: 8px; }
+.ph-qtyw-btn { height: 46px; border-radius: 12px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 800; }
+.ph-qtyw-btn.is-primary { border: none; background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%); color: #fff; box-shadow: 0 6px 14px rgba(120, 8, 41, 0.25); }
+.ph-qtyw-btn.is-cancel { border: 1px solid #fbd5d5; background: #fff5f5; color: #dc2626; }
+.ph-qtyw-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+@media (max-width: 600px) {
+  .ph-qtyw { grid-template-columns: 1fr; }
+  .ph-qtyw-left { border-right: none; border-bottom: 1px solid #ededf0; }
+}
+
+/* ─── Line actions bar (foot of the cart) ────────────────────── */
+.ph-linebar {
+  flex-shrink: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 8px; padding: 4px; border-radius: 12px;
+  background: #fcf8f9; border: 1px solid #f1e6e9;
+}
+.ph-linebar-btn {
+  position: relative; height: clamp(50px, 6.4vh, 60px); padding: 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  border: none; border-radius: 9px; background: none; cursor: pointer;
+  font-family: inherit; font-size: clamp(11px, 0.78vw, 12.5px); font-weight: 600; color: #3f3f46; white-space: nowrap;
+  transition: background 0.1s, transform 0.07s;
+}
+.ph-linebar-btn svg { color: var(--brand); }
+/* thin divider between the buttons */
+.ph-linebar-btn + .ph-linebar-btn::before {
+  content: ''; position: absolute; left: 0; top: 22%; bottom: 22%; width: 1px; background: #ead7dd;
+}
+.ph-linebar-btn:hover:not(:disabled) { background: var(--brand-bg); }
+.ph-linebar-btn:active:not(:disabled) { transform: scale(0.96); }
+.ph-linebar-btn.is-danger, .ph-linebar-btn.is-danger svg { color: #dc2626; }
+.ph-linebar-btn.is-danger:hover:not(:disabled) { background: #fef2f2; }
+.ph-linebar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── Status bar ───────────────────────────────────────────────── */
+.ph-status {
+  /* left · clock centred · right */
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 16px;
+  align-items: center;
+  height: clamp(24px, 2.8vh, 30px); padding: 0 clamp(12px, 1.2vw, 20px);
+  background: var(--surface-2); border-top: 1px solid var(--border); color: var(--text-3);
+  font-size: clamp(10.5px, 0.7vw, 12px); font-weight: 600;
+}
+.ph-status b { color: var(--text-1); font-weight: 700; }
+.ph-status-left { display: flex; gap: clamp(16px, 3vw, 56px); min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ph-status-right { display: flex; justify-content: flex-end; gap: clamp(16px, 3vw, 48px); white-space: nowrap; }
+.ph-status-clock { display: flex; gap: 10px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ─── Narrower terminals (≤1180px) ─────────────────────────────── */
+@media (max-width: 1180px) {
+  .ph-tabs { gap: 4px; padding: 8px 8px 4px; }
+  .ph-tab { padding: 5px 6px; font-size: 10.5px; }
+  .ph-fn { gap: 4px; padding: 4px; font-size: 10.5px; }
+  .ph-fn svg { width: 22px; height: 22px; }
+  .ph-col-barcode { display: none; }
+  .ph-table-row { grid-template-columns: 9% minmax(0, 1fr) 10% 13% 14% 30px; }
+  .ph-txn-stat b { font-size: 13px; }
+  .ph-txn-stat, .ph-txn-total { padding: 6px 9px; }
+}
+
+/* ─── Portrait tablet (≤900px): stack, page scrolls ────────────── */
+@media (max-width: 900px) {
+  /* body is fixed-height (index.css), so the page itself scrolls here */
+  .ph-root { display: flex; flex-direction: column; overflow-y: auto; }
+  .ph-root > * { flex-shrink: 0; }
+  /* cart · summary · (numpad | function keys) · billing */
+  .ph-main { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-rows: none; grid-template-areas: none; }
+  .ph-col-items, .ph-col-fn, .ph-col-pad, .ph-txn, .ph-checkout { grid-area: auto; }
+  .ph-col-items, .ph-txn, .ph-checkout { grid-column: 1 / -1; }
+  .ph-pad { flex: none; }
+  .ph-keys { flex: none; grid-template-rows: repeat(4, 72px); }
+  .ph-table { min-height: 260px; max-height: 42vh; }
+  .ph-fn-grid { max-height: 360px; }
+  .ph-hide-sm { display: none; }
+}
+
+/* ─── Phone (≤600px) ───────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .ph-hide-sm { display: none; }
+  .ph-top { gap: 10px; }
+  .ph-top-meta .ph-top-dot, .ph-top-meta span:last-child, .ph-top-user-text { display: none; }
+  .ph-top-userwrap { padding-left: 6px; }
+  .ph-main { grid-template-columns: minmax(0, 1fr); }
+  .ph-txn-head { flex-wrap: wrap; }
+  .ph-txn-cust { flex-basis: 100%; }
+  .ph-txn-boxes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ph-txn-total { grid-column: 1 / -1; }
+  .ph-pay { grid-template-columns: 1fr 1fr; }
+  .ph-itemcard { flex-wrap: wrap; }
+  .ph-table-row { grid-template-columns: 11% minmax(0, 1fr) 11% 18% 30px; }
+  .ph-table-row > :nth-child(5) { display: none; }
+  .ph-status { grid-template-columns: minmax(0, 1fr); justify-items: center; }   /* phone: just the clock, centred */
+  .ph-status-left, .ph-status-right { display: none; }
+}
+
+/* Bill summary: compact (less vertical space) */
+.ph-txn { gap: clamp(4px, 0.6vh, 8px); padding: clamp(7px, 0.9vh, 10px) clamp(12px, 1vw, 16px); }
+.ph-txn-stat, .ph-txn-total { padding-top: clamp(3px, 0.5vh, 6px); padding-bottom: clamp(3px, 0.5vh, 6px); gap: 1px; }
+.ph-txn-stat b { font-size: clamp(14px, 1vw, 17px); }
+.ph-txn-total { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
+.ph-txn-total > span { align-self: flex-start; }
+.ph-txn-total strong { font-size: clamp(20px, 1.7vw, 30px); order: 2; padding-right: 2px; }
+.ph-txn-total { padding-left: 10px; padding-right: 12px; }
+.ph-txn-paid { order: 1; flex-direction: column; gap: 0; font-size: 10.5px; line-height: 1.35; }
+.ph-txn-total { min-width: 0; overflow: hidden; }
+@media (max-width: 1180px) {
+  .ph-txn-boxes { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 2.1fr); }
+  .ph-txn-total > span { display: none; }
+  .ph-txn-total strong { font-size: clamp(18px, 2vw, 24px); }
+}
+
+/* Checkout card: compact — shorter tiles and BILLING buttons, tighter padding */
+.ph-checkout { gap: 6px; padding: 6px; border-radius: 14px; }
+.ph-checkout .ph-pay { gap: 6px; }
+.ph-checkout .ph-pay-tile { height: clamp(36px, 4.6vh, 44px); border-radius: 10px; }
+.ph-checkout .ph-billing { gap: 6px; }
+.ph-checkout .ph-bill { height: clamp(42px, 5.8vh, 56px); border-radius: 11px; gap: 10px; }
+.ph-checkout .ph-bill span { line-height: 1.15; }
+.ph-checkout .ph-bill svg { width: 22px; height: 22px; }
+
+/* Align rows with the left side: numpad = function keys height; bottom card = left bottom block
+   (Repeat / Discount bar + item strip) */
+.ph-col-pad { justify-content: stretch; align-items: stretch; }
+.ph-col-pad .ph-pad { flex: 1 1 auto; max-width: none; }
+.ph-checkout { min-height: var(--ph-bottom-h, 128px); justify-content: space-between; }
+.ph-checkout .ph-pay-tile { height: auto; flex: 1; min-height: 40px; }
+.ph-checkout .ph-pay { flex: 1; }
+.ph-checkout .ph-billing { flex: 1.3; }
+.ph-checkout .ph-bill { height: auto; min-height: 50px; }
+
+/* Shorter numpad / function keys, taller payment + BILLING section */
+.ph-main { --ph-bottom-h: clamp(150px, 24vh, 210px); }
+.ph-checkout { gap: 8px; padding: 8px; }
+.ph-checkout .ph-pay-tile { min-height: 48px; font-size: clamp(13px, 0.95vw, 15px); }
+.ph-checkout .ph-pay-tile svg { width: 22px; height: 22px; }
+.ph-checkout .ph-bill { min-height: 64px; font-size: clamp(14px, 1vw, 17px); }
+.ph-checkout .ph-bill svg { width: 26px; height: 26px; }
+
+/* Customer as a tappable box */
+.ph-cust-trigger {
+  height: 34px; padding: 0 10px 0 4px; gap: 8px; border-radius: 10px;
+  border: 1px solid #ececee; background: #fafafa; font-size: clamp(13px, 0.95vw, 15px);
+  transition: border-color 0.12s, background 0.12s;
+}
+.ph-cust-ico { width: 26px; height: 26px; flex-shrink: 0; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #ececee; color: #71717a; }
+.ph-cust-trigger:hover { border-color: var(--brand-border); background: #fff; }
+.ph-cust-trigger:hover .ph-cust-ico svg { color: inherit; }
+/* Picked customer: same neutral box, dark icon */
+.ph-cust-trigger.has-customer .ph-cust-ico { color: #3f3f46; }

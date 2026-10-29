@@ -1,0 +1,73 @@
+/* Clear Hold Bill — hold cards + search (left), items + bill total (right) */
+.chb { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.3fr); grid-template-rows: minmax(0, 1fr); gap: 14px; padding: 14px 16px; background: #f7f7f8; overflow: hidden; }
+.chb section { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 14px; background: #fff; border: 1px solid #ececee; }
+.chb h4 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; color: #3f3f46; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chb h4 span { padding: 1px 9px; border-radius: 99px; background: var(--brand-bg); color: var(--brand); font-size: 12px; }
+.chb h4 b { color: var(--brand); }
+.chb-table { flex: 1; min-height: clamp(160px, 42vh, 420px); display: flex; flex-direction: column; }
+.chb-table > .ui-table { flex: 1; min-height: 0; }
+
+.chb-total {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-radius: 11px;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%); color: #fff;
+}
+.chb-total span { font-size: 14px; font-weight: 800; }
+.chb-total small { margin-left: 6px; font-size: 12px; font-weight: 600; opacity: 0.8; }
+.chb-total b { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.chb-error { padding: 8px 18px; font-size: 12.5px; font-weight: 700; background: #fef2f2; color: #b91c1c; border-bottom: 1px solid #fecaca; flex-shrink: 0; }
+.chb-refresh {
+  width: 32px; height: 32px; border-radius: 9px; cursor: pointer; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.chb-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
+.chb-spin { animation: chb-spin 0.9s linear infinite; }
+@keyframes chb-spin { to { transform: rotate(360deg); } }
+
+.chb-foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); background: #fff; flex-shrink: 0; }
+.chb-clear, .chb-close {
+  height: 44px; padding: 0 24px; border-radius: 11px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 800;
+  display: flex; align-items: center; gap: 7px;
+}
+.chb-clear { border: none; background: #dc2626; color: #fff; }
+.chb-clear:disabled { opacity: 0.4; cursor: not-allowed; }
+.chb-close { border: 1px solid #e4e4e7; background: #fff; color: #3f3f46; }
+
+@media (max-width: 760px) {
+  .chb { grid-template-columns: 1fr; grid-template-rows: none; overflow-y: auto; }
+}
+
+/* Hold cards */
+.chb-left-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.chb h4 small { margin-left: 4px; font-size: 12px; font-weight: 600; color: var(--text-4); }
+.chb-find {
+  display: flex; align-items: center; gap: 6px; height: 36px; width: 150px; padding: 0 10px; box-sizing: border-box;
+  border: 1.5px solid #e4e4e7; border-radius: 10px; background: #fafafa; color: var(--text-4); cursor: text;
+}
+.chb-find:focus-within { border-color: var(--brand); background: #fff; color: var(--brand); }
+.chb-find input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font-family: inherit; font-size: 13.5px; font-weight: 700; color: #18181b; }
+
+.chb-cards { flex: 1; min-height: clamp(160px, 42vh, 460px); overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 2px; }
+.chb-empty { padding: 40px 10px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-4); }
+.chb-card {
+  display: flex; align-items: stretch; gap: 12px; padding: 8px; flex-shrink: 0; cursor: pointer; text-align: left;
+  border: 1.5px solid #ececee; border-radius: 12px; background: #fff; font-family: inherit;
+  transition: border-color 0.12s, background 0.12s;
+}
+.chb-card:hover { border-color: var(--brand-border); }
+.chb-card-no {
+  width: 58px; flex-shrink: 0; border-radius: 9px; background: #f4f4f5; color: #18181b;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.chb-card-no small { font-size: 9.5px; font-weight: 700; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.5px; }
+.chb-card-main { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+.chb-card-top { display: flex; align-items: center; gap: 8px; }
+.chb-card-top b { font-size: 14px; font-weight: 800; color: #18181b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chb-card-top em { margin-left: auto; padding: 1px 8px; border-radius: 99px; background: #fef3c7; color: #b45309; font-style: normal; font-size: 11px; font-weight: 800; }
+.chb-card-meta, .chb-card-note { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #71717a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chb-card-note { color: var(--brand); font-style: italic; }
+.chb-card.is-on { border-color: var(--brand); background: var(--brand-bg); }
+.chb-card.is-on .chb-card-no { background: var(--brand); color: #fff; }
+.chb-card.is-on .chb-card-no small { color: rgba(255, 255, 255, 0.75); }

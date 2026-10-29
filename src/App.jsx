@@ -1,15 +1,16 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import LoginPage from './pages/LoginPage'
-import POSPage from './pages/POSPage'
-import EnrollPage from './pages/EnrollPage'
-import CustomerDisplayPage from './pages/CustomerDisplayPage'
+import LoginPage from './pages/login/LoginPage'
+import POSPage from './pages/pos/POSPage'
+import EnrollPage from './pages/enroll/EnrollPage'
+import CustomerDisplayPage from './pages/customer-display/CustomerDisplayPage'
 import LiteHomePage from './pages/lite/LiteHomePage'
-import PosNotifyHost from './components/ui/PosNotifyHost'
+import PosNotifyHost from './components/common/PosNotifyHost'
+import ToastHost from './components/common/Toast'
 import { usePosStore } from './store/posStore'
 import { getEnrollment } from './lib/device'
 import { posNotifyWarning } from './lib/posNotify'
-import SingleTabGuard from './components/ui/SingleTabGuard'
+import SingleTabGuard from './components/common/SingleTabGuard'
 import { useEffect } from 'react'
 
 const qc = new QueryClient()
@@ -50,6 +51,7 @@ export default function App() {
   return (
     <QueryClientProvider client={qc}>
       <PosNotifyHost />
+      <ToastHost />
       <SessionEndedListener />
       <SingleTabGuard>
       <BrowserRouter>

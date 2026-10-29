@@ -1,9 +1,9 @@
-const NEU_RED_RAISED    = '4px 4px 10px rgba(220,38,38,0.18), -4px -4px 10px rgba(255,255,255,0.7)'
-const NEU_RED_PRESSED   = 'inset 2px 2px 5px rgba(220,38,38,0.22), inset -2px -2px 5px rgba(255,255,255,0.5)'
+const NEU_RED_RAISED    = '4px 4px 10px rgba(120,8,41,0.18), -4px -4px 10px rgba(255,255,255,0.7)'
+const NEU_RED_PRESSED   = 'inset 2px 2px 5px rgba(120,8,41,0.22), inset -2px -2px 5px rgba(255,255,255,0.5)'
 const NEU_NEUTRAL_RAISED  = '4px 4px 10px rgba(0,0,0,0.10), -4px -4px 10px rgba(255,255,255,0.75)'
 const NEU_NEUTRAL_PRESSED = 'inset 2px 2px 5px rgba(0,0,0,0.12), inset -2px -2px 5px rgba(255,255,255,0.6)'
-const NEU_BRAND_RAISED  = '0 6px 14px rgba(107,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -2px 4px rgba(0,0,0,0.15)'
-const NEU_BRAND_PRESSED = '0 2px 6px rgba(107,0,0,0.22), inset 0 2px 6px rgba(0,0,0,0.30)'
+const NEU_BRAND_RAISED  = '0 6px 14px rgba(120,8,41,0.30), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -2px 4px rgba(0,0,0,0.15)'
+const NEU_BRAND_PRESSED = '0 2px 6px rgba(120,8,41,0.22), inset 0 2px 6px rgba(0,0,0,0.30)'
 
 export default function LiteActionBar({ hasItems, saving, onClearAll, onSave, onBillAndPrint }) {
   const press = (pressed) => e => { if (!e.currentTarget.disabled) e.currentTarget.style.boxShadow = pressed }

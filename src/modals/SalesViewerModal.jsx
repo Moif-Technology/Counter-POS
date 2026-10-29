@@ -1,0 +1,729 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { X, Receipt, User, Search, RefreshCw, Loader2, ChevronDown, Printer, Ban } from 'lucide-react'
+import { usePosStore } from '../store/posStore'
+import { api } from '../lib/api'
+import { fmtMoney } from '../lib/currencyFormat'
+import { fmtQty } from '../lib/utils'
+import { salesViewerSummaryRows } from '../lib/salesViewerSummary'
+import { printBillReceipt } from '../lib/printBillReceipt'
+import { posNotifyError, posNotifySuccess } from '../lib/posNotify'
+import { notifyStockChanged } from '../lib/stockCheck'
+import VoidBillDialog from './VoidBillDialog'
+
+import { isMultiPaymentMode, normalizePaymentMode } from '../lib/paymentModes'
+import Modal from '../components/common/Modal'
+import DateRangePicker from '../components/common/DateRangePicker'
+
+function isMultiPayment(mode) {
+  return isMultiPaymentMode(mode)
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function fmtDate(d) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  })
+}
+
+function fmtTime(d) {
+  if (!d) return '—'
+  return new Date(d).toLocaleTimeString('en-GB', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  })
+}
+
+function fmtDateTime(d) {
+  if (!d) return '—'
+  return new Date(d).toLocaleString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
+
+function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn = null }) {
+  const [open, setOpen]         = useState(false)
+  const [query, setQuery]       = useState('')
+  const [results, setResults]   = useState([])
+  const [selected, setSelected] = useState(null)
+  const [loading, setLoading]   = useState(false)
+  const wrapRef  = useRef()
+  const debRef   = useRef()
+
+  const doSearch = useCallback(async (q) => {
+    setLoading(true)
+    try {
+      const run = searchFn ?? ((qq) => api.counterPos.customerSearch(qq, 200, accessToken))
+      const { customers } = await run(q)
+      setResults(customers ?? [])
+    } catch {
+      setResults([])
+    } finally {
+      setLoading(false)
+    }
+  }, [accessToken, searchFn])
+
+  useEffect(() => { doSearch('') }, [doSearch])
+
+  useEffect(() => {
+    if (!customerId) {
+      setSelected(null)
+      return
+    }
+    if (selected?.customerId === Number(customerId)) return
+    const run = searchFn ?? ((qq) => api.counterPos.customerSearch(qq, 200, accessToken))
+    run('')
+      .then(r => {
+        const c = (r.customers ?? []).find(x => String(x.customerId) === String(customerId))
+        if (c) setSelected(c)
+      })
+      .catch(() => {})
+  }, [customerId, accessToken, selected?.customerId, searchFn])
+
+  useEffect(() => {
+    const onDoc = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [])
+
+  const scheduleSearch = (q) => {
+    clearTimeout(debRef.current)
+    debRef.current = setTimeout(() => doSearch(q), 280)
+  }
+
+  const pick = (c) => {
+    setSelected(c)
+    onSelect(c ? String(c.customerId) : '')
+    setQuery('')
+    setOpen(false)
+  }
+
+  const displayLabel = selected
+    ? `${selected.customerCode} — ${selected.customerName}`
+    : 'All customers'
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+        <User size={11} /> Customer
+      </label>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', height: 38, boxSizing: 'border-box',
+          borderRadius: 8, border: `1.5px solid ${open ? 'var(--brand)' : 'var(--border)'}`,
+          background: open ? 'var(--brand-bg)' : '#fff',
+          fontSize: 12, padding: '0 10px', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
+          textAlign: 'left', color: 'var(--text-1)', fontWeight: 600,
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayLabel}</span>
+        <ChevronDown size={14} color="var(--text-3)" style={{ flexShrink: 0 }} />
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 30,
+          background: '#fff', border: '1.5px solid var(--border)', borderRadius: 10,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderBottom: '1px solid var(--border)' }}>
+            <Search size={14} color="var(--text-3)" />
+            <input
+              autoFocus
+              value={query}
+              onChange={e => { setQuery(e.target.value); scheduleSearch(e.target.value) }}
+              placeholder="Search code or name…"
+              style={{
+                flex: 1, border: 'none', outline: 'none', fontSize: 12, fontWeight: 600,
+                background: 'transparent', color: 'var(--text-1)',
+              }}
+            />
+            {query && (
+              <button type="button" onClick={() => { setQuery(''); scheduleSearch('') }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-3)' }}>
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          <div
+            onClick={() => pick(null)}
+            style={{
+              padding: '10px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 700,
+              color: !customerId ? 'var(--brand)' : 'var(--text-2)',
+              background: !customerId ? 'var(--brand-bg)' : '#fff',
+              borderBottom: '1px solid var(--border)',
+            }}
+          >
+            All customers
+          </div>
+
+          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+            {loading && (
+              <div style={{ padding: 14, textAlign: 'center', fontSize: 11, color: 'var(--text-4)' }}>
+                <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite', display: 'inline-block' }} />
+              </div>
+            )}
+            {!loading && results.length === 0 && (
+              <div style={{ padding: 14, textAlign: 'center', fontSize: 11, color: 'var(--text-4)' }}>No customers found</div>
+            )}
+            {!loading && results.map(c => {
+              const active = String(c.customerId) === String(customerId)
+              return (
+                <div
+                  key={c.customerId}
+                  onClick={() => pick(c)}
+                  style={{
+                    padding: '9px 12px', cursor: 'pointer', fontSize: 12,
+                    borderBottom: '1px solid var(--border)',
+                    background: active ? 'var(--brand-bg)' : '#fff',
+                    color: active ? 'var(--brand)' : 'var(--text-1)',
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--surface-2)' }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = '#fff' }}
+                >
+                  <div style={{ fontWeight: 700 }}>{c.customerName}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2 }}>{c.customerCode}</div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function BillDetailModal({ salesId, accessToken, onClose, onChanged, billDetailFn = null, printFn = null }) {
+  const shopName = usePosStore(s => s.shopName)
+  const [bill, setBill]       = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [printing, setPrinting] = useState(false)
+  const [error, setError]     = useState(null)
+  const [reloadKey, setReloadKey] = useState(0)
+  /** null | { type: 'BILL' } | { type: 'ITEM', item } */
+  const [voidTarget, setVoidTarget] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    const doDetail = billDetailFn ?? ((id) => api.counterPos.salesViewerBill(id, accessToken))
+    doDetail(salesId)
+      .then(data => { if (!cancelled) setBill(data) })
+      .catch(e => { if (!cancelled) setError(e.message) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [salesId, accessToken, billDetailFn, reloadKey])
+
+  // Cancellation only for live (non-demo) posted sale bills not yet in a counter close.
+  const billMode = normalizePaymentMode(bill?.paymentMode)
+  const canVoidBill = !billDetailFn && !!bill && !bill.isVoid
+    && String(bill.counterCloseNo ?? '').toUpperCase() === 'PENDING'
+    && String(bill.transactionType ?? 'SALE').toUpperCase() !== 'RETURN'
+  const canVoidItem = canVoidBill && (billMode === 'CASH' || billMode === 'CREDITCARD')
+    && (bill?.items ?? []).length > 1
+
+  async function submitVoid(form) {
+    const result = voidTarget?.type === 'ITEM'
+      ? await api.counterPos.voidBillItem(salesId, voidTarget.item.salesChildId, form, accessToken)
+      : await api.counterPos.voidBill(salesId, form, accessToken)
+    setVoidTarget(null)
+    posNotifySuccess(result?.message ?? 'Cancelled', { title: 'Bill Cancellation', duration: 1500 })
+    notifyStockChanged()
+    setReloadKey(k => k + 1)
+    onChanged?.()
+  }
+
+  async function handlePrint() {
+    if (printing || loading) return
+    setPrinting(true)
+    try {
+      const doPrint = printFn ?? ((id, meta) => printBillReceipt(id, accessToken, meta))
+      await doPrint(salesId, { companyName: shopName })
+    } catch (e) {
+      posNotifyError(e.message ?? 'Print failed', { title: 'Print Invoice' })
+    } finally {
+      setPrinting(false)
+    }
+  }
+
+  const gridCols = 'minmax(70px,1fr) minmax(120px,2fr) 60px 70px 60px 70px 80px 34px'
+
+  return (
+    <Modal
+      onClose={onClose}
+      closeOnEsc={!voidTarget}
+      kicker="Bill with details"
+      title={bill?.billNoDisplay ?? `Bill #${salesId}`}
+      zIndex={1100}
+      width={720}
+    >
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+        {loading && (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-4)' }}>
+            <Loader2 size={20} style={{ animation: 'spin 0.8s linear infinite' }} />
+          </div>
+        )}
+        {!loading && error && (
+          <div style={{ padding: 16, color: 'var(--red)', fontWeight: 600, fontSize: 13 }}>{error}</div>
+        )}
+        {!loading && bill && (
+          <>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 14,
+            }}>
+              {[
+                ['Date', fmtDateTime(bill.billDate)],
+                ['Payment', normalizePaymentMode(bill.paymentMode)],
+                ['Customer', bill.customer?.customerName ?? 'Walk-in'],
+                ['Staff', bill.staffName ?? '—'],
+                ['Counter', bill.counterNo],
+                ['Close No', bill.counterCloseNo],
+                ...(bill.cardRefNo ? [['Card Ref', bill.cardRefNo]] : []),
+                ...(bill.isVoid ? [['Status', 'CANCELLED']] : []),
+                ...(bill.voidReason
+                  ? [['Cancel Reason', bill.voidReason + (bill.voidBy ? ' (by staff ' + bill.voidBy + ')' : '')]]
+                  : []),
+                ...(bill.remarks?.trim()
+                  ? [['Comments', bill.remarks.trim()]]
+                  : []),
+              ].map(([k, v]) => (
+                <div key={k} style={{
+                  padding: '8px 10px', borderRadius: 8, background: 'var(--surface-2)',
+                  border: '1px solid var(--border)',
+                  gridColumn: k === 'Comments' || k === 'Cancel Reason' ? '1 / -1' : undefined,
+                  color: k === 'Status' ? 'var(--red)' : undefined,
+                }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase' }}>{k}</div>
+                  <div style={{
+                    fontSize: 12, fontWeight: 700, color: 'var(--text-1)', marginTop: 2,
+                    whiteSpace: k === 'Comments' ? 'pre-wrap' : undefined,
+                  }}>{v}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ border: '1.5px solid var(--border)', borderRadius: 10, overflow: 'hidden', marginBottom: 14 }}>
+              <div style={{
+                display: 'grid', gridTemplateColumns: gridCols,
+                background: 'var(--table-head-bg)', padding: '8px 10px', borderBottom: '1.5px solid var(--border)',
+              }}>
+                {['Code', 'Description', 'Qty', 'Price', 'VAT', 'Disc', 'Total', ''].map(h => (
+                  <span key={h} style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</span>
+                ))}
+              </div>
+              <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+                {(bill.items ?? []).map((it, i) => (
+                  <div
+                    key={it.salesChildId ?? i}
+                    style={{
+                      display: 'grid', gridTemplateColumns: gridCols,
+                      padding: '8px 10px', borderBottom: '1px solid var(--border)',
+                      background: i % 2 === 0 ? '#fff' : 'var(--surface-2)',
+                      fontSize: 11,
+                    }}
+                  >
+                    <span style={{ fontWeight: 600 }}>{it.productCode}</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.description}</span>
+                    <span style={{ textAlign: 'right' }}>{fmtQty(it.qty)}</span>
+                    <span style={{ textAlign: 'right' }}>{fmtMoney(it.unitPrice)}</span>
+                    <span style={{ textAlign: 'right' }}>{fmtMoney(it.vatAmt)}</span>
+                    <span style={{ textAlign: 'right' }}>{fmtMoney(it.discount)}</span>
+                    <span style={{ textAlign: 'right', fontWeight: 700 }}>{fmtMoney(it.lineTotal)}</span>
+                    <span style={{ textAlign: 'center' }}>
+                      {canVoidItem && (
+                        <button
+                          type="button"
+                          title="Cancel this item"
+                          onClick={() => setVoidTarget({ type: 'ITEM', item: it })}
+                          style={{
+                            width: 24, height: 22, borderRadius: 6, border: '1px solid var(--red-border)',
+                            background: 'var(--red-bg)', color: 'var(--red)', cursor: 'pointer',
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                        >
+                          <Ban size={12} />
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                ))}
+                {(bill.items ?? []).length === 0 && (
+                  <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-4)', fontSize: 12 }}>No line items</div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ minWidth: 220 }}>
+                {salesViewerSummaryRows(bill).map(([k, v]) => (
+                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 12 }}>
+                    <span style={{ color: 'var(--text-3)' }}>{k}</span>
+                    <span style={{ fontWeight: 600 }}>{fmtMoney(v)}</span>
+                  </div>
+                ))}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', padding: '8px 0 0',
+                  borderTop: '2px solid var(--border)', marginTop: 6,
+                  fontSize: 14, fontWeight: 800,
+                }}>
+                  <span>Total</span>
+                  <span style={{ color: 'var(--brand)' }}>{fmtMoney(bill.amount)}</span>
+                </div>
+
+                {billMode === 'CREDITCARD' && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0 0', fontSize: 12 }}>
+                    <span style={{ color: 'var(--text-3)' }}>Card Ref No</span>
+                    <span style={{ fontWeight: 700 }}>{bill.cardRefNo || '—'}</span>
+                  </div>
+                )}
+
+                {isMultiPayment(bill.paymentMode) && (
+                  <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                    <div style={{
+                      fontSize: 9, fontWeight: 800, color: 'var(--purple)',
+                      textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8,
+                    }}>
+                      Split Payment
+                    </div>
+                    {(bill.paymentSplits ?? []).length > 0 ? (
+                      <div style={{
+                        border: '1.5px solid var(--border)', borderRadius: 8, overflow: 'hidden',
+                      }}>
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: '28px 1fr 72px 64px 52px',
+                          gap: 6,
+                          background: 'var(--surface-2)',
+                          padding: '6px 8px',
+                          borderBottom: '1px solid var(--border)',
+                        }}>
+                          {['#', 'Mode', 'Amount', 'Tip', 'Ref'].map(h => (
+                            <span key={h} style={{
+                              fontSize: 8, fontWeight: 700, color: 'var(--text-3)',
+                              textTransform: 'uppercase',
+                              textAlign: h === 'Amount' || h === 'Tip' ? 'right' : 'left',
+                            }}>
+                              {h}
+                            </span>
+                          ))}
+                        </div>
+                        {bill.paymentSplits.map(s => (
+                          <div
+                            key={s.payerNo}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '28px 1fr 72px 64px 52px',
+                              gap: 6,
+                              padding: '6px 8px',
+                              borderBottom: '1px solid var(--border)',
+                              fontSize: 10,
+                              background: '#fff',
+                            }}
+                          >
+                            <span style={{ fontWeight: 700 }}>{s.payerNo}</span>
+                            <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {s.payMode}
+                            </span>
+                            <span style={{ textAlign: 'right', fontFamily: 'inherit', fontWeight: 700 }}>
+                              {fmtMoney(s.amount)}
+                            </span>
+                            <span style={{ textAlign: 'right', fontFamily: 'inherit' }}>
+                              {fmtMoney(s.tip ?? 0)}
+                            </span>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-3)' }}>
+                              {s.refNo || '—'}
+                            </span>
+                          </div>
+                        ))}
+                        <div style={{
+                          display: 'flex', justifyContent: 'space-between',
+                          padding: '6px 8px', background: 'var(--purple-bg)',
+                          fontSize: 10, fontWeight: 800, color: 'var(--purple)',
+                        }}>
+                          <span>Split total</span>
+                          <span style={{ fontFamily: 'inherit' }}>
+                            {fmtMoney(bill.paymentSplits.reduce((a, s) => a + Number(s.amount || 0), 0))}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{
+                        padding: '10px 12px', borderRadius: 8,
+                        background: 'var(--surface-2)', border: '1px solid var(--border)',
+                        fontSize: 11, color: 'var(--text-4)', fontWeight: 600,
+                      }}>
+                        No split rows recorded for this bill.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+        {canVoidBill && (
+          <button
+            type="button"
+            onClick={() => setVoidTarget({ type: 'BILL' })}
+            style={{
+              height: 34, padding: '0 16px', borderRadius: 9, marginRight: 'auto',
+              border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
+              color: 'var(--red)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            <Ban size={14} /> Cancel Bill
+          </button>
+        )}
+        <button
+          type="button"
+          disabled={loading || printing || !!error}
+          onClick={handlePrint}
+          style={{
+            height: 34, padding: '0 18px', borderRadius: 9,
+            border: 'none',
+            background: loading || error ? 'var(--surface-3)' : 'linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%)',
+            color: loading || error ? 'var(--text-4)' : '#fff',
+            fontSize: 12, fontWeight: 700, cursor: loading || error ? 'not-allowed' : 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6,
+            boxShadow: loading || error ? 'none' : '0 2px 10px rgba(120,8,41,0.25)',
+          }}
+        >
+          <Printer size={14} /> {printing ? 'Printing…' : 'Print Invoice'}
+        </button>
+        <button onClick={onClose} style={{
+          height: 34, padding: '0 18px', borderRadius: 9,
+          border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
+          color: 'var(--red)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          transition: 'background 0.12s, color 0.12s',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--red)'; e.currentTarget.style.color = '#fff' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--red-bg)'; e.currentTarget.style.color = 'var(--red)' }}
+        >
+          Close
+        </button>
+      </div>
+      {voidTarget && bill && (
+        <VoidBillDialog
+          title={voidTarget.type === 'ITEM' ? 'Cancel Item' : 'Cancel Bill'}
+          subtitle={voidTarget.type === 'ITEM'
+            ? bill.billNoDisplay + ' — ' + (voidTarget.item.description ?? voidTarget.item.productCode ?? '')
+            : bill.billNoDisplay}
+          amount={voidTarget.type === 'ITEM' ? voidTarget.item.lineTotal : bill.amount}
+          onClose={() => setVoidTarget(null)}
+          onSubmit={submitVoid}
+        />
+      )}
+    </Modal>
+  )
+}
+
+const GRID_COLS = '90px 70px 75px 85px 1fr 80px 80px'
+
+export default function SalesViewerModal({
+  onClose, salesListFn = null, customerSearchFn = null, billDetailFn = null, printFn = null,
+}) {
+  const accessToken = usePosStore(s => s.accessToken)
+  const counterNo   = usePosStore(s => s.counterNo)
+
+  const [dateFrom, setDateFrom]     = useState(todayISO())
+  const [dateTo, setDateTo]         = useState(todayISO())
+  const [customerId, setCustomerId] = useState('')
+  const [bills, setBills]           = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState(null)
+  const [detailId, setDetailId]     = useState(null)
+
+  const loadBills = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const doList = salesListFn ?? ((params) => api.counterPos.salesViewerList(params, accessToken))
+      const { bills: list } = await doList({
+        counterNo,
+        dateFrom,
+        dateTo,
+        customerId: customerId || undefined,
+        limit: 300,
+      })
+      setBills(list ?? [])
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [accessToken, counterNo, dateFrom, dateTo, customerId, salesListFn])
+
+  useEffect(() => { loadBills() }, [loadBills])
+
+  useEffect(() => {
+    const onKey = e => {
+      if (detailId) return
+      if (document.activeElement?.tagName === 'INPUT') return
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose, detailId])
+
+  // Returns are stored as positive amounts — keep them apart; cancelled bills count nowhere.
+  const totals = bills.reduce((t, b) => {
+    if (b.isVoid) { t.voidCount += 1; return t }
+    const amt = Number(b.amount || 0)
+    const sign = b.transactionType === 'RETURN' ? -1 : 1
+    if (sign < 0) { t.returns += amt; t.returnCount += 1 } else { t.sales += amt; t.saleCount += 1 }
+    t.cash += sign * Number(b.cashAmount ?? 0)
+    t.card += sign * Number(b.cardAmount ?? 0)
+    t.credit += sign * Number(b.creditAmount ?? 0)
+    return t
+  }, { sales: 0, returns: 0, cash: 0, card: 0, credit: 0, saleCount: 0, returnCount: 0, voidCount: 0 })
+
+  return (
+    <>
+    <Modal closeOnEsc={false} onClose={onClose} icon={Receipt} kicker="Reports" title="Sales Viewer" width={820}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr auto', gap: 8, alignItems: 'end' }}>
+          <SearchableCustomerFilter
+            accessToken={accessToken}
+            customerId={customerId}
+            onSelect={setCustomerId}
+            searchFn={customerSearchFn}
+          />
+          <DateRangePicker
+            from={dateFrom}
+            to={dateTo}
+            onChange={(f, t) => { setDateFrom(f); setDateTo(t) }}
+            style={{ gridColumn: 'span 2' }}
+          />
+          <button onClick={loadBills} style={{
+            height: 38, padding: '0 14px', borderRadius: 8,
+            border: '1.5px solid var(--brand-border)', background: 'var(--brand-bg)',
+            color: 'var(--brand)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+          }}>
+            <RefreshCw size={14} /> Load
+          </button>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '0 16px 12px' }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: GRID_COLS,
+          background: 'var(--table-head-bg)', padding: '9px 10px', borderRadius: '10px 10px 0 0',
+          border: '1.5px solid var(--border)', borderBottom: 'none', marginTop: 12,
+        }}>
+          {['Bill Date', 'Bill No', 'Bill Time', 'Payment', 'Customer', 'Amount', 'Close No'].map(h => (
+            <span key={h} style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</span>
+          ))}
+        </div>
+
+        <div style={{
+          flex: 1, overflowY: 'auto', border: '1.5px solid var(--border)',
+          borderRadius: '0 0 10px 10px', minHeight: 280,
+        }}>
+          {loading && (
+            <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-4)', fontSize: 12 }}>
+              <Loader2 size={18} style={{ animation: 'spin 0.8s linear infinite', display: 'inline-block' }} /> Loading…
+            </div>
+          )}
+          {!loading && error && (
+            <div style={{ padding: 16, color: 'var(--red)', fontSize: 12, fontWeight: 600 }}>{error}</div>
+          )}
+          {!loading && !error && bills.length === 0 && (
+            <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-4)', fontSize: 12 }}>No bills found for selected filters</div>
+          )}
+          {!loading && !error && bills.map((b, i) => (
+            <button
+              key={b.salesId}
+              type="button"
+              title={b.remarks ? `Comment: ${b.remarks}` : undefined}
+              onClick={() => setDetailId(b.salesId)}
+              style={{
+                width: '100%', display: 'grid', gridTemplateColumns: GRID_COLS,
+                padding: '9px 10px', border: 'none', borderBottom: '1px solid var(--border)',
+                background: i % 2 === 0 ? '#fff' : 'var(--surface-2)',
+                fontSize: 11, textAlign: 'left', cursor: 'pointer', color: 'var(--text-1)',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-bg)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? '#fff' : 'var(--surface-2)' }}
+            >
+              <span>{fmtDate(b.billDate)}</span>
+              <span style={{ fontWeight: 700, color: b.isVoid ? 'var(--red)' : b.transactionType === 'RETURN' ? 'var(--amber)' : undefined }}>
+                {b.billNoDisplay ?? b.billNo}{b.isVoid ? ' (VOID)' : ''}
+              </span>
+              <span>{fmtTime(b.billTime)}</span>
+              <span>{normalizePaymentMode(b.paymentMode)}</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.customerName}</span>
+              <span style={{
+                fontWeight: 700, textAlign: 'right',
+                textDecoration: b.isVoid ? 'line-through' : undefined,
+                color: b.isVoid ? 'var(--text-4)' : b.transactionType === 'RETURN' ? 'var(--red)' : undefined,
+              }}>
+                {b.transactionType === 'RETURN' ? '-' : ''}{fmtMoney(b.amount)}
+              </span>
+              <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{b.counterCloseNo}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '10px 18px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', flexShrink: 0,
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>
+          <span>
+            Sales {fmtMoney(totals.sales)} ({totals.saleCount})
+            {' · '}Returns <span style={{ color: 'var(--red)' }}>-{fmtMoney(totals.returns)}</span> ({totals.returnCount})
+            {' · '}<span style={{ color: 'var(--text-1)', fontWeight: 800 }}>Net {fmtMoney(totals.sales - totals.returns)}</span>
+            {totals.voidCount > 0 ? ' · ' + totals.voidCount + ' cancelled' : ''}
+          </span>
+          <span style={{ fontSize: 10, color: 'var(--text-4)' }}>
+            Cash {fmtMoney(totals.cash)} · Card {fmtMoney(totals.card)} · Credit {fmtMoney(totals.credit)} (net of returns) — click a row for details
+          </span>
+        </div>
+        <button onClick={onClose} style={{
+          height: 34, padding: '0 18px', borderRadius: 9,
+          border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
+          color: 'var(--red)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 6,
+          transition: 'background 0.12s, color 0.12s',
+        }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--red)'; e.currentTarget.style.color = '#fff' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--red-bg)'; e.currentTarget.style.color = 'var(--red)' }}
+        >
+          <X size={13} /> Close
+        </button>
+      </div>
+    </Modal>
+
+    {detailId != null && (
+      <BillDetailModal
+        salesId={detailId}
+        accessToken={accessToken}
+        onClose={() => setDetailId(null)}
+        onChanged={loadBills}
+        billDetailFn={billDetailFn}
+        printFn={printFn}
+      />
+    )}
+    </>
+  )
+}

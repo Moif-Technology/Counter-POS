@@ -1,5 +1,6 @@
 import { Banknote, CreditCard, UserCheck, Layers } from 'lucide-react'
 import { PM } from '../../../lib/paymentModes'
+import { NEU_RAISED, NEU_PRESSED } from '../../../components/common/neumorphic'
 
 export const PAYMENT_MODES = [
   { key: PM.CASH,         label: 'Cash',     icon: Banknote },
@@ -8,8 +9,6 @@ export const PAYMENT_MODES = [
   { key: PM.MULTIPAYMENT, label: 'Multi',    icon: Layers },
 ]
 
-const NEU_RAISED = '4px 4px 8px rgba(0,0,0,0.10), -4px -4px 8px rgba(255,255,255,0.75)'
-const NEU_PRESSED = 'inset 2px 2px 5px rgba(0,0,0,0.12), inset -2px -2px 5px rgba(255,255,255,0.6)'
 
 export default function LitePaymentModes({ paymentMode, onSelect }) {
   return (
@@ -17,7 +16,7 @@ export default function LitePaymentModes({ paymentMode, onSelect }) {
       <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 'clamp(3px, 0.8vh, 6px)' }}>
         Payment
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 'clamp(4px, 0.8vh, 6px)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 'clamp(4px, 0.8vh, 6px)' }}>
         {PAYMENT_MODES.map(({ key, label, icon: Icon }) => {
           const active = paymentMode === key
           return (

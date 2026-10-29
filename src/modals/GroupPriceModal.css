@@ -1,0 +1,24 @@
+/* Group price — group name, big price, numpad, Cancel / Done */
+.gp { display: flex; flex-direction: column; gap: 12px; padding: 18px; }
+.gp-head { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.gp-head span { font-size: 10.5px; font-weight: 800; color: var(--text-4); letter-spacing: 0.7px; text-transform: uppercase; }
+.gp-head h3 { margin: 0; font-size: 19px; font-weight: 800; color: var(--brand); }
+.gp-head em { margin-top: 2px; padding: 1px 10px; border-radius: 99px; background: var(--brand-bg); color: var(--brand); font-style: normal; font-size: 12px; font-weight: 800; }
+
+.gp-price {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 60px; padding: 0 16px;
+  border: 1.5px solid #e4e4e7; border-radius: 13px; background: #fafafa;
+}
+.gp-price span { font-size: 12px; font-weight: 800; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.4px; }
+.gp-price b { font-size: 26px; font-weight: 800; color: #a1a1aa; font-variant-numeric: tabular-nums; }
+.gp-price.has-value { border-color: var(--brand); background: #fff; box-shadow: 0 0 0 3px rgba(120, 8, 41, 0.08); }
+.gp-price.has-value span, .gp-price.has-value b { color: var(--brand); }
+
+.gp-btns { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
+.gp-btns button {
+  height: 52px; border-radius: 12px; cursor: pointer; font-family: inherit; font-size: 15px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+}
+.gp-cancel { border: 1px solid #e4e4e7; background: #fff; color: #3f3f46; }
+.gp-done { border: none; background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%); color: #fff; }
+.gp-done:disabled { opacity: 0.4; cursor: not-allowed; }

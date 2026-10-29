@@ -1,7 +1,6 @@
-const NUMPAD_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', '⌫']
+import { NEU_RAISED, NEU_PRESSED } from '../../../components/common/neumorphic'
 
-const NEU_RAISED = '4px 4px 8px rgba(0,0,0,0.10), -4px -4px 8px rgba(255,255,255,0.75)'
-const NEU_PRESSED = 'inset 2px 2px 5px rgba(0,0,0,0.12), inset -2px -2px 5px rgba(255,255,255,0.6)'
+const NUMPAD_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', '⌫']
 
 export default function LiteQtyKeypad({ selectedRowKey, qtyBuffer, onPressKey, onApply }) {
   return (
@@ -13,11 +12,11 @@ export default function LiteQtyKeypad({ selectedRowKey, qtyBuffer, onPressKey, o
         display: 'flex', justifyContent: 'space-between',
       }}>
         <span>{selectedRowKey ? 'Set Qty' : 'Select a row'}</span>
-        <span style={{ fontWeight: 800, color: 'var(--brand)', fontFamily: "'JetBrains Mono', monospace" }}>
+        <span style={{ fontWeight: 800, color: 'var(--brand)', fontFamily: 'inherit' }}>
           {qtyBuffer || '—'}
         </span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'clamp(4px, 1vh, 8px)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'clamp(4px, 1vh, 8px)' }}>
         {NUMPAD_KEYS.map(k => {
           const isAction = k === '⌫' || k === 'C'
           return (
@@ -26,12 +25,12 @@ export default function LiteQtyKeypad({ selectedRowKey, qtyBuffer, onPressKey, o
               className="lite-btn"
               onClick={() => onPressKey(k)}
               style={{
-                padding: 'clamp(9px, 2.3vh, 22px) 0', borderRadius: 12,
+                padding: 'clamp(8px, 1.5vh, 20px) 0', borderRadius: 12,
                 border: `1px solid ${isAction ? 'var(--red-border)' : 'var(--border)'}`,
                 background: 'var(--surface-2)',
                 color: isAction ? 'var(--red)' : 'var(--text-1)',
                 fontSize: isAction ? 'clamp(12px, 2vh, 15px)' : 'clamp(16px, 2.6vh, 22px)', fontWeight: 700,
-                fontFamily: k === '⌫' ? 'inherit' : "'JetBrains Mono', monospace",
+                fontFamily: k === '⌫' ? 'inherit' : 'inherit',
                 cursor: 'pointer',
                 boxShadow: NEU_RAISED,
                 transition: 'transform 0.07s, box-shadow 0.1s',
