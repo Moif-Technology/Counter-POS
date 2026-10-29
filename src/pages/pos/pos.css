@@ -640,6 +640,6 @@
 }
 .ph-cust-ico { width: 26px; height: 26px; flex-shrink: 0; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #ececee; color: #71717a; }
 .ph-cust-trigger:hover { border-color: var(--brand-border); background: #fff; }
-.ph-cust-trigger.has-customer { border-color: var(--brand-border); background: var(--brand-bg); color: var(--brand); }
-.ph-cust-trigger.has-customer .ph-cust-ico { background: var(--brand); border-color: var(--brand); color: #fff; }
 .ph-cust-trigger:hover .ph-cust-ico svg { color: inherit; }
+/* Picked customer: same neutral box, dark icon */
+.ph-cust-trigger.has-customer .ph-cust-ico { color: #3f3f46; }
