@@ -6,7 +6,8 @@ import { fmt3 } from '../../lib/utils'
 import { fmtMoney, moneyPlaceholder } from '../../lib/currencyFormat'
 import { printCounterReport } from '../../lib/printCounterReport'
 import { getReceiptPrintMetaFromStore } from '../../lib/receiptPrintTheme'
-import { posNotifyWarning } from '../../lib/posNotify'
+import { posConfirm, posNotifyWarning } from '../../lib/posNotify'
+import { useOfflineStore } from '../../lib/offlineCache'
 
 const DENOMS = [
   { label: '1000', value: 1000  },
@@ -91,6 +92,24 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
 
   const handleReport = async (reportType) => {
     if (submitting || loading) return
+    // Bills saved offline on this till are not on the server yet.
+    if (!closeFn) {
+      const { pending, failed } = useOfflineStore.getState()
+      if (reportType === 'Z' && pending.length) {
+        posNotifyWarning(`Sync ${pending.length} pending offline bill${pending.length > 1 ? 's' : ''} first (status button in the header).`, { title: 'Z-Report' })
+        return
+      }
+      const unsynced = pending.length + failed.length
+      if (unsynced) {
+        const ok = await posConfirm({
+          title: `${reportType}-Report`,
+          message: `${unsynced} offline bill${unsynced > 1 ? 's are' : ' is'} not synced and won't be in this report. Continue?`,
+          confirmLabel: 'Continue',
+          cancelLabel: 'Cancel',
+        })
+        if (!ok) return
+      }
+    }
     setSubmitting(reportType)
     setError(null)
     try {
@@ -163,14 +182,21 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
 
   // Build summary rows from API data
   const summaryRows = summary ? [
-    { label: 'Total Cash',              value: fmt3(summary.totalCash),          accent: false },
+    { label: 'Opening Float',           value: fmt3(summary.openingFloat ?? 0),   accent: 'green' },
+    { label: 'Cash Sales',              value: fmt3(summary.cashSales ?? summary.totalCash), accent: false },
+    { label: 'Cash Refund',             value: fmt3(summary.cashRefund ?? 0),     accent: 'red' },
+    { label: 'Net Cash Sales',          value: fmt3(summary.totalCash),           accent: false },
     { label: 'Total Credit',            value: fmt3(summary.totalCredit),         accent: false },
     { label: 'Total Card',              value: fmt3(summary.totalCard),           accent: false },
     { label: 'Credit Receipt (Cash)',   value: fmt3(summary.creditReceiptCash),   accent: 'green' },
     { label: 'Credit Receipt (Card)',   value: fmt3(summary.creditReceiptCard),   accent: 'green' },
-    { label: 'Refund Amt',              value: fmt3(summary.totalRefund),         accent: false },
+    { label: 'Refund Amt (All Modes)',  value: fmt3(summary.totalRefund),         accent: false },
     { label: 'Total Cash IN',           value: fmt3(summary.cashIn),              accent: 'green' },
+    { label: 'Petty Cash IN',           value: fmt3(summary.pettyCashIn ?? 0),    accent: 'green' },
     { label: 'Total Cash Out',          value: fmt3(summary.cashOut),             accent: 'red' },
+    { label: 'Petty Cash Out',          value: fmt3(summary.pettyCashOut ?? 0),   accent: 'red' },
+    { label: 'Bills Cancelled',         value: `${summary.billCancelledCount ?? 0} / ${fmt3(summary.billCancelledAmount ?? 0)}`, accent: 'red' },
+    { label: 'Items Cancelled',         value: `${summary.itemCancelledCount ?? 0} / ${fmt3(summary.itemCancelledAmount ?? 0)}`, accent: 'red' },
     { label: 'Cash To Be Collected',    value: fmt3(summary.cashToBeCollected), accent: 'brand', large: true },
     { label: 'Total Discount',          value: fmt3(summary.totalDiscount),       accent: false },
     { label: 'Tax Amount',              value: fmt3(summary.totalTax),            accent: false },
@@ -401,7 +427,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
                             color: isIn ? 'var(--green)' : 'var(--red)',
                             textTransform: 'uppercase',
                           }}>
-                            {isIn ? 'IN' : 'OUT'}
+                            {row.category === 'OPENING_FLOAT' ? 'FLOAT' : row.category === 'PETTY_CASH' ? `PETTY ${isIn ? 'IN' : 'OUT'}` : isIn ? 'IN' : 'OUT'}
                           </span>
                           <span style={{ fontSize: 10, color: 'var(--text-3)', marginLeft: 6 }}>
                             {row.remarks || '—'}

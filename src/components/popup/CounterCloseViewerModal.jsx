@@ -62,8 +62,13 @@ function CloseDetailModal({ closeId, accessToken, onClose, detailFn = null }) {
     { label: 'Round Off',      value: fmt3(detail.totalRoundOff) },
     { label: 'Tax',            value: fmt3(detail.totalTax) },
     { label: 'Total Sales',    value: fmt3(detail.grossAmount) },
+    { label: 'Opening Float',  value: fmt3(detail.openingFloat ?? 0), accent: 'green' },
     { label: 'Cash In',        value: fmt3(detail.cashIn), accent: 'green' },
+    { label: 'Petty Cash In',  value: fmt3(detail.pettyCashIn ?? 0), accent: 'green' },
     { label: 'Cash Out',       value: fmt3(detail.cashOut), accent: 'red' },
+    { label: 'Petty Cash Out', value: fmt3(detail.pettyCashOut ?? 0), accent: 'red' },
+    { label: 'Bills Cancelled', value: `${detail.billCancelledCount ?? 0} / ${fmt3(detail.billCancelledAmount ?? 0)}`, accent: 'red' },
+    { label: 'Items Cancelled', value: `${detail.itemCancelledCount ?? 0} / ${fmt3(detail.itemCancelledAmount ?? 0)}`, accent: 'red' },
     { label: 'Cash To Collect', value: fmt3(detail.cashToBeCollected), accent: 'brand' },
     { label: 'Collected Cash', value: fmt3(detail.collectedCash) },
     { label: 'Cash Difference', value: fmt3(detail.cashDifference) },
@@ -180,7 +185,7 @@ function CloseDetailModal({ closeId, accessToken, onClose, detailFn = null }) {
                         color: isIn ? 'var(--green)' : 'var(--red)',
                         textTransform: 'uppercase',
                       }}>
-                        {isIn ? 'IN' : 'OUT'}
+                        {row.category === 'OPENING_FLOAT' ? 'FLOAT' : row.category === 'PETTY_CASH' ? `PETTY ${isIn ? 'IN' : 'OUT'}` : isIn ? 'IN' : 'OUT'}
                       </span>
                       <span style={{ fontSize: 11, color: 'var(--text-2)', marginLeft: 6 }}>
                         {row.remarks || '—'}

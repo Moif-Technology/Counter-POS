@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { usePosStore } from '../store/posStore'
 import { api } from '../lib/api'
-import { isMultiPaymentMode } from '../lib/paymentModes'
+import { isMultiPaymentMode, isCreditCardMode } from '../lib/paymentModes'
 import ItemsGrid from '../components/pos/ItemsGrid'
 import BarcodeInput from '../components/pos/BarcodeInput'
 import NumPad from '../components/pos/NumPad'
@@ -18,8 +18,14 @@ import { enrichCartItemsForSave } from '../lib/cartLine'
 import { focusBarcodeScan, shouldSkipBarcodeRefocus } from '../lib/posFocus'
 import { setGvTax } from '../lib/gvtax'
 import { setAutoRoundOff } from '../lib/posSettings'
-import { posConfirm, posNotifyError, posNotifySuccess, posNotifyWarning } from '../lib/posNotify'
-import { printBillReceipts } from '../lib/printBillReceipt'
+import { posConfirm, posNotifyError, posNotifySuccess, posNotifyWarning, posPromptText } from '../lib/posNotify'
+import { confirmStockForAdd, notifyStockChanged } from '../lib/stockCheck'
+import { printBillReceipts, printBillFromData } from '../lib/printBillReceipt'
+import SyncStatusButton from '../components/pos/SyncStatusButton'
+import { isOffline } from '../lib/offlineCache'
+import {
+  startOfflineSync, isNetworkError, newClientUuid, offlineBlockReason, queueOfflineBill, offlineReceiptBill,
+} from '../lib/offlineSync'
 import { broadcastSaved } from '../lib/customerDisplay'
 import { IS_ANDROID, scanSunmiBarcode } from '../lib/sunmiCameraScanner'
 import {
@@ -80,6 +86,79 @@ function HeaderIconBtn({ icon: Icon, badge }) {
   )
 }
 
+/**
+ * Shift start: no float, no bills and no drawer entries yet on this counter session →
+ * ask once for the opening float (skippable; also available under Cash In/Out).
+ */
+async function askOpeningFloat() {
+  const { accessToken, counterNo: cno, cashier: who } = usePosStore.getState()
+  const askedKey = `pos-float-asked:${cno}:${who?.staffId ?? ''}`
+  try {
+    if (sessionStorage.getItem(askedKey)) return
+    sessionStorage.setItem(askedKey, '1')
+  } catch { /* storage blocked */ }
+  let summary
+  try {
+    summary = await api.counterPos.counterSummary(cno, accessToken)
+  } catch {
+    return // no counter-reading access on this login: skip the prompt silently
+  }
+  try {
+    const fresh = !Number(summary?.openingFloat) && !Number(summary?.billCount)
+      && !(summary?.cashInOutList ?? []).length
+    if (!fresh) return
+    const raw = await posPromptText({
+      title: 'Opening Float',
+      message: 'Cash placed in the drawer at the start of this shift.',
+      placeholder: '0.00',
+      inputMode: 'decimal',
+      confirmLabel: 'Save',
+      cancelLabel: 'Skip',
+    })
+    const amount = parseFloat(raw)
+    if (!(amount > 0)) return
+    await api.counterPos.addCashInOut({
+      counterNo: cno, transactionType: 'CASH_IN', category: 'OPENING_FLOAT',
+      amount, remarks: 'Opening Float',
+    }, accessToken)
+    posNotifySuccess(`Opening float ${amount.toFixed(2)} saved`, { title: 'Opening Float', duration: 1200 })
+  } catch (err) {
+    if (err?.status !== 409) posNotifyWarning(err?.message ?? 'Opening float not saved', { title: 'Opening Float' })
+  } finally {
+    focusBarcodeScan(50)
+  }
+}
+
+/**
+ * Server unreachable: queue the bill on this terminal (cash / card sales only),
+ * print it with its offline number and clear the screen. Autosync uploads it later.
+ */
+async function saveBillOffline(payload, andPrint) {
+  const blocked = offlineBlockReason(payload)
+  if (blocked) {
+    posNotifyError(`No connection to the server. ${blocked} — bill kept on screen.`, { title: 'Not available offline' })
+    return
+  }
+  const rec = await queueOfflineBill(payload, payload.clientUuid)
+  const receipt = offlineReceiptBill(rec)
+  const st = usePosStore.getState()
+  posNotifySuccess(`No connection — saved offline as ${rec.offlineBillNo}. It will sync automatically.`, {
+    title: 'Saved Offline', duration: 1800,
+  })
+  usePosStore.setState({ recalledHoldSalesId: null })
+  if (st.customerDisplayEnabled) broadcastSaved(st.netAmount, st.paidAmount, st.balanceAmount, st.currency)
+  st.clearAll()
+  st.setBillNo('OFFLINE')
+  notifyStockChanged()
+  if (andPrint) {
+    try {
+      await printBillFromData(receipt, { companyName: st.shopName, counterNo: st.counterNo })
+    } catch (printErr) {
+      posNotifyError(printErr.message ?? 'Print failed', { title: 'Print' })
+    }
+  }
+}
+
 export default function POSPage() {
   const navigate         = useNavigate()
   const cashier          = usePosStore(s => s.cashier)
@@ -134,8 +213,15 @@ export default function POSPage() {
         setGvTax(5)
       }
     })()
+    askOpeningFloat()
     return () => clearInterval(t)
   }, [cashier, navigate, fetchNextBillNo])
+
+  // Offline product cache + autosync of bills saved while the server was unreachable.
+  useEffect(() => {
+    if (!cashier) return
+    return startOfflineSync()
+  }, [cashier])
 
   const handleEnter = useCallback(async () => {
     const state = usePosStore.getState()
@@ -217,7 +303,7 @@ export default function POSPage() {
     }
 
     const docNo = parseDocNumber(term)
-    if (docNo != null && isDocBarcodeScan(term)) {
+    if (docNo != null && isDocBarcodeScan(term) && !isOffline()) {
       const resolved = await resolveNumericDocumentScan(docNo, accessToken, api)
       if (resolved) {
         const isHold = resolved.type === DOC_TYPE.HOLD
@@ -269,6 +355,11 @@ export default function POSPage() {
       const { product } = await api.counterPos.productSearch(term, accessToken)
       const { parseScanQty, resetAfterLineScan } = usePosStore.getState()
       const qty = parseScanQty(qtyBuffer)
+      if (!(await confirmStockForAdd(product, qty))) {
+        usePosStore.getState().setBarcodeBuffer('')
+        focusBarcodeScan(30)
+        return
+      }
       addItem({
         productId:   product.productId,
         barcode:     product.barcode,
@@ -338,6 +429,23 @@ export default function POSPage() {
       return
     }
 
+    // Card bill: bank slip / approval reference is mandatory.
+    let cardRefNo = null
+    if (isCreditCardMode(state.paymentMode)) {
+      cardRefNo = await posPromptText({
+        title: 'Card Payment',
+        message: 'Enter the bank receipt / approval reference number.',
+        placeholder: 'Approval / ref no',
+        required: true,
+        confirmLabel: 'Save Bill',
+      })
+      if (!cardRefNo) {
+        posNotifyWarning('Card reference is required to save a card bill', { title: 'Card Payment' })
+        focusBarcodeScan(30)
+        return
+      }
+    }
+
     setSaving(true)
     try {
       const fresh = usePosStore.getState()
@@ -345,10 +453,11 @@ export default function POSPage() {
       const hasSale   = cartItems.some(i => Number(i.qty) > 0)
       const hasReturn = cartItems.some(i => Number(i.qty) < 0)
       const isReturn = fresh.returnMode && !hasSale && hasReturn
-      const result = await api.counterPos.saveBill({
+      const payload = {
         cartItems,
         paymentMode:  fresh.paymentMode,
         paymentSplits: isMultiPaymentMode(fresh.paymentMode) ? (fresh.paymentSplits ?? []) : undefined,
+        cardRefNo:    cardRefNo ?? undefined,
         counterNo:    fresh.counterNo,
         subTotal:     fresh.subTotal,
         discountAmt:  fresh.discountAmt,
@@ -363,7 +472,21 @@ export default function POSPage() {
         isReturn,
         recalledHoldSalesId: fresh.recalledHoldSalesId ?? null,
         recalledDeliverySalesId: fresh.recalledDeliverySalesId ?? null,
-      }, fresh.accessToken)
+        // Same id is reused if this save is queued offline, so a lost response can't double-post.
+        clientUuid:   newClientUuid(),
+      }
+      if (isOffline()) {
+        await saveBillOffline(payload, andPrint)
+        return
+      }
+      let result
+      try {
+        result = await api.counterPos.saveBill(payload, fresh.accessToken)
+      } catch (err) {
+        if (!isNetworkError(err)) throw err
+        await saveBillOffline(payload, andPrint)
+        return
+      }
 
       if (result?.isMixed) {
         posNotifySuccess(
@@ -381,6 +504,7 @@ export default function POSPage() {
       const { accessToken, counterNo, shopName, netAmount: net, paidAmount: paid, balanceAmount: change, currency, customerDisplayEnabled } = usePosStore.getState()
       if (customerDisplayEnabled) broadcastSaved(net, paid, change, currency)
       clearAll()
+      notifyStockChanged()
       await fetchNextBillNo()
 
       if (andPrint) {
@@ -452,6 +576,7 @@ export default function POSPage() {
 
         {/* Right — bill / actions / user */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <SyncStatusButton />
           <div style={{
             background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)',
             borderRadius: 7, padding: '5px 11px', flexShrink: 0,

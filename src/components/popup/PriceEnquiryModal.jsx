@@ -3,6 +3,7 @@ import { X, Delete, ScanBarcode } from 'lucide-react'
 import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
 import { fmtMoney as fmt } from '../../lib/currencyFormat'
+import { getGvTax, netToGross } from '../../lib/gvtax'
 
 const COLS = '36px 1fr 120px 70px 64px 52px 64px 70px'
 const HEADS = ['Sl#', 'Description', 'Pack Details', 'Unit Price', 'Discount', 'VAT%', 'VAT Amt', 'Price']
@@ -68,7 +69,11 @@ export default function PriceEnquiryModal({ onClose, searchFn = null }) {
     try {
       const doSearch = searchFn ?? ((t) => api.counterPos.productSearch(t, accessToken))
       const { product } = await doSearch(term)
-      const vatAmt = Number(product.unitPrice) * (Number(product.vatPer) / 100)
+      // product.unitPrice is the NET (ex-VAT) inventory price — the cart adds VAT the same way
+      // (posStore.addItem → netToGross, falling back to the GV tax rate when the item has none).
+      const vatPer = Number(product.vatPer) || getGvTax()
+      const gross = netToGross(Number(product.unitPrice) || 0, vatPer)
+      const vatAmt = gross - (Number(product.unitPrice) || 0)
       setResult({
         sl: 1,
         barcode:   product.barcode ?? term,
@@ -76,9 +81,9 @@ export default function PriceEnquiryModal({ onClose, searchFn = null }) {
         pack:      product.unitName ?? '—',
         unitPrice: Number(product.unitPrice),
         discount:  0,
-        vatPer:    Number(product.vatPer),
+        vatPer,
         vatAmt,
-        price:     Number(product.unitPrice) + vatAmt,
+        price:     gross,
         qtyOnHand: Number(product.qtyOnHand),
       })
     } catch (e) {

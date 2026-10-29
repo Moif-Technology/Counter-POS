@@ -239,7 +239,7 @@ export default function RecallHoldModal({ onClose, onRecall }) {
             </div>
             <div>
               <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: 0.8, textTransform: 'uppercase' }}>Bills</p>
-              <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1 }}>Recall Hold</p>
+              <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1 }}>Recall Hold Bill</p>
             </div>
           </div>
           <button

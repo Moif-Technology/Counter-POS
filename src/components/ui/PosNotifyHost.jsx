@@ -455,6 +455,79 @@ function PromptDialog({ prompt, onResolve }) {
   )
 }
 
+function TextPromptDialog({ prompt, onResolve }) {
+  const [visible, setVisible] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const [value, setValue] = useState('')
+  const inputRef = useRef(null)
+  const theme = THEMES.question
+
+  useEffect(() => {
+    if (prompt) {
+      setLeaving(false)
+      setValue(prompt.defaultValue ?? '')
+      const t = requestAnimationFrame(() => {
+        setVisible(true)
+        inputRef.current?.focus()
+        inputRef.current?.select()
+      })
+      return () => cancelAnimationFrame(t)
+    }
+    setVisible(false)
+    setLeaving(false)
+  }, [prompt])
+
+  if (!prompt) return null
+
+  const canSubmit = !prompt.required || value.trim().length > 0
+  const close = (result) => {
+    setLeaving(true)
+    setTimeout(() => onResolve(result), 180)
+  }
+  const submit = () => { if (canSubmit) close(value) }
+
+  return (
+    <SwalOverlay visible={visible && !leaving} onBackdropClick={() => close(null)}>
+      <SwalCard visible={visible} leaving={leaving} onClick={e => e.stopPropagation()}>
+        <SwalIcon type="question" />
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: colors.text1, marginBottom: 8, lineHeight: 1.25 }}>
+          {prompt.title}
+        </h2>
+        {prompt.message && (
+          <p style={{ fontSize: 14, color: colors.text2, lineHeight: 1.55, marginBottom: 14, padding: '0 4px' }}>
+            {prompt.message}
+          </p>
+        )}
+        <input
+          ref={inputRef}
+          value={value}
+          inputMode={prompt.inputMode}
+          placeholder={prompt.placeholder}
+          onChange={e => setValue(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') { e.preventDefault(); submit() }
+            if (e.key === 'Escape') { e.preventDefault(); close(null) }
+          }}
+          style={{
+            width: '100%', height: 48, boxSizing: 'border-box', marginBottom: 20,
+            borderRadius: 12, border: `2px solid ${colors.brandBorder}`, background: colors.brandBg,
+            padding: '0 14px', fontSize: 18, fontWeight: 700, color: colors.text1, outline: 'none',
+            fontFamily: "'JetBrains Mono', monospace",
+          }}
+        />
+        <div style={{ display: 'flex', gap: 10, opacity: 1 }}>
+          <SwalButton theme={theme} variant="secondary" onClick={() => close(null)}>
+            {prompt.cancelLabel}
+          </SwalButton>
+          <SwalButton theme={theme} variant="primary" onClick={submit}>
+            {prompt.confirmLabel}
+          </SwalButton>
+        </div>
+      </SwalCard>
+    </SwalOverlay>
+  )
+}
+
 function ConfirmDialog({ confirm, onResolve }) {
   const [visible, setVisible] = useState(false)
   const [leaving, setLeaving] = useState(false)
@@ -512,9 +585,11 @@ export default function PosNotifyHost() {
   const dismissAlert = usePosNotify(s => s.dismissAlert)
   const resolveConfirm = usePosNotify(s => s.resolveConfirm)
   const resolvePrompt = usePosNotify(s => s.resolvePrompt)
+  const textPrompt = usePosNotify(s => s.textPrompt)
+  const resolveTextPrompt = usePosNotify(s => s.resolveTextPrompt)
 
   const currentAlert = alerts[0]
-  const modalOpen = !!(confirm || prompt)
+  const modalOpen = !!(confirm || prompt || textPrompt)
 
   return (
     <>
@@ -524,6 +599,7 @@ export default function PosNotifyHost() {
       )}
       <ConfirmDialog confirm={confirm} onResolve={resolveConfirm} />
       <PromptDialog prompt={prompt} onResolve={resolvePrompt} />
+      <TextPromptDialog prompt={textPrompt} onResolve={resolveTextPrompt} />
     </>
   )
 }

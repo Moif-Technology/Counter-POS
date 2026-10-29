@@ -546,7 +546,7 @@ export default function LiteHomePage() {
         posNotifySuccess(`Bill held as HOLD-${holdNo}`, { title: 'Hold Bill', duration: 1200 })
         return
       }
-      case 'Recall': {
+      case 'Recall Hold Bill': {
         setShowRecall(true)
         return
       }

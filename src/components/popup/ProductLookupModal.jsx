@@ -3,11 +3,14 @@ import { X, Search, Trash2, Loader2 } from 'lucide-react'
 import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
 import { fmtMoney } from '../../lib/currencyFormat'
+import { fmtQty } from '../../lib/utils'
+import { STOCK_CHANGED_EVENT } from '../../lib/stockCheck'
 
 const COLUMNS = [
   { key: 'barcode',       label: 'Barcode',     w: 130 },
   { key: 'description',   label: 'Description', flex: true },
-  { key: 'packetDetails', label: 'Unit',         w: 130 },
+  { key: 'packetDetails', label: 'Unit',         w: 110 },
+  { key: 'stock',         label: 'Stock',        w: 80, align: 'right' },
   { key: 'price',         label: 'Price',        w: 90, align: 'right' },
 ]
 
@@ -46,6 +49,8 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
         description:   prod.description,
         packetDetails: prod.unitName ?? '—',
         price:         fmtMoney(prod.unitPrice ?? 0),
+        stock:         prod.trackStock === false ? '—' : fmtQty(Number(prod.qtyOnHand ?? 0)),
+        _low:          prod.trackStock !== false && Number(prod.qtyOnHand ?? 0) <= 0,
         _raw:          prod,
       })))
     } catch (e) {
@@ -59,6 +64,18 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
   useEffect(() => {
     if (groupId != null) runSearch('', price, groupId)
   }, [groupId])
+
+  // A bill saved elsewhere changes qty on hand: reload the visible rows.
+  const lastSearchRef = useRef({ q: '', p: '' })
+  useEffect(() => { lastSearchRef.current = { q: query, p: price } }, [query, price])
+  useEffect(() => {
+    const onStock = () => {
+      const { q, p } = lastSearchRef.current
+      if (q.trim() || groupId != null) runSearch(q, p)
+    }
+    window.addEventListener(STOCK_CHANGED_EVENT, onStock)
+    return () => window.removeEventListener(STOCK_CHANGED_EVENT, onStock)
+  }, [runSearch, groupId])
 
   const scheduleSearch = (q, p) => {
     clearTimeout(debounceRef.current)
@@ -203,7 +220,7 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
                   value={query}
                   onChange={handleQueryChange}
                   onKeyDown={handleQueryKeyDown}
-                  placeholder="Type or scan barcode…"
+                  placeholder="Name, code or barcode…"
                   style={{ ...inputStyle, paddingRight: 34 }}
                   onFocus={e => { e.target.style.borderColor = 'var(--brand)' }}
                   onBlur={e => { e.target.style.borderColor = 'var(--border)' }}
@@ -326,8 +343,9 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
                       key={col.key}
                       style={{
                         width: col.w, flex: col.flex ? 1 : undefined,
-                        fontSize: 12, color: isActive ? 'var(--brand)' : 'var(--text-1)',
-                        fontWeight: isActive ? 600 : 400,
+                        fontSize: 12,
+                        color: col.key === 'stock' && row._low ? 'var(--red)' : isActive ? 'var(--brand)' : 'var(--text-1)',
+                        fontWeight: isActive || (col.key === 'stock' && row._low) ? 600 : 400,
                         textAlign: col.align || 'left',
                         paddingRight: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       }}

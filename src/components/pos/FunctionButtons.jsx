@@ -45,12 +45,13 @@ import { closeAndFocusBarcode } from '../../lib/posFocus'
 import { posAskPrintCopies, posNotifyError, posNotifySuccess, posNotifyWarning } from '../../lib/posNotify'
 import { holdDataFromPosState, printHoldReceipt } from '../../lib/printHoldReceipt'
 import { deliveryDataFromPosState, printDeliveryReceipt } from '../../lib/printDeliveryReceipt'
+import { confirmStockForAdd } from '../../lib/stockCheck'
 
 /* ─── Side nav button data ───────────────────────────────────── */
 const SIDE_BUTTONS = [
   { label: 'POS',          icon: ShoppingCart, isPOS: true },
   { label: 'Hold Bill',    icon: PauseCircle },
-  { label: 'Recall',       icon: Archive },
+  { label: 'Recall Hold Bill', icon: Archive },
   { label: 'Print',        icon: Printer },
   { label: 'Reprint',      icon: Printer },
   { label: 'Sub Total',    icon: Receipt },
@@ -215,11 +216,20 @@ export function SideNav() {
           if (btn.label === 'Sub Total') { pressSubTotal();  setActiveLabel(btn.label); return }
           if (btn.label === 'Hold Bill') { doHoldBill(); setActiveLabel(btn.label); return }
           if (btn.label === 'Return') {
+            // Deyno btnReturn: bill no typed in scan box → load whole bill as return lines
+            const typed = usePosStore.getState().barcodeBuffer.trim()
+            if (/^([A-Za-z]+-?)?\d+$/.test(typed)) {
+              usePosStore.getState().loadReturnBill(typed)
+                .then(bill => posNotifySuccess(`Bill ${bill.billNoDisplay} loaded for return`, { title: 'Return', duration: 1200 }))
+                .catch(e => posNotifyError(e.message, { title: 'Return' }))
+                .finally(() => setActiveLabel(usePosStore.getState().returnMode ? 'Return' : 'POS'))
+              return
+            }
             toggleReturn()
             setActiveLabel(usePosStore.getState().returnMode ? 'Return' : 'POS')
             return
           }
-          if (btn.label === 'Recall')  { setRecallOpen(true);  setActiveLabel(btn.label); return }
+          if (btn.label === 'Recall Hold Bill') { setRecallOpen(true); setActiveLabel(btn.label); return }
           if (btn.label === 'Reprint') { setReprintOpen(true); setActiveLabel(btn.label); return }
           if (btn.label === 'Cust Display') {
             if (IS_ANDROID) {
@@ -376,10 +386,11 @@ export function FeatureGrid() {
   const qtyBuffer = usePosStore(s => s.qtyBuffer)
   const selectedRowKey = usePosStore(s => s.selectedRowKey)
 
-  function handleLookupSelect(product) {
+  async function handleLookupSelect(product) {
     if (!product?.productId && !product?.productCode && !product?.barcode) return
     const { parseScanQty, resetAfterLineScan } = usePosStore.getState()
     const qty = parseScanQty(qtyBuffer)
+    if (!(await confirmStockForAdd(product, qty))) return
     addItem({
       productId:   product.productId,
       barcode:     product.barcode ?? product.productCode,

@@ -55,6 +55,8 @@ export const usePosStore = create((set, get) => ({
   // Payment
   paidAmount: 0,
   balanceAmount: 0,
+  /** Cash handed over by the customer, typed in the Paid Amount box (string; '' = exact). */
+  tenderInput: '',
   paymentMode: PM.CASH,
   /**
    * For MULTIPAYMENT mode: array of { payMode, amount, tip?, refNo? }.
@@ -162,7 +164,7 @@ export const usePosStore = create((set, get) => ({
       cartItems: [], selectedRowKey: null,
       subTotal: 0, lineDiscountAmt: 0, billDiscountAmt: 0, discountAmt: 0, taxableAmt: 0,
       taxAmt: 0, roundOff: 0, netAmount: 0,
-      paidAmount: 0, balanceAmount: 0,
+      paidAmount: 0, balanceAmount: 0, tenderInput: '',
       paymentSplits: null,
       returnMode: false, qtyBuffer: '1', barcodeBuffer: '',
       customerId: null, customerName: '', customerCode: '',
@@ -202,6 +204,18 @@ export const usePosStore = create((set, get) => ({
   })),
   setInputMode: (mode) => set({ inputMode: mode }),
 
+  /** Paid Amount box: keep raw text, show live change against the bill. */
+  setTenderInput: (raw) => {
+    const text = String(raw ?? '')
+    const paid = parseFloat(text)
+    const { netAmount } = get()
+    if (!text.trim() || !Number.isFinite(paid)) {
+      set({ tenderInput: text, paidAmount: netAmount, balanceAmount: 0 })
+      return
+    }
+    set({ tenderInput: text, paidAmount: paid, balanceAmount: roundMoney(paid - netAmount) })
+  },
+
   /** Pure numeric barcode value = cash received (CASH/CREDITCARD). Empty → paid = bill. */
   isCashTenderInput: (raw) => moneyInputRegex().test(String(raw || '').trim()),
 
@@ -210,6 +224,11 @@ export const usePosStore = create((set, get) => ({
     const { netAmount, cartItems, paymentMode } = get()
     if (!cartItems.length) return
     if (!isCashTenderMode(paymentMode)) return
+    const tendered = parseFloat(get().tenderInput)
+    if (String(get().tenderInput).trim() && Number.isFinite(tendered)) {
+      set({ paidAmount: tendered, balanceAmount: roundMoney(tendered - netAmount) })
+      return
+    }
     set({ paidAmount: netAmount, balanceAmount: 0 })
   },
 
@@ -217,15 +236,18 @@ export const usePosStore = create((set, get) => ({
   resetPaymentForNewBill: () => {
     const { paymentMode, netAmount } = get()
     if (isCashTenderMode(paymentMode)) {
-      set({ barcodeBuffer: '', paidAmount: netAmount, balanceAmount: 0 })
+      set({ barcodeBuffer: '', tenderInput: '', paidAmount: netAmount, balanceAmount: 0 })
     } else {
-      set({ barcodeBuffer: '', paidAmount: 0, balanceAmount: 0 })
+      set({ barcodeBuffer: '', tenderInput: '', paidAmount: 0, balanceAmount: 0 })
     }
   },
 
-  /** Apply barcode cash tender and validate only on Save / Bill & Print. */
+  /**
+   * Apply cash tender and validate only on Save / Bill & Print.
+   * Paid Amount box wins; a pure number left in the scan box is the old shortcut.
+   */
   applyPaymentForSettlement: () => {
-    const { barcodeBuffer, netAmount, cartItems, paymentMode, paymentSplits } = get()
+    const { barcodeBuffer, tenderInput, netAmount, cartItems, paymentMode, paymentSplits } = get()
     if (!cartItems.length) return { ok: true }
 
     if (isMultiPaymentMode(paymentMode)) {
@@ -242,7 +264,7 @@ export const usePosStore = create((set, get) => ({
 
     if (!isCashTenderMode(paymentMode)) return { ok: true }
 
-    const trimmed = String(barcodeBuffer || '').trim()
+    const trimmed = String(tenderInput || '').trim() || String(barcodeBuffer || '').trim()
     if (!trimmed) {
       set({ paidAmount: netAmount, balanceAmount: 0 })
       return { ok: true }
@@ -465,7 +487,7 @@ export const usePosStore = create((set, get) => ({
       subTotal: 0, lineDiscountAmt: 0, billDiscountAmt: 0, discountAmt: 0, taxableAmt: 0,
       taxAmt: 0,
       // netAmount, roundOff, paidAmount, balanceAmount kept until first scan on next bill
-      returnMode: false, qtyBuffer: '1', barcodeBuffer: '',
+      returnMode: false, qtyBuffer: '1', barcodeBuffer: '', tenderInput: '',
       customerId: null, customerName: '', customerCode: '',
       customerPaymentMode: 'CASH', osAmount: 0,
       paymentMode: PM.CASH,
@@ -622,6 +644,59 @@ export const usePosStore = create((set, get) => ({
       billComment:         String(holdMaster.remarks ?? '').trim(),
     })
     get().recalc(cartItems)
+  },
+
+  /** LoadSalesData (Deyno Return) — append a posted bill's lines as negative qty. */
+  loadReturnBill: async (billNo) => {
+    const bill = await api.counterPos.billForReturn(billNo, get().accessToken)
+    const items = Array.isArray(bill?.items) ? bill.items : []
+    if (!items.length) {
+      const err = new Error(`Bill No : ${billNo} Not found`)
+      err.status = 404
+      throw err
+    }
+    const prev = get().cartItems
+    const returnLines = items.map((it, idx) => {
+      const groupId = Number(it.groupId) > 0 ? Number(it.groupId) : null
+      const productId = Number(it.productId) > 0 ? Number(it.productId) : null
+      const vatPer = Number(it.vatPer) || 0
+      const key = `RTN_${bill.salesId}_${it.salesChildId ?? idx}`
+      return {
+        slNo:          prev.length + idx + 1,
+        barcode:       groupId && !productId ? key : (it.productCode || String(productId ?? '')),
+        productId,
+        productCode:   it.productCode,
+        description:   it.description,
+        descriptionArabic: it.descriptionArabic,
+        qty:           -Math.abs(Number(it.qty) || 0),
+        unitPrice:     Number(it.unitPrice) || 0,
+        unitPriceGross: netToGross(Number(it.unitPrice) || 0, vatPer),
+        vatPer,
+        discount:      0,
+        discountMode:  'amt',
+        discountAmt:   Math.abs(Number(it.discount) || 0),
+        groupId,
+        priceIsGross:  !!(groupId && !productId),
+        _key:          key,
+      }
+    })
+    const cartItems = [...prev, ...returnLines]
+    const c = bill.customer ?? {}
+    set({
+      cartItems,
+      returnMode: true,
+      qtyBuffer: '-1',
+      barcodeBuffer: '',
+      selectedRowKey: returnLines[returnLines.length - 1]._key,
+      ...(c.customerId && !get().customerId ? {
+        customerId: Number(c.customerId),
+        customerName: c.customerName ?? '',
+        customerCode: c.customerCode ?? '',
+      } : {}),
+    })
+    get().recalc(cartItems)
+    if (!prev.length) get().resetPaymentForNewBill()
+    return bill
   },
 
   /** Fetch and load a pending delivery onto the counter by delivery number. */

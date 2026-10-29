@@ -70,6 +70,7 @@ export default function StaffWiseReportModal({ onClose, reportFn = null }) {
         <td style="text-align:right">${fmt3(r.grossAmount)}</td>
         <td style="text-align:right">${fmt3(r.totalDiscount)}</td>
         <td style="text-align:right">${fmt3(r.totalRoundOff)}</td>
+        <td style="text-align:right">${fmt3(r.returnAmount ?? 0)}</td>
         <td style="text-align:right;font-weight:700">${fmt3(r.netAmount)}</td>
         <td style="text-align:right">${fmt3(r.totalCash)}</td>
         <td style="text-align:right">${fmt3(r.totalCard)}</td>
@@ -117,6 +118,7 @@ export default function StaffWiseReportModal({ onClose, reportFn = null }) {
         <th class="right">Gross Amt</th>
         <th class="right">Discount</th>
         <th class="right">Round Off</th>
+        <th class="right">Returns</th>
         <th class="right">Net Amount</th>
         <th class="right">Cash</th>
         <th class="right">Card</th>
@@ -133,6 +135,7 @@ export default function StaffWiseReportModal({ onClose, reportFn = null }) {
         <td class="right">${fmt3(rows.reduce((s, r) => s + r.grossAmount, 0))}</td>
         <td class="right">${fmt3(rows.reduce((s, r) => s + r.totalDiscount, 0))}</td>
         <td class="right">${fmt3(rows.reduce((s, r) => s + r.totalRoundOff, 0))}</td>
+        <td class="right">${fmt3(rows.reduce((s, r) => s + (r.returnAmount ?? 0), 0))}</td>
         <td class="right">${fmt3(grandTotal)}</td>
         <td class="right">${fmt3(rows.reduce((s, r) => s + r.totalCash, 0))}</td>
         <td class="right">${fmt3(rows.reduce((s, r) => s + r.totalCard, 0))}</td>
@@ -290,7 +293,7 @@ export default function StaffWiseReportModal({ onClose, reportFn = null }) {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
                     <tr style={{ background: 'var(--surface-2)' }}>
-                      {['#', 'Staff Name', 'Bills', 'Gross Amt', 'Discount', 'Round Off', 'Net Amount', 'Cash', 'Card', 'Credit'].map((h, i) => (
+                      {['#', 'Staff Name', 'Bills', 'Gross Amt', 'Discount', 'Round Off', 'Returns', 'Net Amount', 'Cash', 'Card', 'Credit'].map((h, i) => (
                         <th key={h} style={{
                           padding: '9px 10px', fontWeight: 700, fontSize: 10.5,
                           color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: 0.5,
@@ -309,6 +312,7 @@ export default function StaffWiseReportModal({ onClose, reportFn = null }) {
                         <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--text-2)' }}>{fmt3(r.grossAmount)}</td>
                         <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--red)' }}>{fmt3(r.totalDiscount)}</td>
                         <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--text-3)' }}>{fmt3(r.totalRoundOff)}</td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--red)' }}>{fmt3(r.returnAmount ?? 0)}</td>
                         <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 800, color: 'var(--text-1)' }}>{fmt3(r.netAmount)}</td>
                         <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--green)' }}>{fmt3(r.totalCash)}</td>
                         <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--blue)' }}>{fmt3(r.totalCard)}</td>
@@ -323,6 +327,7 @@ export default function StaffWiseReportModal({ onClose, reportFn = null }) {
                       <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 800 }}>{fmt3(rows.reduce((s, r) => s + r.grossAmount, 0))}</td>
                       <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 800, color: 'var(--red)' }}>{fmt3(rows.reduce((s, r) => s + r.totalDiscount, 0))}</td>
                       <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 800 }}>{fmt3(rows.reduce((s, r) => s + r.totalRoundOff, 0))}</td>
+                      <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 800, color: 'var(--red)' }}>{fmt3(rows.reduce((s, r) => s + (r.returnAmount ?? 0), 0))}</td>
                       <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 800, color: 'var(--text-1)' }}>{fmt3(grandTotal)}</td>
                       <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 800, color: 'var(--green)' }}>{fmt3(rows.reduce((s, r) => s + r.totalCash, 0))}</td>
                       <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 800, color: 'var(--blue)' }}>{fmt3(rows.reduce((s, r) => s + r.totalCard, 0))}</td>

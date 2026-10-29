@@ -6,8 +6,15 @@ import { api } from '../../lib/api'
 import { usePosStore } from '../../store/posStore'
 import { fmtMoney, moneyPlaceholder } from '../../lib/currencyFormat'
 
-const IN_CATEGORIES  = ['Cash', 'Petty Cash']
-const OUT_CATEGORIES = ['Cash', 'Expense From Cash Counter']
+const IN_CATEGORIES  = ['Cash', 'Opening Float', 'Petty Cash']
+const OUT_CATEGORIES = ['Cash', 'Petty Cash', 'Expense From Cash Counter']
+/** Stored ops.cash_in_out.category — X/Z report float and petty cash on their own lines. */
+const CATEGORY_CODE = {
+  'Cash': 'GENERAL',
+  'Opening Float': 'OPENING_FLOAT',
+  'Petty Cash': 'PETTY_CASH',
+  'Expense From Cash Counter': 'EXPENSE',
+}
 
 export default function CashInOutModal({ onClose, saveFn = null }) {
   const [step,     setStep]     = useState('choose')
@@ -89,6 +96,7 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
         await doSave({
           counterNo,
           transactionType,
+          category: CATEGORY_CODE[e.category] ?? 'GENERAL',
           amount: parseFloat(e.amount),
           remarks: remarks || null,
         })

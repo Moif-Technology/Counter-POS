@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { usePosStore } from '../../store/posStore'
-import { normalizePaymentMode } from '../../lib/paymentModes'
+import { normalizePaymentMode, isCashTenderMode } from '../../lib/paymentModes'
 import { getGvTax } from '../../lib/gvtax'
 import { fmt3 } from '../../lib/utils'
 import { ChevronUp, ChevronDown, Receipt } from 'lucide-react'
@@ -49,8 +49,9 @@ export default function BillSummary() {
   const {
     subTotal, lineDiscountAmt, billDiscountAmt, discountAmt, taxableAmt, taxAmt, voucherAmt,
     roundOff, netAmount, paidAmount, balanceAmount,
-    paymentMode,
+    paymentMode, tenderInput, setTenderInput, cartItems,
   } = usePosStore()
+  const showTender = isCashTenderMode(paymentMode)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -104,10 +105,41 @@ export default function BillSummary() {
           Payment
         </div>
 
-        <SummaryRow label="Paid Amount" value={fmt3(paidAmount)} bold />
+        {showTender ? (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '3px 0' }}>
+            <label htmlFor="pos-paid-amount" style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+              Paid Amount
+            </label>
+            <input
+              id="pos-paid-amount"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder={fmt3(netAmount)}
+              value={tenderInput}
+              disabled={!cartItems.length}
+              onChange={e => {
+                const v = e.target.value.replace(/[^0-9.]/g, '')
+                if ((v.match(/\./g) ?? []).length > 1) return
+                setTenderInput(v)
+              }}
+              onKeyDown={e => { if (e.key === 'Escape') setTenderInput('') }}
+              style={{
+                width: 110, height: 30, boxSizing: 'border-box', textAlign: 'right',
+                borderRadius: 7, border: '1.5px solid var(--brand-border)', background: '#fff',
+                padding: '0 8px', fontSize: 13, fontWeight: 800, color: 'var(--text-1)',
+                fontFamily: "'JetBrains Mono', monospace", outline: 'none',
+              }}
+            />
+          </div>
+        ) : (
+          <SummaryRow label="Paid Amount" value={fmt3(paidAmount)} bold />
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600 }}>Balance</span>
+          <span style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600 }}>
+            {balanceAmount < 0 ? 'Short' : 'Change'}
+          </span>
           <span style={{
             fontSize: 16, fontWeight: 800, lineHeight: 1,
             fontVariantNumeric: 'tabular-nums',

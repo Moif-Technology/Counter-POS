@@ -48,6 +48,21 @@ export const usePosNotify = create((set, get) => ({
     prompt?.resolve?.(value)
     set({ prompt: null })
   },
+
+  /** @type {null | { title?: string, message?: string, defaultValue?: string, placeholder?: string, inputMode?: string, required?: boolean, confirmLabel?: string, cancelLabel?: string, resolve?: (v: string|null) => void }} */
+  textPrompt: null,
+
+  showTextPrompt: (opts) => new Promise((resolve) => {
+    const { textPrompt } = get()
+    if (textPrompt?.resolve) textPrompt.resolve(null)
+    set({ textPrompt: { ...opts, resolve } })
+  }),
+
+  resolveTextPrompt: (value) => {
+    const { textPrompt } = get()
+    textPrompt?.resolve?.(value)
+    set({ textPrompt: null })
+  },
 }))
 
 function normalizeType(type) {
@@ -138,4 +153,21 @@ export function posAskPrintCopies(opts = {}) {
     if (!Number.isFinite(n) || n < min) return min
     return Math.min(n, max)
   })
+}
+
+/**
+ * Ask for a line of text (card ref, amount…). Resolves the trimmed text, or null when cancelled.
+ * required=true keeps OK disabled until something is typed.
+ */
+export function posPromptText(opts = {}) {
+  return usePosNotify.getState().showTextPrompt({
+    title: opts.title ?? 'Enter value',
+    message: opts.message ?? '',
+    defaultValue: String(opts.defaultValue ?? ''),
+    placeholder: opts.placeholder ?? '',
+    inputMode: opts.inputMode ?? 'text',
+    required: !!opts.required,
+    confirmLabel: opts.confirmLabel ?? 'OK',
+    cancelLabel: opts.cancelLabel ?? 'Cancel',
+  }).then((raw) => (raw == null ? null : String(raw).trim()))
 }

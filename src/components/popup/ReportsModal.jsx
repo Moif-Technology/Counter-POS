@@ -4,11 +4,14 @@ import StaffWiseReportModal from './StaffWiseReportModal'
 import SalesViewerModal from './SalesViewerModal'
 import CounterCloseViewerModal from './CounterCloseViewerModal'
 import CashInOutViewerModal from './CashInOutViewerModal'
+import RecallHoldModal from './RecallHoldModal'
+import { api } from '../../lib/api'
+import { usePosStore } from '../../store/posStore'
+import { posConfirm, posNotifyError, posNotifySuccess, posNotifyInfo } from '../../lib/posNotify'
 import {
   X, BarChart2,
   ClipboardList, Users, Star, Grid3x3, Receipt, Archive, Wallet,
   UserCog, Eraser, Trash2,
-  Download, Upload, GitBranch,
   KeyRound, Mail, ShieldCheck,
   Power,
 } from 'lucide-react'
@@ -37,21 +40,11 @@ const SECTIONS = [
     border: 'var(--amber-border)',
     items: [
       { key: 4, label: 'Cashier Change',      sub: 'Switch active cashier',    icon: UserCog },
-      { key: 5, label: 'Clear Hold Bill',     sub: 'Remove selected hold',     icon: Eraser },
+      { key: 5, label: 'Clear Hold Bill',     sub: 'Pick a hold to remove',    icon: Eraser },
       { key: 10, label: 'Clear All Holds',    sub: 'Wipe all hold bills',      icon: Trash2, danger: true },
     ],
   },
-  {
-    label: 'Data Sync',
-    color: 'var(--green)',
-    bg: 'var(--green-bg)',
-    border: 'var(--green-border)',
-    items: [
-      { key: 6, label: 'Download Data',   sub: 'Fetch from server',       icon: Download },
-      { key: 7, label: 'Upload to Server',sub: 'Push counter data',       icon: Upload },
-      { key: 13, label: 'Sync to Branch', sub: 'Sync cross-branch data',  icon: GitBranch },
-    ],
-  },
+  // Data Sync (Download / Upload / Sync to Branch) hidden until offline sync exists.
   {
     label: 'Settings',
     color: 'var(--purple)',
@@ -74,6 +67,8 @@ const SECTIONS = [
   },
 ]
 
+const VISIBLE_KEYS = new Set(SECTIONS.flatMap(sec => sec.items.map(i => i.key)))
+
 /* ─── Shortcut key map (0–9 + A–D) ─────────────────────────── */
 const SHORTCUT_MAP = {
   0: '0', 1: '1', 2: '2', 3: '3', 4: '4',
@@ -95,13 +90,40 @@ export default function ReportsModal({
   const [salesViewerOpen,       setSalesViewerOpen]       = useState(false)
   const [counterCloseViewerOpen, setCounterCloseViewerOpen] = useState(false)
   const [cashInOutViewerOpen,    setCashInOutViewerOpen]    = useState(false)
+  const [clearHoldOpen,          setClearHoldOpen]          = useState(false)
   const overlayRef = useRef()
+  // Lite (demo) mode passes its own data fns and keeps its holds locally.
+  const liteMode = !!salesListFn
+
+  async function clearAllHolds() {
+    const token = usePosStore.getState().accessToken
+    try {
+      const holds = await api.counterPos.getHeldBills(token)
+      const list = Array.isArray(holds) ? holds : []
+      if (!list.length) { posNotifyInfo('There are no hold bills', { title: 'Clear All Holds' }); return }
+      const ok = await posConfirm({
+        title: 'Clear All Holds',
+        message: `Remove all ${list.length} hold bill${list.length !== 1 ? 's' : ''}? This cannot be undone.`,
+        confirmLabel: 'Clear All',
+        danger: true,
+      })
+      if (!ok) return
+      let failed = 0
+      for (const h of list) {
+        try { await api.counterPos.cancelHold(h.sales_id, token) } catch { failed += 1 }
+      }
+      if (failed) posNotifyError(`${failed} hold bill(s) could not be removed`, { title: 'Clear All Holds' })
+      else posNotifySuccess(`${list.length} hold bill(s) cleared`, { title: 'Clear All Holds', duration: 1500 })
+    } catch (e) {
+      posNotifyError(e.message ?? 'Could not clear holds', { title: 'Clear All Holds' })
+    }
+  }
 
   useEffect(() => {
     const onKey = e => {
       if (e.key === 'Escape') { onClose(); return }
       const code = e.key.toUpperCase()
-      const entry = Object.entries(SHORTCUT_MAP).find(([, v]) => v === code)
+      const entry = Object.entries(SHORTCUT_MAP).find(([k, v]) => v === code && VISIBLE_KEYS.has(Number(k)))
       if (entry) {
         const itemKey = Number(entry[0])
         handleSelect(itemKey)
@@ -117,6 +139,8 @@ export default function ReportsModal({
     if (itemKey === 14) { setSalesViewerOpen(true); return }
     if (itemKey === 15) { setCounterCloseViewerOpen(true); return }
     if (itemKey === 16) { setCashInOutViewerOpen(true); return }
+    if (!liteMode && itemKey === 5) { setClearHoldOpen(true); return }
+    if (!liteMode && itemKey === 10) { clearAllHolds(); return }
     onSelect?.(itemKey)
     onClose()
   }
@@ -342,7 +366,7 @@ export default function ReportsModal({
           flexShrink: 0,
         }}>
           <span style={{ fontSize: 10, color: 'var(--text-4)', fontWeight: 600 }}>
-            17 operations available
+            {SECTIONS.reduce((n, sec) => n + sec.items.length, 0)} operations available
           </span>
           <button
             onClick={onClose}
@@ -387,6 +411,12 @@ export default function ReportsModal({
         onClose={() => setCounterCloseViewerOpen(false)}
         historyFn={closeHistoryFn}
         closeDetailFn={closeDetailFn}
+      />
+    )}
+    {clearHoldOpen && (
+      <RecallHoldModal
+        onClose={() => setClearHoldOpen(false)}
+        onRecall={() => setClearHoldOpen(false)}
       />
     )}
     {cashInOutViewerOpen && (

@@ -57,7 +57,16 @@ export function buildCounterReportHtml(data, meta = {}) {
   const reportAt = meta.reportAt ? new Date(meta.reportAt) : new Date()
   const printerNote = getReceiptPrinterName()
 
-  const cashSales = Number(data.totalCash) || 0
+  // Gross cash sales (refunds shown on their own line); older close records only have the net.
+  const cashSales = Number(data.cashSales ?? data.totalCash) || 0
+  const cashRefund = Number(data.cashRefund) || 0
+  const openingFloat = Number(data.openingFloat) || 0
+  const pettyCashIn = Number(data.pettyCashIn) || 0
+  const pettyCashOut = Number(data.pettyCashOut) || 0
+  const billCancelledCount = Number(data.billCancelledCount) || 0
+  const billCancelledAmount = Number(data.billCancelledAmount) || 0
+  const itemCancelledCount = Number(data.itemCancelledCount) || 0
+  const itemCancelledAmount = Number(data.itemCancelledAmount) || 0
   const creditReceived = Number(data.creditReceiptCash) || 0
   const advanceReceived = 0
   const cashIn = Number(data.cashIn) || 0
@@ -73,7 +82,7 @@ export function buildCounterReportHtml(data, meta = {}) {
   const receiptCard = Number(data.creditReceiptCard) || 0
   const voucherSales = Number(data.totalVoucher) || 0
   const complimentSales = 0
-  const cashSalesLessRefund = cashSales
+  const cashSalesLessRefund = Number(data.totalCash) || 0
   const totalDiscount = Number(data.totalDiscount) || 0
   const itemDiscount = Number(data.itemDiscountTotal) || 0
   const totalSales = Number(data.grossAmount) || 0
@@ -91,13 +100,17 @@ export function buildCounterReportHtml(data, meta = {}) {
   const counterNo = meta.counterNo ?? data.counterNo ?? ''
 
   const financialRows = [
+    ['OPENING FLOAT', openingFloat],
     ['CASH SALES', cashSales],
     ['CREDIT RECEIVED', creditReceived],
     ['ADVANCE RECEIVED', advanceReceived],
     ['TOTAL CASH IN', cashIn],
+    ['PETTY CASH IN', pettyCashIn],
     ['TOTAL CASH OUT', cashOut],
+    ['PETTY CASH OUT', pettyCashOut],
     ['TOTAL', subTotal],
-    ['REFUND', refund],
+    ['CASH REFUND', cashRefund],
+    ['REFUND (ALL MODES)', refund],
     ['CASH TO BE COLLECTED', cashToCollect],
     ['COLLECTED CASH', collectedCash],
     ['CASH DIFFERENCE', cashDifference],
@@ -176,8 +189,8 @@ export function buildCounterReportHtml(data, meta = {}) {
       <tr><th>Cancel Type</th><th class="c">Coun</th><th class="r">Amount</th></tr>
     </thead>
     <tbody>
-      ${countRow('BILL CANCELLED', 0, 0)}
-      ${countRow('ITEM CANCELLED', 0, 0)}
+      ${countRow('BILL CANCELLED', billCancelledCount, billCancelledAmount)}
+      ${countRow('ITEM CANCELLED', itemCancelledCount, itemCancelledAmount)}
     </tbody>
   </table>
 

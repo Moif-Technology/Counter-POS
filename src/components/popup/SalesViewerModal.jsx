@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  X, Receipt, Calendar, User, Search, RefreshCw, Loader2, ChevronDown, Printer,
+  X, Receipt, Calendar, User, Search, RefreshCw, Loader2, ChevronDown, Printer, Ban,
 } from 'lucide-react'
 import { usePosStore } from '../../store/posStore'
 import { api } from '../../lib/api'
@@ -8,7 +8,9 @@ import { fmtMoney } from '../../lib/currencyFormat'
 import { fmtQty } from '../../lib/utils'
 import { salesViewerSummaryRows } from '../../lib/salesViewerSummary'
 import { printBillReceipt } from '../../lib/printBillReceipt'
-import { posNotifyError } from '../../lib/posNotify'
+import { posNotifyError, posNotifySuccess } from '../../lib/posNotify'
+import { notifyStockChanged } from '../../lib/stockCheck'
+import VoidBillDialog from './VoidBillDialog'
 
 import { isMultiPaymentMode, normalizePaymentMode } from '../../lib/paymentModes'
 
@@ -200,12 +202,15 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn 
   )
 }
 
-function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, printFn = null }) {
+function BillDetailModal({ salesId, accessToken, onClose, onChanged, billDetailFn = null, printFn = null }) {
   const shopName = usePosStore(s => s.shopName)
   const [bill, setBill]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [printing, setPrinting] = useState(false)
   const [error, setError]     = useState(null)
+  const [reloadKey, setReloadKey] = useState(0)
+  /** null | { type: 'BILL' } | { type: 'ITEM', item } */
+  const [voidTarget, setVoidTarget] = useState(null)
   const overlayRef = useRef()
 
   useEffect(() => {
@@ -218,13 +223,32 @@ function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, p
       .catch(e => { if (!cancelled) setError(e.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [salesId, accessToken, billDetailFn])
+  }, [salesId, accessToken, billDetailFn, reloadKey])
 
   useEffect(() => {
-    const onKey = e => { if (e.key === 'Escape') onClose() }
+    const onKey = e => { if (e.key === 'Escape' && !voidTarget) onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, voidTarget])
+
+  // Cancellation only for live (non-demo) posted sale bills not yet in a counter close.
+  const billMode = normalizePaymentMode(bill?.paymentMode)
+  const canVoidBill = !billDetailFn && !!bill && !bill.isVoid
+    && String(bill.counterCloseNo ?? '').toUpperCase() === 'PENDING'
+    && String(bill.transactionType ?? 'SALE').toUpperCase() !== 'RETURN'
+  const canVoidItem = canVoidBill && (billMode === 'CASH' || billMode === 'CREDITCARD')
+    && (bill?.items ?? []).length > 1
+
+  async function submitVoid(form) {
+    const result = voidTarget?.type === 'ITEM'
+      ? await api.counterPos.voidBillItem(salesId, voidTarget.item.salesChildId, form, accessToken)
+      : await api.counterPos.voidBill(salesId, form, accessToken)
+    setVoidTarget(null)
+    posNotifySuccess(result?.message ?? 'Cancelled', { title: 'Bill Cancellation', duration: 1500 })
+    notifyStockChanged()
+    setReloadKey(k => k + 1)
+    onChanged?.()
+  }
 
   async function handlePrint() {
     if (printing || loading) return
@@ -239,7 +263,7 @@ function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, p
     }
   }
 
-  const gridCols = 'minmax(70px,1fr) minmax(120px,2fr) 60px 70px 60px 70px 80px'
+  const gridCols = 'minmax(70px,1fr) minmax(120px,2fr) 60px 70px 60px 70px 80px 34px'
 
   return (
     <div
@@ -300,6 +324,11 @@ function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, p
                   ['Staff', bill.staffName ?? '—'],
                   ['Counter', bill.counterNo],
                   ['Close No', bill.counterCloseNo],
+                  ...(bill.cardRefNo ? [['Card Ref', bill.cardRefNo]] : []),
+                  ...(bill.isVoid ? [['Status', 'CANCELLED']] : []),
+                  ...(bill.voidReason
+                    ? [['Cancel Reason', bill.voidReason + (bill.voidBy ? ' (by staff ' + bill.voidBy + ')' : '')]]
+                    : []),
                   ...(bill.remarks?.trim()
                     ? [['Comments', bill.remarks.trim()]]
                     : []),
@@ -307,7 +336,8 @@ function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, p
                   <div key={k} style={{
                     padding: '8px 10px', borderRadius: 8, background: 'var(--surface-2)',
                     border: '1px solid var(--border)',
-                    gridColumn: k === 'Comments' ? '1 / -1' : undefined,
+                    gridColumn: k === 'Comments' || k === 'Cancel Reason' ? '1 / -1' : undefined,
+                    color: k === 'Status' ? 'var(--red)' : undefined,
                   }}>
                     <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase' }}>{k}</div>
                     <div style={{
@@ -323,7 +353,7 @@ function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, p
                   display: 'grid', gridTemplateColumns: gridCols,
                   background: 'var(--surface-2)', padding: '8px 10px', borderBottom: '1.5px solid var(--border)',
                 }}>
-                  {['Code', 'Description', 'Qty', 'Price', 'VAT', 'Disc', 'Total'].map(h => (
+                  {['Code', 'Description', 'Qty', 'Price', 'VAT', 'Disc', 'Total', ''].map(h => (
                     <span key={h} style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</span>
                   ))}
                 </div>
@@ -345,6 +375,22 @@ function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, p
                       <span style={{ textAlign: 'right' }}>{fmtMoney(it.vatAmt)}</span>
                       <span style={{ textAlign: 'right' }}>{fmtMoney(it.discount)}</span>
                       <span style={{ textAlign: 'right', fontWeight: 700 }}>{fmtMoney(it.lineTotal)}</span>
+                      <span style={{ textAlign: 'center' }}>
+                        {canVoidItem && (
+                          <button
+                            type="button"
+                            title="Cancel this item"
+                            onClick={() => setVoidTarget({ type: 'ITEM', item: it })}
+                            style={{
+                              width: 24, height: 22, borderRadius: 6, border: '1px solid var(--red-border)',
+                              background: 'var(--red-bg)', color: 'var(--red)', cursor: 'pointer',
+                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            }}
+                          >
+                            <Ban size={12} />
+                          </button>
+                        )}
+                      </span>
                     </div>
                   ))}
                   {(bill.items ?? []).length === 0 && (
@@ -369,6 +415,13 @@ function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, p
                     <span>Total</span>
                     <span style={{ color: 'var(--brand)' }}>{fmtMoney(bill.amount)}</span>
                   </div>
+
+                  {billMode === 'CREDITCARD' && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0 0', fontSize: 12 }}>
+                      <span style={{ color: 'var(--text-3)' }}>Card Ref No</span>
+                      <span style={{ fontWeight: 700 }}>{bill.cardRefNo || '—'}</span>
+                    </div>
+                  )}
 
                   {isMultiPayment(bill.paymentMode) && (
                     <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
@@ -457,6 +510,20 @@ function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, p
         </div>
 
         <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          {canVoidBill && (
+            <button
+              type="button"
+              onClick={() => setVoidTarget({ type: 'BILL' })}
+              style={{
+                height: 34, padding: '0 16px', borderRadius: 9, marginRight: 'auto',
+                border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
+                color: 'var(--red)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <Ban size={14} /> Cancel Bill
+            </button>
+          )}
           <button
             type="button"
             disabled={loading || printing || !!error}
@@ -486,6 +553,17 @@ function BillDetailModal({ salesId, accessToken, onClose, billDetailFn = null, p
           </button>
         </div>
       </div>
+      {voidTarget && bill && (
+        <VoidBillDialog
+          title={voidTarget.type === 'ITEM' ? 'Cancel Item' : 'Cancel Bill'}
+          subtitle={voidTarget.type === 'ITEM'
+            ? bill.billNoDisplay + ' — ' + (voidTarget.item.description ?? voidTarget.item.productCode ?? '')
+            : bill.billNoDisplay}
+          amount={voidTarget.type === 'ITEM' ? voidTarget.item.lineTotal : bill.amount}
+          onClose={() => setVoidTarget(null)}
+          onSubmit={submitVoid}
+        />
+      )}
     </div>
   )
 }
@@ -539,7 +617,17 @@ export default function SalesViewerModal({
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose, detailId])
 
-  const totalAmount = bills.reduce((s, b) => s + Number(b.amount || 0), 0)
+  // Returns are stored as positive amounts — keep them apart; cancelled bills count nowhere.
+  const totals = bills.reduce((t, b) => {
+    if (b.isVoid) { t.voidCount += 1; return t }
+    const amt = Number(b.amount || 0)
+    const sign = b.transactionType === 'RETURN' ? -1 : 1
+    if (sign < 0) { t.returns += amt; t.returnCount += 1 } else { t.sales += amt; t.saleCount += 1 }
+    t.cash += sign * Number(b.cashAmount ?? 0)
+    t.card += sign * Number(b.cardAmount ?? 0)
+    t.credit += sign * Number(b.creditAmount ?? 0)
+    return t
+  }, { sales: 0, returns: 0, cash: 0, card: 0, credit: 0, saleCount: 0, returnCount: 0, voidCount: 0 })
 
   return (
     <>
@@ -665,11 +753,19 @@ export default function SalesViewerModal({
                 onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? '#fff' : 'var(--surface-2)' }}
               >
                 <span>{fmtDate(b.billDate)}</span>
-                <span style={{ fontWeight: 700 }}>{b.billNoDisplay ?? b.billNo}</span>
+                <span style={{ fontWeight: 700, color: b.isVoid ? 'var(--red)' : b.transactionType === 'RETURN' ? 'var(--amber)' : undefined }}>
+                  {b.billNoDisplay ?? b.billNo}{b.isVoid ? ' (VOID)' : ''}
+                </span>
                 <span>{fmtTime(b.billTime)}</span>
                 <span>{normalizePaymentMode(b.paymentMode)}</span>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.customerName}</span>
-                <span style={{ fontWeight: 700, textAlign: 'right' }}>{fmtMoney(b.amount)}</span>
+                <span style={{
+                  fontWeight: 700, textAlign: 'right',
+                  textDecoration: b.isVoid ? 'line-through' : undefined,
+                  color: b.isVoid ? 'var(--text-4)' : b.transactionType === 'RETURN' ? 'var(--red)' : undefined,
+                }}>
+                  {b.transactionType === 'RETURN' ? '-' : ''}{fmtMoney(b.amount)}
+                </span>
                 <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{b.counterCloseNo}</span>
               </button>
             ))}
@@ -680,10 +776,17 @@ export default function SalesViewerModal({
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '10px 18px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', flexShrink: 0,
         }}>
-          <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>
-            {bills.length} bill{bills.length !== 1 ? 's' : ''} · Total {fmtMoney(totalAmount)}
-          </span>
-          <span style={{ fontSize: 10, color: 'var(--text-4)' }}>Click a row to open bill with details</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>
+            <span>
+              Sales {fmtMoney(totals.sales)} ({totals.saleCount})
+              {' · '}Returns <span style={{ color: 'var(--red)' }}>-{fmtMoney(totals.returns)}</span> ({totals.returnCount})
+              {' · '}<span style={{ color: 'var(--text-1)', fontWeight: 800 }}>Net {fmtMoney(totals.sales - totals.returns)}</span>
+              {totals.voidCount > 0 ? ' · ' + totals.voidCount + ' cancelled' : ''}
+            </span>
+            <span style={{ fontSize: 10, color: 'var(--text-4)' }}>
+              Cash {fmtMoney(totals.cash)} · Card {fmtMoney(totals.card)} · Credit {fmtMoney(totals.credit)} (net of returns) — click a row for details
+            </span>
+          </div>
           <button onClick={onClose} style={{
             height: 34, padding: '0 18px', borderRadius: 9,
             border: '1.5px solid var(--red-border)', background: 'var(--red-bg)',
@@ -705,6 +808,7 @@ export default function SalesViewerModal({
         salesId={detailId}
         accessToken={accessToken}
         onClose={() => setDetailId(null)}
+        onChanged={loadBills}
         billDetailFn={billDetailFn}
         printFn={printFn}
       />

@@ -619,7 +619,16 @@ export function buildCounterReportPrintCommands(data = {}, meta = {}) {
   const reportType = String(meta.reportType ?? data.reportType ?? 'X').toUpperCase()
   const reportAt = meta.reportAt ? new Date(meta.reportAt) : new Date()
 
-  const cashSales = Number(data.totalCash) || 0
+  // Gross cash sales (refunds shown on their own line); older close records only have the net.
+  const cashSales = Number(data.cashSales ?? data.totalCash) || 0
+  const cashRefund = Number(data.cashRefund) || 0
+  const openingFloat = Number(data.openingFloat) || 0
+  const pettyCashIn = Number(data.pettyCashIn) || 0
+  const pettyCashOut = Number(data.pettyCashOut) || 0
+  const billCancelledCount = Number(data.billCancelledCount) || 0
+  const billCancelledAmount = Number(data.billCancelledAmount) || 0
+  const itemCancelledCount = Number(data.itemCancelledCount) || 0
+  const itemCancelledAmount = Number(data.itemCancelledAmount) || 0
   const creditReceived = Number(data.creditReceiptCash) || 0
   const advanceReceived = 0
   const cashIn = Number(data.cashIn) || 0
@@ -634,7 +643,7 @@ export function buildCounterReportPrintCommands(data = {}, meta = {}) {
   const onlineSales = Number(data.totalOnline) || 0
   const receiptCard = Number(data.creditReceiptCard) || 0
   const voucherSales = Number(data.totalVoucher) || 0
-  const cashSalesLessRefund = cashSales
+  const cashSalesLessRefund = Number(data.totalCash) || 0
   const totalDiscount = Number(data.totalDiscount) || 0
   const itemDiscount = Number(data.itemDiscountTotal) || 0
   const totalSales = Number(data.grossAmount) || 0
@@ -668,13 +677,17 @@ export function buildCounterReportPrintCommands(data = {}, meta = {}) {
       { value: 'Amount', width: 18, align: 'right' },
     ]),
     plainDivider('.'),
+    reportAmountLine('OPENING FLOAT', openingFloat),
     reportAmountLine('CASH SALES', cashSales),
     reportAmountLine('CREDIT RECEIVED', creditReceived),
     reportAmountLine('ADVANCE RECEIVED', advanceReceived),
     reportAmountLine('TOTAL CASH IN', cashIn),
+    reportAmountLine('PETTY CASH IN', pettyCashIn),
     reportAmountLine('TOTAL CASH OUT', cashOut),
+    reportAmountLine('PETTY CASH OUT', pettyCashOut),
     reportAmountLine('TOTAL', subTotal),
-    reportAmountLine('REFUND', refund),
+    reportAmountLine('CASH REFUND', cashRefund),
+    reportAmountLine('REFUND (ALL MODES)', refund),
     reportAmountLine('CASH TO BE COLLECTED', cashToCollect),
     reportAmountLine('COLLECTED CASH', collectedCash),
     reportAmountLine('CASH DIFFERENCE', cashDifference),
@@ -700,8 +713,8 @@ export function buildCounterReportPrintCommands(data = {}, meta = {}) {
       { value: 'Amount', width: 16, align: 'right' },
     ]),
     plainDivider('.'),
-    reportCountAmountLine('BILL CANCELLED', 0, 0),
-    reportCountAmountLine('ITEM CANCELLED', 0, 0),
+    reportCountAmountLine('BILL CANCELLED', billCancelledCount, billCancelledAmount),
+    reportCountAmountLine('ITEM CANCELLED', itemCancelledCount, itemCancelledAmount),
     plainDivider(),
     center('BILL COUNT'),
     pairLine('CASH BILL', cashBillCount, 30, 18),

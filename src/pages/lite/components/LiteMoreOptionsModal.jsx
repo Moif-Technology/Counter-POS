@@ -9,7 +9,7 @@ import {
  * exactly like FunctionButtons.jsx's FEATURE_BUTTONS in the normal POS. */
 export const MORE_OPTIONS = [
   { label: 'Hold Bill',    icon: PauseCircle,      color: 'var(--brand)',  bg: 'var(--brand-bg)',  border: 'var(--brand-border)' },
-  { label: 'Recall',       icon: Archive,          color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
+  { label: 'Recall Hold Bill', icon: Archive,          color: 'var(--amber)',  bg: 'var(--amber-bg)',  border: 'var(--amber-border)' },
   { label: 'Reprint',      icon: Printer,          color: 'var(--brand)',  bg: 'var(--brand-tint)', border: 'var(--brand-border)' },
   { label: 'Clear Line',   icon: Minus,            color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)', danger: true },
   { label: 'Return',       icon: RotateCcw,        color: 'var(--red)',    bg: 'var(--red-bg)',    border: 'var(--red-border)', danger: true },
