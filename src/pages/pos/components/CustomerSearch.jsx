@@ -157,7 +157,8 @@ export default function CustomerSearch({ variant = 'button', dropUp = false }) {
       {/* ── Trigger button ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         {variant === 'plain' ? (
-          <button className="ph-cust-trigger" onClick={() => setOpen(o => !o)} title="Change customer">
+          <button className={`ph-cust-trigger${hasCustomer ? ' has-customer' : ''}`} onClick={() => setOpen(o => !o)} title="Change customer">
+            <span className="ph-cust-ico"><User size={14} /></span>
             <span className="ph-ellipsis">{customerName || PLAIN_WALK_IN}</span>
             <ChevronDown size={14} />
           </button>
