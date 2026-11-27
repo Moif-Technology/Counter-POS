@@ -6,6 +6,7 @@ import { usePosStore } from '../store/posStore'
 import { fmtMoney } from '../lib/currencyFormat'
 import Modal from '../components/common/Modal'
 import Table from '../components/common/Table'
+import TouchKeyboard from '../components/common/Keyboard'
 import { posNotifySuccess } from '../lib/posNotify'
 
 const NUM_KEYS = [
@@ -26,6 +27,7 @@ export default function CreditCustomerModal({ onClose, onApply }) {
   const [loading,      setLoading]      = useState(false)
   const [error,        setError]        = useState(null)
   const [focus,        setFocus]        = useState('code')
+  const [kb,           setKb]           = useState(false) // QWERTY for code/name (codes can have letters)
   const debounceRef = useRef(null)
   const accessToken = usePosStore(s => s.accessToken)
 
@@ -65,6 +67,12 @@ export default function CreditCustomerModal({ onClose, onApply }) {
     }
     if (focus === 'code') { setCustomerCode(v => { const n = v + k; scheduleSearch(n); return n }) }
     if (focus === 'name') { setCustomerName(v => { const n = v + k; scheduleSearch(n); return n }) }
+  }
+
+  // pressKey appends any key that isn't ⌫, so letters go through it too.
+  const typeKey = k => {
+    if (k === 'ENTER') return handleApply()
+    if (k !== '123') pressKey(k)
   }
 
   const handleFieldChange = (setter, val) => {
@@ -141,6 +149,7 @@ export default function CreditCustomerModal({ onClose, onApply }) {
                 <input
                   value={f.value}
                   onFocus={() => setFocus(f.key)}
+                  onClick={() => { setFocus(f.key); setKb(true) }}
                   onChange={e => handleFieldChange(f.setter, e.target.value)}
                   style={fieldStyle(focus === f.key)}
                 />
@@ -148,8 +157,8 @@ export default function CreditCustomerModal({ onClose, onApply }) {
             ))}
           </div>
 
-          {/* Numpad */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {/* Numpad — hidden while the QWERTY is open (it has its own 123 keys), so both fit on short screens */}
+          {!kb && <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             {NUM_KEYS.map((row, ri) => (
               <div key={ri} style={{ display: 'flex', gap: 5 }}>
                 {row.map(k => (
@@ -188,7 +197,7 @@ export default function CreditCustomerModal({ onClose, onApply }) {
                 onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
               ><Delete size={15} /></button>
             </div>
-          </div>
+          </div>}
 
           {/* Footer */}
           <div style={{ display: 'flex', gap: 6, paddingBottom: 14, marginTop: 'auto' }}>
@@ -220,6 +229,7 @@ export default function CreditCustomerModal({ onClose, onApply }) {
 
         </div>
       </div>
+      {kb && <TouchKeyboard onKey={typeKey} onClose={() => setKb(false)} />}
     </Modal>
   )
 }

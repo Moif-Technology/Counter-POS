@@ -2,23 +2,22 @@
  * Code 39 SVG barcode for thermal receipts (no external deps).
  * Includes start/stop * — required for scanners to read the symbol.
  *
- * Short numbers (e.g. 14) are padded before encoding (see formatDocBarcode)
- * so the symbol is wide enough for handheld scanners.
+ * Document slips encode prefix + number (e.g. B-14, see formatDocBarcode).
  */
 
 const CODE39_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%*'
 
+// Same order as CODE39_CHARS. Element order: bar, space, bar, … (9 elements, 3 wide).
 const CODE39_PATTERNS = [
-  'nnnwwnwnn', 'wnnwnnnnw', 'nnwwnnnnw', 'wnnwwnnnn', 'nnnnwwnnw',
-  'wnnnwwnnn', 'nnwnwwnnn', 'nnnnnwwnw', 'wnnnnwwnn', 'nnwnnwwnn',
-  'wwnnnnnnw', 'nwwnnnnnw', 'wwwnnnnnn', 'nnwnnnnww', 'wnwnnnnwn',
-  'nwwnnnnwn', 'nnnnwnnww', 'wnnnwnnwn', 'nnwnwnnwn', 'nnnnnnwww',
-  'wnnnnnwwn', 'nnwnnnwwn', 'nnnnwnwwn', 'wwnwnnnnn', 'nwwnwnnnn',
-  'wwwnwnnnn', 'nnnwwnnnn', 'wnnwwnnnn', 'nnwwwnnnn', 'nnnwnwnnn',
-  'wnnwnwnnn', 'nnwwnwnnn', 'nnnwnnnwn', 'wnnwnnnwn', 'nnwwnnnwn',
-  'nnnnwwnnn', 'wnnnwwnnn', 'nnwnwwnnn', 'nnnnnwwnn', 'wnnnnwwnn',
-  'nnwnnwwnn', 'nnnnnnwnw', 'wnnnnnwnn', 'nnwnnnwnn', 'nnnnwnwnn',
-  'nwnnwnwwn', // * start/stop
+  'nnnwwnwnn', 'wnnwnnnnw', 'nnwwnnnnw', 'wnwwnnnnn', 'nnnwwnnnw',
+  'wnnwwnnnn', 'nnwwwnnnn', 'nnnwnnwnw', 'wnnwnnwnn', 'nnwwnnwnn',
+  'wnnnnwnnw', 'nnwnnwnnw', 'wnwnnwnnn', 'nnnnwwnnw', 'wnnnwwnnn',
+  'nnwnwwnnn', 'nnnnnwwnw', 'wnnnnwwnn', 'nnwnnwwnn', 'nnnnwwwnn',
+  'wnnnnnnww', 'nnwnnnnww', 'wnwnnnnwn', 'nnnnwnnww', 'wnnnwnnwn',
+  'nnwnwnnwn', 'nnnnnnwww', 'wnnnnnwwn', 'nnwnnnwwn', 'nnnnwnwwn',
+  'wwnnnnnnw', 'nwwnnnnnw', 'wwwnnnnnn', 'nwnnwnnnw', 'wwnnwnnnn',
+  'nwwnwnnnn', 'nwnnnnwnw', 'wwnnnnwnn', 'nwwnnnwnn', 'nwnwnwnnn',
+  'nwnwnnnwn', 'nwnnnwnwn', 'nnnwnwnwn', 'nwnnwnwnn', // … $ / + % *
 ]
 
 /** Narrow bar width in SVG user units (3:1 wide:narrow ratio per Code 39). */

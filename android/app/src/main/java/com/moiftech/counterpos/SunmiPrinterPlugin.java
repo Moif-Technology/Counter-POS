@@ -5,15 +5,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.DashPathEffect;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.RemoteException;
+import android.util.Base64;
 import android.view.View;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -158,6 +161,29 @@ public class SunmiPrinterPlugin extends Plugin {
         }
 
         executePrintHtml(call, html, width);
+    }
+
+    /** No Sale: pulse the cash drawer port (Sunmi DLE DC4 pulse, then standard ESC p for pin 2). */
+    @PluginMethod
+    public void openDrawer(PluginCall call) {
+        if (printerService == null) {
+            bindPrinterService();
+            call.reject("Sunmi printer service not connected, try again");
+            return;
+        }
+        printerExecutor.execute(() -> {
+            try {
+                printerService.sendRAWData(new byte[] {
+                    0x10, 0x14, 0x00, 0x00, 0x00,
+                    0x1b, 0x70, 0x00, 0x19, (byte) 0xfa
+                }, null);
+                JSObject ret = new JSObject();
+                ret.put("opened", true);
+                resolveOnMain(call, ret);
+            } catch (Exception e) {
+                rejectOnMain(call, "Cash drawer failed: " + e.getMessage());
+            }
+        });
     }
 
     private boolean bindPrinterService() {
@@ -329,7 +355,9 @@ public class SunmiPrinterPlugin extends Plugin {
                     command.optString("text", ""),
                     command.optInt("width", 576),
                     command.optInt("padding", 4),
-                    (float) command.optDouble("textSize", 22)
+                    (float) command.optDouble("textSize", 22),
+                    command.optBoolean("fit", true),
+                    command.optBoolean("bold", true)
                 ), null);
                 break;
             case "columns":
@@ -352,6 +380,20 @@ public class SunmiPrinterPlugin extends Plugin {
                     null
                 );
                 break;
+            case "image": {
+                // Receipt logo / footer image from the Control Panel (data:image/png|jpeg;base64,...).
+                Bitmap image = decodeImageBitmap(
+                    command.optString("data", ""),
+                    command.optInt("maxWidth", 576),
+                    command.optInt("maxHeight", 400)
+                );
+                if (image != null) {
+                    printerService.setAlignment(1, null);
+                    printerService.printBitmap(image, null);
+                    printerService.lineWrap(1, null);
+                }
+                break;
+            }
             case "feed":
                 printerService.lineWrap(command.optInt("lines", 1), null);
                 break;
@@ -369,13 +411,38 @@ public class SunmiPrinterPlugin extends Plugin {
         }
     }
 
-    private Bitmap renderReceiptTextBitmap(String text, int width, int padding, float requestedTextSize) {
+    /** Decode a base64 data URL, fit it inside maxWidth x maxHeight dots, flatten transparency onto white. */
+    private Bitmap decodeImageBitmap(String data, int maxWidth, int maxHeight) {
+        try {
+            int comma = data.indexOf(',');
+            byte[] bytes = Base64.decode(comma >= 0 ? data.substring(comma + 1) : data, Base64.DEFAULT);
+            Bitmap src = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            if (src == null) return null;
+            float scale = Math.min(1f, Math.min(
+                Math.max(1, maxWidth) / (float) src.getWidth(),
+                Math.max(1, maxHeight) / (float) src.getHeight()
+            ));
+            int w = Math.max(1, Math.round(src.getWidth() * scale));
+            int h = Math.max(1, Math.round(src.getHeight() * scale));
+            Bitmap out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(out);
+            canvas.drawColor(Color.WHITE);
+            canvas.drawBitmap(src, null, new Rect(0, 0, w, h), new Paint(Paint.FILTER_BITMAP_FLAG));
+            src.recycle();
+            return out;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** fit = auto-size to the widest line; false = exact textSize, each line trimmed and centred (TRN line). */
+    private Bitmap renderReceiptTextBitmap(String text, int width, int padding, float requestedTextSize, boolean fit, boolean bold) {
         String[] lines = text == null ? new String[] { "" } : text.split("\\n", -1);
 
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(Color.BLACK);
         paint.setTypeface(Typeface.MONOSPACE);
-        paint.setFakeBoldText(true);
+        paint.setFakeBoldText(bold);
         paint.setTextSize(requestedTextSize);
 
         int printableWidth = Math.max(1, width - (padding * 2));
@@ -387,10 +454,10 @@ public class SunmiPrinterPlugin extends Plugin {
         }
         if (widestLine.isEmpty()) widestLine = " ";
 
-        while (paint.measureText(widestLine) > printableWidth && paint.getTextSize() > 14f) {
+        while (fit && paint.measureText(widestLine) > printableWidth && paint.getTextSize() > 14f) {
             paint.setTextSize(paint.getTextSize() - 1f);
         }
-        while (paint.measureText(widestLine) < printableWidth * 0.94f && paint.getTextSize() < 28f) {
+        while (fit && paint.measureText(widestLine) < printableWidth * 0.94f && paint.getTextSize() < 28f) {
             paint.setTextSize(paint.getTextSize() + 1f);
         }
 
@@ -412,6 +479,11 @@ public class SunmiPrinterPlugin extends Plugin {
                 rulePaint.setStrokeWidth(safeLine.startsWith("=") ? 4.5f : 3.2f);
                 rulePaint.setPathEffect(new DashPathEffect(new float[] { 11f, 7f }, 0));
                 canvas.drawLine(0, ruleY, width, ruleY, rulePaint);
+            } else if (!fit) {
+                String trimmed = safeLine.trim();
+                float x = Math.max(padding, (width - paint.measureText(trimmed)) / 2f);
+                if (bold) drawThermalText(canvas, trimmed, x, y, paint, false);
+                else canvas.drawText(trimmed, x, y, paint);
             } else {
                 drawThermalText(canvas, safeLine, padding, y, paint, isEmphasisLine(safeLine));
             }

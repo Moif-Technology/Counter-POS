@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Loader2, History, User, Search, X, ChevronDown, Printer } from 'lucide-react'
+import TouchKeyboard from '../components/common/Keyboard'
+import { Loader2, History, User, Search, X, ChevronDown, Printer, Keyboard as KeyboardIcon } from 'lucide-react'
 import { normalizePaymentMode, PM } from '../lib/paymentModes'
 import { api } from '../lib/api'
 import { fmt3 } from '../lib/utils'
@@ -37,6 +38,7 @@ function creditCustomersOnly(list) {
 function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn = null }) {
   const [open, setOpen]         = useState(false)
   const [query, setQuery]       = useState('')
+  const [kb, setKb]             = useState(false) // on-screen keyboard (touch tills have no system keyboard)
   const [results, setResults]   = useState([])
   const [selected, setSelected] = useState(null)
   const [loading, setLoading]   = useState(false)
@@ -86,6 +88,13 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn 
     debRef.current = setTimeout(() => doSearch(q), 280)
   }
 
+  const typeKey = (k) => {
+    if (k === '123' || k === 'ENTER') return
+    const q = k === '⌫' ? query.slice(0, -1) : query + k
+    setQuery(q)
+    scheduleSearch(q)
+  }
+
   const pick = (c) => {
     setSelected(c)
     onSelect(c ? String(c.customerId) : '')
@@ -123,6 +132,7 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn 
           position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 20,
           background: '#fff', border: '1.5px solid var(--border)', borderRadius: 10,
           boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden',
+          ...(kb && { right: 'auto', width: 560, maxWidth: '90vw' }),
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderBottom: '1px solid var(--border)' }}>
             <Search size={14} color="var(--text-3)" />
@@ -136,6 +146,10 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn 
                 background: 'transparent', color: 'var(--text-1)',
               }}
             />
+            <button type="button" title="On-screen keyboard" onClick={() => setKb(o => !o)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: kb ? 'var(--brand)' : 'var(--text-3)' }}>
+              <KeyboardIcon size={15} />
+            </button>
             {query && (
               <button type="button" onClick={() => { setQuery(''); scheduleSearch('') }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-3)' }}>
@@ -156,7 +170,7 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn 
             All credit customers
           </div>
 
-          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+          <div style={{ maxHeight: kb ? 140 : 200, overflowY: 'auto' }}>
             {loading && (
               <div style={{ padding: 14, textAlign: 'center', fontSize: 11, color: 'var(--text-4)' }}>
                 <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite', display: 'inline-block' }} />
@@ -186,6 +200,7 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn 
               )
             })}
           </div>
+          {kb && <TouchKeyboard onKey={typeKey} onClose={() => setKb(false)} />}
         </div>
       )}
     </div>

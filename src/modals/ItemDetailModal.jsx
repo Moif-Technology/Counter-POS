@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Minus, Plus, Trash2, Save, Edit3, Percent, RotateCcw } from 'lucide-react'
-import { usePosStore } from '../store/posStore'
+import { usePosStore, MIX_SALE_MSG } from '../store/posStore'
+import { posNotifyWarning } from '../lib/posNotify'
 import { calcLineTotals, findCartItemByKey, getCartRowKey } from '../lib/cartLine'
 import { fmt3 } from '../lib/utils'
 import PriceChangeModal from './PriceChangeModal'
@@ -62,6 +63,11 @@ export default function ItemDetailModal({ item, onClose }) {
     if (!rowKey) return
     const absQty = Math.abs(Number(qty))
     if (absQty <= 0) return
+    // Turning one sale line into a return would mix sale + return in one bill.
+    if (cartItems.some(i => getCartRowKey(i) !== rowKey && Number(i.qty) > 0)) {
+      posNotifyWarning(MIX_SALE_MSG, { title: 'Return' })
+      return
+    }
     updateLine(rowKey, { qty: -absQty })
     usePosStore.setState({ returnMode: true })
     onClose()

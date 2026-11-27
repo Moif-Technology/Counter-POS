@@ -1,3 +1,5 @@
+import { fmtMoney, getCurrencyPrecision } from './currencyFormat'
+
 const CHANNEL_KEY = 'moif-customer-display'
 
 let _bc = null
@@ -81,15 +83,15 @@ function poleLines(p) {
   }
   if (p.mode === 'saved') {
     const chg = p.balanceAmount > 0
-      ? `CHG ${c} ${Number(p.balanceAmount).toFixed(2)}`
+      ? `CHG ${c} ${fmtMoney(p.balanceAmount)}`
       : 'THANK YOU!'
     return ['BILL SAVED'.padEnd(COLS), chg.substring(0, COLS).padEnd(COLS)]
   }
-  const totalStr = `${c} ${Number(p.netAmount || 0).toFixed(2)}`
+  const totalStr = `${c} ${fmtMoney(p.netAmount)}`
   const totalLine = ('TOTAL' + totalStr.padStart(COLS - 5)).substring(0, COLS)
   if (p.lastItem) {
     const desc = String(p.lastItem.description || '').substring(0, COLS)
-    const amt = Number(p.lastItem.lineTotal || 0).toFixed(2)
+    const amt = fmtMoney(p.lastItem.lineTotal)
     const gap = COLS - desc.length - amt.length
     const line1 = gap >= 1
       ? desc + ' '.repeat(gap) + amt
@@ -135,6 +137,7 @@ export function buildPayload(s) {
     shopName: s.shopName || 'MOIF POS',
     shopSubName: s.shopSubName || '',
     currency: s.currency || 'AED',
+    currencyPrecision: getCurrencyPrecision(),
     billNo: s.billNo || '',
     cashierName: s.cashier?.staffName || '',
     customerName: s.customerName || '',
@@ -170,6 +173,7 @@ export function broadcastSaved(netAmount, paidAmount, balanceAmount, currency) {
     mode: 'saved',
     shopName: '', shopSubName: '',
     currency: currency || 'AED',
+    currencyPrecision: getCurrencyPrecision(),
     billNo: '', cashierName: '', customerName: '',
     lastItem: null, itemCount: 0,
     subTotal: 0, discountAmt: 0, taxAmt: 0,

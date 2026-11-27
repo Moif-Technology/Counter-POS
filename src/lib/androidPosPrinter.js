@@ -10,12 +10,14 @@ import {
   resolveCashierName,
   resolveReceiptCompanyMeta,
 } from './receiptPrintTheme'
+import { getReceiptSettings, billField, billLineOn } from './posSettings'
 
 const SunmiPrinter = registerPlugin('SunmiPrinter', {
   web: () => ({
     isAvailable: () => Promise.resolve({ available: false }),
     print: () => Promise.reject(new Error('Sunmi printer not available on web')),
     printHtml: () => Promise.reject(new Error('Sunmi printer not available on web')),
+    openDrawer: () => Promise.reject(new Error('Sunmi printer not available on web')),
   }),
 })
 
@@ -107,6 +109,9 @@ function textBitmapCommand(lines, opts = {}) {
     width: opts.width ?? SUNMI_80MM_BITMAP_WIDTH,
     padding: opts.padding ?? 8,
     textSize: opts.textSize ?? 22,
+    // fit false = exact textSize, lines centred (APKs before this flag auto-fit as usual).
+    fit: opts.fit ?? true,
+    bold: opts.bold ?? true,
   }
 }
 
@@ -118,7 +123,7 @@ function plainDivider(char = '-') {
   return char.repeat(LINE_WIDTH)
 }
 
-function companyHeaderLines(meta = {}, billCompany = {}) {
+function companyHeaderLines(meta = {}, billCompany = {}, withTrn = true) {
   const resolved = resolveReceiptCompanyMeta(meta)
   const co = {
     ...resolved,
@@ -133,7 +138,7 @@ function companyHeaderLines(meta = {}, billCompany = {}) {
   if (co.branch) lines.push(center(co.branch))
   if (co.phone) lines.push(center(`Ph: ${co.phone}`))
   for (const line of wrapLines(co.address, LINE_WIDTH)) lines.push(center(line))
-  if (co.trn) lines.push(center(`TRN: ${co.trn}`))
+  if (withTrn && co.trn) lines.push(center(`TRN: ${co.trn}`))
   return lines
 }
 
@@ -199,15 +204,20 @@ function companyHeaderCommands(meta = {}, billCompany = {}) {
   return commands
 }
 
-function finishCommands(commands, barcodeText, displayText = '', scanLabel = 'Scan for reprint') {
+// Control Panel header / footer, already drawn at printer width (576 dots = 72 mm).
+// APKs without the native 'image' case print a blank line instead.
+const RENDER_IMAGE_BOX = { maxWidth: 576, maxHeight: 1600 }
+
+function finishCommands(commands, barcodeText, displayText = '', scanLabel = 'Scan for reprint', footers = ['Thank You......Visit Again'], footerImage = '', barcodeRule = plainDivider(), footerRule = plainDivider()) {
   if (barcodeText) {
-    commands.push(textBitmapCommand([plainDivider(), center(scanLabel)], { padding: 2 }))
+    commands.push(textBitmapCommand([barcodeRule, center(scanLabel)], { padding: 2 }))
     commands.push({ type: 'barcode', text: barcodeText, height: 64, width: 2, position: 0 })
     if (displayText) {
       commands.push(textBitmapCommand([center(displayText)], { padding: 0 }))
     }
   }
-  commands.push(textBitmapCommand([plainDivider(), center('Thank You......Visit Again')], { padding: 2 }))
+  commands.push(textBitmapCommand([footerRule, ...footers.map(f => center(f))], { padding: 2 }))
+  if (footerImage) commands.push({ type: 'image', data: footerImage, ...RENDER_IMAGE_BOX })
   commands.push({ type: 'feed', lines: 2 })
   commands.push({ type: 'cut' })
   return commands
@@ -224,8 +234,10 @@ function billLineUnitDisplay(it) {
   return money(it.unitPrice)
 }
 
-export function buildBillPrintCommands(bill, meta = {}) {
+/** images: Control Panel header / footer drawn for this bill (printBillReceipt.renderReceiptImages). */
+export function buildBillPrintCommands(bill, meta = {}, copies = 1, images = {}) {
   if (!bill) throw new Error('No bill data to print')
+  const rs = getReceiptSettings()
 
   const isReturn = String(bill.transactionType ?? '').toUpperCase() === 'RETURN'
   const label = billNoLabel(bill)
@@ -235,45 +247,62 @@ export function buildBillPrintCommands(bill, meta = {}) {
   const payMode = normalizePaymentMode(bill.paymentMode)
   const settlement = isMultiPaymentMode(bill.paymentMode) ? 'MULTIPAYMENT' : payMode
 
-  const lines = [
-    ...companyHeaderLines(meta, bill.company ?? {}),
-    plainDivider(),
-    center(isReturn ? 'RETURN INVOICE' : 'TAX INVOICE'),
-    plainDivider(),
-    pairLine(`BILL # : ${label}`, fmtReceiptDateTime(bill.billTime ?? bill.billDate)),
-    `COUNTER : ${clean(bill.counterNo)}`.slice(0, LINE_WIDTH),
-    `CASHIER : ${clean(bill.staffName ?? 'CASHIER')}`.slice(0, LINE_WIDTH),
-  ]
+  // Control Panel header image / old headings replace the company block; TRN stays (tax invoice).
+  // Arabic title: no glyphs on this text path (the header image carries any Arabic).
+  const trn = bill.company?.taxRegistrationNo ?? meta.trn ?? resolveReceiptCompanyMeta(meta).trn
+  const header = images.header ? []
+    : rs.headings.length ? rs.headings.map(h => center(h))
+    : companyHeaderLines(meta, bill.company ?? {}, false)
+  // Control Panel layout: hidden fields are skipped, switched-off dotted lines print blank.
+  // ponytail: per-field size / boldness only for TRN here (one monospace bitmap); full styling is on the HTML bill.
+  const show = k => !billField(rs, k).hidden
+  const rule = (k, char = '-') => (billLineOn(rs, k) ? plainDivider(char) : '')
+  const trnStyle = billField(rs, 'trn')
+  // TRN: own line at the Control Panel size (HTML px × 1.5 ≈ printer dots); bold = weight 600+.
+  const trnCommand = trn && show('trn')
+    ? [textBitmapCommand([center(`TRN: ${trn}`)], { padding: 2, textSize: Math.round(trnStyle.size * 1.5), fit: false, bold: trnStyle.weight >= 600 })]
+    : []
+  const lines = [rule('lineTitleTop')]
+  if (show('title')) lines.push(center(isReturn ? 'RETURN INVOICE' : 'TAX INVOICE'))
+  lines.push(rule('lineTitleBottom'))
+  if (show('billNo') || show('date')) {
+    lines.push(pairLine(show('billNo') ? `BILL # : ${label}` : '', show('date') ? fmtReceiptDateTime(bill.billTime ?? bill.billDate) : ''))
+  }
+  if (show('counter')) lines.push(`COUNTER : ${clean(bill.counterNo)}`.slice(0, LINE_WIDTH))
+  if (show('cashier')) lines.push(`CASHIER : ${clean(bill.staffName ?? 'CASHIER')}`.slice(0, LINE_WIDTH))
 
   const customerName = clean(bill.customer?.customerName)
-  if (customerName && !/^(walk-?in|walk in)$/i.test(customerName)) {
-    lines.push(plainDivider())
+  if (customerName && !/^(walk-?in|walk in)$/i.test(customerName) && show('customer')) {
+    lines.push(rule('lineCustomer'))
     lines.push(...wrapLines(`Customer: ${customerName}`))
     if (bill.customer?.customerCode) lines.push(...wrapLines(`Code: ${bill.customer.customerCode}`))
     if (bill.customer?.taxRegNo) lines.push(...wrapLines(`TRN: ${bill.customer.taxRegNo}`))
   }
 
-  if (bill.remarks?.trim()) lines.push(...wrapLines(`Comments: ${bill.remarks}`))
+  if (bill.remarks?.trim() && show('comments')) lines.push(...wrapLines(`Comments: ${bill.remarks}`))
 
-  lines.push(plainDivider())
-  lines.push(fixedColumns([
-    { value: 'Description', width: 24 },
-    { value: 'Qty', width: 5, align: 'right' },
-    { value: 'Price', width: 9, align: 'right' },
-    { value: 'Total', width: 10, align: 'right' },
-  ]))
-  lines.push(plainDivider('.'))
-  for (const it of items) {
+  lines.push(rule('lineItemsTop'))
+  if (show('itemHead')) {
+    lines.push(fixedColumns([
+      { value: 'Description', width: 24 },
+      { value: 'Qty', width: 5, align: 'right' },
+      { value: 'Price', width: 9, align: 'right' },
+      { value: 'Total', width: 10, align: 'right' },
+    ]))
+    lines.push(rule('lineItemHead', '.'))
+  }
+  const showCode = show('itemSub')
+  for (const it of show('items') ? items : []) {
     lines.push(...wrapLines(it.description || 'Item'))
     const vatPer = Number(it.vatPer) || Number(bill.taxRate) || 5
     const vatAmt = Number(it.vatAmt) || 0
     lines.push(fixedColumns([
-      { value: it.productCode || (it.productId ? String(it.productId) : ''), width: 24 },
+      { value: showCode ? (it.productCode || (it.productId ? String(it.productId) : '')) : '', width: 24 },
       { value: fmtQty(it.qty), width: 5, align: 'right' },
       { value: billLineUnitDisplay(it), width: 9, align: 'right' },
       { value: money(it.lineTotal), width: 10, align: 'right' },
     ]))
-    lines.push(pairLine('', `VAT@${vatPer}% (${money(vatAmt)})`, 18, 30))
+    if (showCode) lines.push(pairLine('', `VAT@${vatPer}% (${money(vatAmt)})`, 18, 30))
   }
 
   const taxableAmt = Number(bill.taxableAmt) || 0
@@ -284,42 +313,56 @@ export function buildBillPrintCommands(bill, meta = {}) {
   const discountAmt = Number(bill.discountAmt) || 0
   const roundOff = bill.roundOff != null ? Number(bill.roundOff) : 0
 
-  lines.push(plainDivider())
-  if (discountAmt) lines.push(amountLine('DISCOUNT', discountAmt))
-  if (roundOff) lines.push(amountLine('ROUND OFF', roundOff))
-  lines.push(amountLine('TOTAL :', amount))
-  lines.push(`SETTLEMENT : ${settlement}`.slice(0, LINE_WIDTH))
-
-  if (isMultiPaymentMode(bill.paymentMode)) {
-    for (const split of bill.paymentSplits ?? []) {
-      lines.push(amountLine(split.payMode, split.amount))
+  lines.push(rule('lineTotals'))
+  if (discountAmt && show('discount')) lines.push(amountLine('DISCOUNT', discountAmt))
+  if (roundOff && show('discount')) lines.push(amountLine('ROUND OFF', roundOff))
+  if (show('total')) lines.push(amountLine('TOTAL :', amount))
+  if (show('settlement')) {
+    lines.push(`SETTLEMENT : ${settlement}`.slice(0, LINE_WIDTH))
+    if (isMultiPaymentMode(bill.paymentMode)) {
+      for (const split of bill.paymentSplits ?? []) {
+        lines.push(amountLine(split.payMode, split.amount))
+      }
     }
   }
 
-  lines.push(pairLine(`ITEMS : ${itemCount}`, `BILL AMOUNT : ${money(amount)}`))
-  lines.push(pairLine(`QTY : ${fmtQty(qtyTotal)}`, `PAID AMOUNT : ${money(paidAmount)}`))
-  lines.push(pairLine('', `BAL. AMOUNT : ${money(balanceAmount)}`))
+  const pair = (lk, left, rk, right) => {
+    if (show(lk) || show(rk)) lines.push(pairLine(show(lk) ? left : '', show(rk) ? right : ''))
+  }
+  pair('itemCount', `ITEMS : ${itemCount}`, 'billAmount', `BILL AMOUNT : ${money(amount)}`)
+  pair('qtyTotal', `QTY : ${fmtQty(qtyTotal)}`, 'paidAmount', `PAID AMOUNT : ${money(paidAmount)}`)
+  if (show('balance')) lines.push(pairLine('', `BAL. AMOUNT : ${money(balanceAmount)}`))
 
-  if (payMode === PM.CREDIT && bill.customer?.customerId) {
+  if (payMode === PM.CREDIT && bill.customer?.customerId && show('osBalance')) {
     const os = Number(bill.customerOsBalance) || Number(bill.outstandingBalance) || 0
     lines.push(amountLine('O/S BALANCE', os))
   }
 
-  lines.push(plainDivider())
-  lines.push(center('Tax Details'))
-  lines.push(fixedColumns([
-    { value: 'Taxable Amount', width: 18 },
-    { value: 'Tax Amount', width: 14, align: 'right' },
-    { value: 'Bill Amount', width: 16, align: 'right' },
-  ]))
-  lines.push(fixedColumns([
-    { value: money(taxableAmt), width: 18 },
-    { value: money(taxAmt), width: 14, align: 'right' },
-    { value: money(amount), width: 16, align: 'right' },
-  ]))
+  if (show('tax')) {
+    lines.push(rule('lineTax'))
+    lines.push(center('Tax Details'))
+    lines.push(fixedColumns([
+      { value: 'Taxable Amount', width: 18 },
+      { value: 'Tax Amount', width: 14, align: 'right' },
+      { value: 'Bill Amount', width: 16, align: 'right' },
+    ]))
+    lines.push(fixedColumns([
+      { value: money(taxableAmt), width: 18 },
+      { value: money(taxAmt), width: 14, align: 'right' },
+      { value: money(amount), width: 16, align: 'right' },
+    ]))
+  }
 
-  const commands = [plainReceiptCommand(lines)]
-  return finishCommands(commands, formatDocBarcode(label), label, 'Scan for reprint')
+  const commands = [
+    ...(images.header ? [{ type: 'image', data: images.header, ...RENDER_IMAGE_BOX }] : []),
+    ...(header.length ? [plainReceiptCommand(header)] : []),
+    ...trnCommand,
+    plainReceiptCommand(lines),
+  ]
+  const barcode = show('barcode') ? formatDocBarcode(label, isReturn ? 'R' : 'B') : ''
+  const footers = images.footer ? [] : (rs.footers.length ? rs.footers : undefined)
+  // Each copy ends with its own cut.
+  return repeatCopies(finishCommands(commands, barcode, label, 'Scan for reprint', footers, images.footer, rule('lineBarcode'), rule('lineFooter')), copies)
 }
 
 export function buildHoldPrintCommands(hold, meta = {}, copies = 1) {
@@ -360,8 +403,8 @@ export function buildHoldPrintCommands(hold, meta = {}, copies = 1) {
   oneCopy.push(amountLine('TOTAL :', hold.netAmount))
   oneCopy.push(pairLine(`ITEMS : ${itemCount}`, `QTY : ${fmtQty(qtyTotal)}`))
 
-  const commandCopies = repeatPlainCopies(oneCopy, copies)
-  return finishCommands([plainReceiptCommand(commandCopies)], formatHoldBarcode(hold.holdNo), String(hold.holdNo ?? ''), 'Scan to recall')
+  // Each copy ends with its own barcode + cut.
+  return repeatCopies(finishCommands([plainReceiptCommand(oneCopy)], formatHoldBarcode(hold.holdNo), String(hold.holdNo ?? ''), 'Scan to recall'), copies)
 }
 
 export function buildDeliveryPrintCommands(delivery, meta = {}, copies = 1) {
@@ -426,20 +469,13 @@ export function buildDeliveryPrintCommands(delivery, meta = {}, copies = 1) {
     { value: money(delivery.netAmount), width: 16, align: 'right' },
   ]))
 
-  const commandCopies = repeatPlainCopies(oneCopy, copies)
-  return finishCommands([plainReceiptCommand(commandCopies)], formatDeliveryBarcode(delivery.deliveryNo), String(delivery.deliveryNo ?? ''), 'Scan to recall')
+  // Each copy ends with its own barcode + cut.
+  return repeatCopies(finishCommands([plainReceiptCommand(oneCopy)], formatDeliveryBarcode(delivery.deliveryNo), String(delivery.deliveryNo ?? ''), 'Scan to recall'), copies)
 }
 
 function repeatCopies(commands, copies = 1) {
   const n = Math.max(1, Math.min(20, Math.floor(Number(copies) || 1)))
   return Array.from({ length: n }, () => commands).flat()
-}
-
-function repeatPlainCopies(lines, copies = 1) {
-  const n = Math.max(1, Math.min(20, Math.floor(Number(copies) || 1)))
-  return Array.from({ length: n }, () => lines).flatMap((copy, idx) => (
-    idx === 0 ? copy : ['', ...copy]
-  ))
 }
 
 export async function printAndroidCommands(commands) {
@@ -480,8 +516,8 @@ export async function printAndroidReceiptHtml(html) {
   return true
 }
 
-export async function printAndroidBill(bill, meta = {}) {
-  return printAndroidCommands(buildBillPrintCommands(bill, meta))
+export async function printAndroidBill(bill, meta = {}, copies = 1, images = {}) {
+  return printAndroidCommands(buildBillPrintCommands(bill, meta, copies, images))
 }
 
 export async function printAndroidHold(hold, meta = {}, copies = 1) {
@@ -615,6 +651,25 @@ function reportCountAmountLine(label, count, amount = 0) {
   ])
 }
 
+/** CASH COUNT block for the X/Z slip; nothing when the cashier typed the amount without counting notes. */
+function cashCountLines(denoms) {
+  if (!Array.isArray(denoms) || !denoms.length) return []
+  const label = v => (Number.isInteger(v) ? String(v) : v.toFixed(2))
+  return [
+    plainDivider(),
+    center('CASH COUNT'),
+    fixedColumns([
+      { value: 'Note', width: 27 },
+      { value: 'Count', width: 5, align: 'right' },
+      { value: 'Amount', width: 16, align: 'right' },
+    ]),
+    plainDivider('.'),
+    ...denoms.map(d => reportCountAmountLine(label(d.value), d.count, d.value * d.count)),
+    plainDivider('.'),
+    reportCountAmountLine('TOTAL', denoms.reduce((s, d) => s + d.count, 0), denoms.reduce((s, d) => s + d.value * d.count, 0)),
+  ]
+}
+
 export function buildCounterReportPrintCommands(data = {}, meta = {}) {
   const reportType = String(meta.reportType ?? data.reportType ?? 'X').toUpperCase()
   const reportAt = meta.reportAt ? new Date(meta.reportAt) : new Date()
@@ -648,6 +703,7 @@ export function buildCounterReportPrintCommands(data = {}, meta = {}) {
   const itemDiscount = Number(data.itemDiscountTotal) || 0
   const totalSales = Number(data.grossAmount) || 0
   const taxAmount = Number(data.totalTax) || 0
+  const refundTax = Number(data.totalRefundTax) || 0
   const netCardAmt = cardSales
 
   const billCount = Number(data.billCount) || 0
@@ -666,6 +722,7 @@ export function buildCounterReportPrintCommands(data = {}, meta = {}) {
     pairLine('TIME', reportTime(reportAt), 18, 30),
     pairLine('COUNTER CLOSE#', meta.closeNo ?? data.closeNo ?? '-', 24, 24),
     pairLine('COUNTER', meta.counterNo ?? data.counterNo ?? '', 18, 30),
+    pairLine('CASHIER', meta.cashierName || '-', 18, 30),
     pairLine('BILL COUNT', billCount, 18, 30),
     plainDivider(),
     center('FIRST / LAST BILL'),
@@ -687,7 +744,6 @@ export function buildCounterReportPrintCommands(data = {}, meta = {}) {
     reportAmountLine('PETTY CASH OUT', pettyCashOut),
     reportAmountLine('TOTAL', subTotal),
     reportAmountLine('CASH REFUND', cashRefund),
-    reportAmountLine('REFUND (ALL MODES)', refund),
     reportAmountLine('CASH TO BE COLLECTED', cashToCollect),
     reportAmountLine('COLLECTED CASH', collectedCash),
     reportAmountLine('CASH DIFFERENCE', cashDifference),
@@ -698,13 +754,21 @@ export function buildCounterReportPrintCommands(data = {}, meta = {}) {
     reportAmountLine('NET CARD AMT (SALES+TIPS)', netCardAmt),
     reportAmountLine('ONLINE SALES', onlineSales),
     reportAmountLine('RECEIPT CREDIT CARD', receiptCard),
+    reportAmountLine('CARD TO BE COLLECTED', Number(data.cardToBeCollected) || 0),
+    reportAmountLine('COLLECTED CARD', Number(data.collectedCard) || 0),
+    reportAmountLine('CARD DIFFERENCE', Number(data.cardDifference) || 0),
     reportAmountLine('VOUCHER SALES', voucherSales),
     reportAmountLine('COMPLIMENT SALES', 0),
     reportAmountLine('CASH SALES (LESS REFUND)', cashSalesLessRefund),
     reportAmountLine('TOTAL DISCOUNT AMOUNT', totalDiscount),
     reportAmountLine('ITEM DISCOUNT TOTAL', itemDiscount),
-    reportAmountLine('TOTAL SALES', totalSales),
+    reportAmountLine('TOTAL SALE', totalSales),
+    reportAmountLine('REFUND / RETURN', refund),
+    reportAmountLine('NET SALE', totalSales - refund),
     reportAmountLine('TAX AMOUNT', taxAmount),
+    reportAmountLine('RETURN TAX', refundTax),
+    reportAmountLine('NET TAX', taxAmount - refundTax),
+    ...cashCountLines(data.cashDenoms),
     plainDivider(),
     center('BILL CANCEL DETAILS'),
     fixedColumns([

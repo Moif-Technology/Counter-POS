@@ -5,9 +5,14 @@ import Numpad from '../components/common/Numpad'
 import TouchKeyboard from '../components/common/Keyboard'
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
-import { fmtMoney } from '../lib/currencyFormat'
+import { fmtMoney, moneyPlaceholder } from '../lib/currencyFormat'
 import './CashInOutModal.css'
 import { posNotifySuccess } from '../lib/posNotify'
+import { DENOMS } from '../lib/denoms'
+
+/** Cash In categories counted note-by-note (drawer float). */
+const DENOM_CATEGORIES = ['Opening Float', 'Petty Cash']
+const noCounts = () => Object.fromEntries(DENOMS.map(d => [d.label, '']))
 
 const CATEGORIES = {
   in:  ['Cash', 'Opening Float', 'Petty Cash'],
@@ -36,13 +41,17 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
   const [kbOpen,   setKbOpen]   = useState(false)
   const [saving,   setSaving]   = useState(false)
   const [error,    setError]    = useState(null)
+  const [counts,   setCounts]   = useState(noCounts)
+  const [activeDenom, setActiveDenom] = useState(DENOMS[0].label)
   const noteRef     = useRef()
   const accessToken = usePosStore(s => s.accessToken)
   const counterNo   = usePosStore(s => s.counterNo)
   const currency    = usePosStore(s => s.currency)
 
-  const isIn   = type === 'in'
-  const parsed = parseFloat(amount) || 0
+  const isIn      = type === 'in'
+  const denomMode = isIn && DENOM_CATEGORIES.includes(category)
+  const denomTotal = Math.round(DENOMS.reduce((s, d) => s + d.value * (parseInt(counts[d.label], 10) || 0), 0) * 1000) / 1000
+  const parsed = denomMode ? denomTotal : (parseFloat(amount) || 0)
   const total  = entries.reduce((s, e) => s + e.amount, 0)
 
   useEffect(() => { noteRef.current?.focus() }, [])
@@ -50,10 +59,17 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
   // Switching In / Out starts a fresh list (one save = one direction).
   const switchType = (t) => {
     if (t === type) return
-    setType(t); setCategory(CATEGORIES[t][0]); setEntries([]); setAmount(''); setNote(''); setError(null)
+    setType(t); setCategory(CATEGORIES[t][0]); setEntries([]); setAmount(''); setNote(''); setCounts(noCounts()); setError(null)
   }
 
   const handleKey = (k) => {
+    if (denomMode) {   // numpad types the count of the selected note
+      if (k === '.') return
+      if (k === 'C') { setCounts(c => ({ ...c, [activeDenom]: '' })); return }
+      if (k === '⌫') { setCounts(c => ({ ...c, [activeDenom]: c[activeDenom].slice(0, -1) })); return }
+      setCounts(c => (c[activeDenom].length >= 5 ? c : { ...c, [activeDenom]: c[activeDenom] + k }))
+      return
+    }
     if (k === 'C') { setAmount(''); return }
     if (k === '⌫') { setAmount(v => v.slice(0, -1)); return }
     if (k === '.' && amount.includes('.')) return
@@ -63,8 +79,11 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
 
   const addEntry = () => {
     if (parsed <= 0) return
-    setEntries(prev => [...prev, { id: Date.now(), category, note: note.trim(), amount: parsed }])
-    setAmount(''); setNote(''); setError(null)
+    const denoms = denomMode
+      ? DENOMS.filter(d => parseInt(counts[d.label], 10) > 0).map(d => `${d.label}×${parseInt(counts[d.label], 10)}`).join(', ')
+      : ''
+    setEntries(prev => [...prev, { id: Date.now(), category, note: note.trim(), denoms, amount: parsed }])
+    setAmount(''); setNote(''); setCounts(noCounts()); setActiveDenom(DENOMS[0].label); setError(null)
     noteRef.current?.focus()
   }
 
@@ -82,7 +101,7 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
       const transactionType = isIn ? 'CASH_IN' : 'CASH_OUT'
       const doSave = saveFn ?? ((entry) => api.counterPos.addCashInOut(entry, accessToken))
       for (const e of entries) {
-        const remarks = [e.category, e.note].filter(Boolean).join(' — ')
+        const remarks = [e.category, e.note, e.denoms].filter(Boolean).join(' — ')
         await doSave({ counterNo, transactionType, category: CATEGORY_CODE[e.category] ?? 'GENERAL', amount: e.amount, remarks: remarks || null })
       }
       posNotifySuccess(`${entries.length} cash ${isIn ? 'in' : 'out'} entr${entries.length === 1 ? 'y' : 'ies'} saved`, { title: 'Cash In / Out', duration: 1500 })
@@ -130,9 +149,36 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
             </button>
           </div>
           <div className="cio-amount">
-            <span>{currency}</span>
-            <b className={amount ? '' : 'is-empty'}>{amount || '0.00'}</b>
+            <span>{denomMode ? `Notes total · ${currency}` : currency}</span>
+            {denomMode
+              ? <b className={denomTotal ? '' : 'is-empty'}>{fmtMoney(denomTotal)}</b>
+              : <input
+                  value={amount}
+                  placeholder={moneyPlaceholder()}
+                  inputMode="decimal"
+                  onChange={e => { const x = e.target.value; if (/^\d*\.?\d{0,3}$/.test(x)) setAmount(x) }}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEntry() } }}
+                  aria-label="Amount"
+                />}
           </div>
+
+          {/* Float / petty cash: count each note */}
+          {denomMode && (
+            <div className="cio-denoms">
+              {DENOMS.map(d => (
+                <label key={d.label} className={`cio-denom${activeDenom === d.label ? ' is-on' : ''}`} onClick={() => setActiveDenom(d.label)}>
+                  <span>{d.label} ×</span>
+                  <input
+                    value={counts[d.label]}
+                    placeholder="0"
+                    onFocus={() => setActiveDenom(d.label)}
+                    onChange={e => { const x = e.target.value; if (/^\d{0,5}$/.test(x)) setCounts(c => ({ ...c, [d.label]: x })) }}
+                    aria-label={`${d.label} count`}
+                  />
+                </label>
+              ))}
+            </div>
+          )}
 
           {/* Entries */}
           <div className="cio-list">
@@ -143,6 +189,7 @@ export default function CashInOutModal({ onClose, saveFn = null }) {
                 <div className="cio-entry-main">
                   <b>{e.category}</b>
                   {e.note && <span>{e.note}</span>}
+                  {e.denoms && <span>{e.denoms}</span>}
                 </div>
                 <span className="cio-entry-amt">{isIn ? '+' : '−'}{fmtMoney(e.amount)}</span>
                 <button type="button" className="cio-entry-del" onClick={() => setEntries(p => p.filter(x => x.id !== e.id))} aria-label="Remove entry">

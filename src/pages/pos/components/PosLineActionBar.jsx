@@ -7,19 +7,21 @@ import { posConfirm } from '../../../lib/posNotify'
 import { closeAndFocusBarcode } from '../../../lib/posFocus'
 import PriceChangeModal from '../../../modals/PriceChangeModal'
 import DiscountModal from '../../../modals/DiscountModal'
+import { requireApproval } from '../../../lib/supervisorApproval'
 
 // `confirm` actions are sensitive: the cashier must confirm before they run.
+// `approval`: needs the role permission, else a supervisor code + PIN (the approval doubles as the confirm).
 const ACTIONS = [
   { key: 'repeat',   label: 'Repeat',        icon: Repeat2 },
-  { key: 'discount', label: 'Add Discount',  icon: BadgePercent },
-  { key: 'price',    label: 'Edit Price',    icon: Pencil,       confirm: true },
-  { key: 'clear',    label: 'Delete All',    icon: Trash2,       danger: true },   // clears at once, like Clear All
+  { key: 'discount', label: 'Add Discount',  icon: BadgePercent, approval: 'discount' },
+  { key: 'price',    label: 'Edit Price',    icon: Pencil,       confirm: true, approval: 'price_change' },
+  { key: 'clear',    label: 'Delete All',    icon: Trash2,       danger: true },   // asks Yes/No before clearing
 ]
 
 /**
  * Actions bar at the foot of the cart: Repeat · Add Discount · Edit Price · Delete All.
  * The first three act on the line shown in the item strip (the selected line, or the last one).
- * Edit Price asks for confirmation first; Delete All clears the bill at once.
+ * Edit Price and Delete All ask for confirmation first.
  */
 export default function PosLineActionBar({ disabled }) {
   const cartItems      = usePosStore(s => s.cartItems)
@@ -40,9 +42,18 @@ export default function PosLineActionBar({ disabled }) {
   const run = async (action) => {
     const rowKey = getCartRowKey(line)
     usePosStore.setState({ selectedRowKey: rowKey })
-    if (action.confirm && !(await ask())) return
+    const allowed = action.approval ? await requireApproval(action.approval) : 'self'
+    if (!allowed) return
+    if (action.confirm && allowed === 'self' && !(await ask())) return
     if (action.key === 'clear') {
-      usePosStore.getState().clearAll()
+      const n = cartItems.length
+      const ok = await posConfirm({
+        title: 'Delete all items?',
+        message: `Remove all ${n} scanned item${n === 1 ? '' : 's'} from this bill? This cannot be undone.`,
+        confirmLabel: 'Yes, delete all', cancelLabel: 'No',
+        danger: true,
+      })
+      if (ok) usePosStore.getState().clearAll()
       return
     }
     if (action.key === 'repeat') {

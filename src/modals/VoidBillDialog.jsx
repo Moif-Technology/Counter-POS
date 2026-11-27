@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { X, Ban, Loader2 } from 'lucide-react'
 import { fmtMoney } from '../lib/currencyFormat'
+import TouchKeyboard from '../components/common/Keyboard'
+import Numpad from '../components/common/Numpad'
 
 const inputStyle = {
   width: '100%', height: 38, boxSizing: 'border-box',
@@ -9,17 +11,18 @@ const inputStyle = {
 }
 
 /**
- * Bill / item cancellation form: mandatory reason + optional supervisor code & PIN.
- * The server accepts the request without a supervisor only when the logged-in
- * staff's role has the bill-cancel permission (pos.billing.delete).
- * onSubmit({ reason, supervisorCode, supervisorPin }) must return a promise.
+ * Bill / item cancellation form: mandatory reason + admin / supervisor PIN.
+ * The server accepts the request without a PIN only when the logged-in
+ * staff's role has the bill-cancel permission (pos.billing.delete) or is Admin.
+ * onSubmit({ reason, supervisorPin }) must return a promise.
  */
-export default function VoidBillDialog({ title, subtitle, amount, onClose, onSubmit }) {
+export default function VoidBillDialog({ title, subtitle, amount, needsApproval = true, onClose, onSubmit }) {
   const [reason, setReason] = useState('')
-  const [supervisorCode, setSupervisorCode] = useState('')
   const [supervisorPin, setSupervisorPin] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  // Which on-screen keypad is open: QWERTY for the reason, digits for the PIN (touch tills have no system keyboard).
+  const [pad, setPad] = useState('reason')
   const overlayRef = useRef()
   const reasonRef = useRef()
 
@@ -32,6 +35,13 @@ export default function VoidBillDialog({ title, subtitle, amount, onClose, onSub
 
   const canSubmit = reason.trim().length >= 3 && !saving
 
+  const reasonKey = k => {
+    if (k === 'ENTER') return submit()
+    if (k === '123') return // layout switch, not a character
+    setReason(v => k === '⌫' ? v.slice(0, -1) : (v + k).slice(0, 200))
+  }
+  const pinKey = k => setSupervisorPin(v => k === 'C' ? '' : k === '⌫' ? v.slice(0, -1) : (v + k).slice(0, 6))
+
   async function submit() {
     if (!canSubmit) return
     setSaving(true)
@@ -39,7 +49,6 @@ export default function VoidBillDialog({ title, subtitle, amount, onClose, onSub
     try {
       await onSubmit({
         reason: reason.trim(),
-        supervisorCode: supervisorCode.trim() || undefined,
         supervisorPin: supervisorPin.trim() || undefined,
       })
     } catch (e) {
@@ -59,7 +68,7 @@ export default function VoidBillDialog({ title, subtitle, amount, onClose, onSub
       }}
     >
       <div style={{
-        width: 420, maxWidth: '94vw', background: '#fff', borderRadius: 18,
+        width: 560, maxWidth: '94vw', background: '#fff', borderRadius: 18,
         boxShadow: '0 32px 80px rgba(0,0,0,0.25)', overflow: 'hidden',
       }}>
         <div style={{
@@ -98,36 +107,42 @@ export default function VoidBillDialog({ title, subtitle, amount, onClose, onSub
               maxLength={200}
               onChange={e => setReason(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') submit() }}
+              onFocus={() => setPad('reason')}
+              onClick={() => setPad('reason')}
               placeholder="Why is this being cancelled?"
               style={{ ...inputStyle, marginTop: 4 }}
             />
           </div>
+          {needsApproval && (<>
           <div style={{ fontSize: 11, color: 'var(--text-4)', lineHeight: 1.4 }}>
-            Supervisor approval — needed unless your login is allowed to cancel bills.
+            Your login cannot cancel bills. An admin, or a supervisor allowed to, approves with their PIN.
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <input
-              value={supervisorCode}
-              onChange={e => setSupervisorCode(e.target.value)}
-              placeholder="Supervisor code"
-              autoComplete="off"
-              style={inputStyle}
-            />
-            <input
-              value={supervisorPin}
-              onChange={e => setSupervisorPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              onKeyDown={e => { if (e.key === 'Enter') submit() }}
-              placeholder="PIN"
-              type="password"
-              inputMode="numeric"
-              autoComplete="off"
-              style={inputStyle}
-            />
-          </div>
+          {/* new-password: Chrome ignores "off" on password fields and autofills the saved login.
+              No system keyboard: the on-screen digit pad below covers touch tills. */}
+          <input
+            value={supervisorPin}
+            onChange={e => setSupervisorPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            onKeyDown={e => { if (e.key === 'Enter') submit() }}
+            onFocus={() => setPad('pin')}
+            onClick={() => setPad('pin')}
+            placeholder="Admin or supervisor PIN"
+            aria-label="Admin or supervisor PIN"
+            type="password"
+            autoComplete="new-password"
+            style={inputStyle}
+          />
+          {pad === 'pin' && (
+            <Numpad onKey={pinKey} showDot={false} showClear showBackspace btnHeight={46} fontSize={18} gap={8} />
+          )}
+          </>)}
           {error && (
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--red)' }}>{error}</div>
           )}
         </div>
+
+        {pad === 'reason' && (
+          <TouchKeyboard onKey={reasonKey} onClose={() => setPad(needsApproval ? 'pin' : null)} />
+        )}
 
         <div style={{
           padding: '10px 16px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)',

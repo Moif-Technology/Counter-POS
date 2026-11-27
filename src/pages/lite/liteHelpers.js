@@ -1,4 +1,5 @@
 import { LITE_GROUPS } from './data/liteProducts'
+import { roundMoney } from '../../lib/currencyFormat'
 
 export const PRICE_LEVELS = { Retail: 1, Wholesale: 0.9, VIP: 0.85 }
 export const PRICE_LEVEL_ORDER = ['Retail', 'Wholesale', 'VIP']
@@ -8,7 +9,7 @@ export const PRICE_LEVEL_ORDER = ['Retail', 'Wholesale', 'VIP']
  *  amount, Done adds a group-priced line to the cart. */
 export const LITE_GROUP_OBJECTS = LITE_GROUPS.map((name, i) => ({ groupId: i + 1, groupDescription: name, keyShift: 0 }))
 
-export const roundAmt = (n) => Math.round((Number(n) || 0) * 100) / 100
+export const roundAmt = (n) => roundMoney(n)
 
 /** Same item shape the normal POS's Sales Viewer / Bill Detail expect. */
 export const buildLiteReceiptItems = (cartItems) => cartItems.map((i, idx) => ({

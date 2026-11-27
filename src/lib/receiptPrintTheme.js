@@ -5,6 +5,8 @@
  */
 
 import { usePosStore } from '../store/posStore.js'
+import { getReceiptPrinterName } from './posPrinter.js'
+import { posNotifyError } from './posNotify.js'
 
 /** Bill font — Sora, the single font used across the app */
 export const BILL_FONT = "'Sora', system-ui, sans-serif"
@@ -12,7 +14,15 @@ export const BILL_FONT = "'Sora', system-ui, sans-serif"
 /** Loads Sora inside print windows (must be the first rule in a <style>) */
 export const BILL_FONT_IMPORT = "@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap');"
 
+/** Page = the driver's 80mm paper. A smaller @page (72mm) got stretched to 80mm by the driver
+ *  (text ~1.1x bigger and cut on the right, real print 2026-11-24), so the page stays 80mm and the
+ *  padding keeps the text inside what the head actually prints. */
 export const RECEIPT_PAGE_WIDTH = '80mm'
+// ponytail: thermal calibration knob. Text runs 2mm..72mm of the paper (70mm wide); the head lost
+// everything past ~76mm on the 80mm prints. Raise RIGHT if the last character still cuts,
+// lower it if the slip looks off-centre.
+export const RECEIPT_PAD_LEFT = '2mm'
+export const RECEIPT_PAD_RIGHT = '8mm'
 
 /** Standard font sizes (px) — keep in sync across all receipt prints */
 export const RECEIPT_FONT = {
@@ -152,11 +162,11 @@ export const RECEIPT_BARCODE_EXTRA_CSS = `
   .barcode-block { margin: 8px 0 4px; }
   .barcode-label { font-size: 13px; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.3px; }
   .barcode-svg { display: flex; justify-content: center; margin: 4px 0; overflow: visible; }
-  .barcode-svg svg { max-width: 72mm; height: auto; }
+  .barcode-svg svg { max-width: 100%; height: auto; }
   .barcode-text { font-size: 16px; font-weight: 700; letter-spacing: 2px; margin-top: 4px; }
   @media print {
     .barcode-svg svg {
-      width: 68mm !important;
+      width: 100% !important;
       height: auto !important;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
@@ -178,11 +188,12 @@ export function buildReceiptBaseCss(opts = {}) {
       width: ${RECEIPT_PAGE_WIDTH};
       max-width: ${RECEIPT_PAGE_WIDTH};
       margin: 0 auto;
-      padding: 3mm 2mm;
+      padding: 3mm ${RECEIPT_PAD_RIGHT} 3mm ${RECEIPT_PAD_LEFT};
     }
     @media print {
-      body { width: ${RECEIPT_PAGE_WIDTH}; padding: 0; font-size: ${f.body}px; }
-      @page { size: ${RECEIPT_PAGE_WIDTH} auto; margin: 2mm; }
+      html, body { width: ${RECEIPT_PAGE_WIDTH}; max-width: ${RECEIPT_PAGE_WIDTH}; }
+      body { padding: 2mm ${RECEIPT_PAD_RIGHT} 2mm ${RECEIPT_PAD_LEFT}; font-size: ${f.body}px; }
+      @page { size: ${RECEIPT_PAGE_WIDTH} auto; margin: 0; }
     }
   ` : ''
 
@@ -245,7 +256,7 @@ export function buildReceiptBaseCss(opts = {}) {
     table.items td { padding: 3px 0; vertical-align: top; font-weight: 700; }
     table.items .desc { font-weight: 700; max-width: 42mm; word-wrap: break-word; }
     table.items .c { text-align: center; width: 30px; font-weight: 700; }
-    table.items .r { text-align: right; white-space: nowrap; font-weight: 700; }
+    table.items .r { text-align: right; white-space: nowrap; font-weight: 700; padding-left: 6px; }
     table.items .b { font-weight: 700; }
     table.items .item-sub td { padding-bottom: 5px; border-bottom: 1px dotted #000; font-size: ${f.itemSub}px; font-weight: 700; }
     table.items .item-sub-last td { border-bottom: none; padding-bottom: 2px; }
@@ -260,6 +271,11 @@ export function buildReceiptBaseCss(opts = {}) {
     table.tax th:first-child, table.tax td:first-child { text-align: left; }
     table.tax thead tr { border-bottom: 1px dotted #000; }
     table.tax tbody tr { border-bottom: none; }
+    /* Never past the printable edge: a value that doesn't fit drops to the next line (right-aligned),
+       and wraps if it is longer than a whole line (long customer names, big amounts). */
+    .row, .pair-row { flex-wrap: wrap; }
+    .row .val, .row-right { flex-shrink: 1; min-width: 0; white-space: normal; overflow-wrap: anywhere; text-align: right; }
+    .pair-row > .pair { margin-left: auto; }
     .footer { text-align: center; font-size: ${f.footer}px; font-weight: 700; margin-top: 10px; letter-spacing: 0.3px; }
     .printer-note { font-size: ${f.printerNote}px; font-weight: 700; color: #000; margin-top: 5px; text-align: center; }
   `
@@ -286,13 +302,21 @@ export function buildReportPrintFontCss() {
   `
 }
 
-const AUTO_PRINT_SCRIPT = `
+/** Print-window script. copies > 1 = one print job per copy (window.print() blocks until each is sent). */
+const autoPrintScript = (copies = 1) => `
   <script>
     window.onload = function() {
-      setTimeout(function() { window.focus(); window.print(); }, 400);
+      setTimeout(function() {
+        window.focus();
+        for (var i = 0; i < ${copies}; i++) window.print();
+      }, 400);
     };
   </script>
 `
+const AUTO_PRINT_SCRIPT = autoPrintScript(1)
+const AUTO_PRINT_RE = /<script>[\s\S]*?window\.onload[\s\S]*?<\/script>/i
+
+const clampCopies = (copies) => Math.max(1, Math.min(20, Math.floor(Number(copies) || 1)))
 
 /**
  * Wrap receipt body HTML in a full printable document.
@@ -315,32 +339,41 @@ export function buildReceiptDocumentHtml({ title = 'Receipt', bodyHtml = '', ext
 </html>`
 }
 
-export const RECEIPT_COPY_EXTRA_CSS = `
-  .receipt-copy { page-break-after: always; break-after: page; }
-  .receipt-copy:last-child { page-break-after: auto; break-after: auto; }
-`
-
-/** Duplicate one receipt body for N thermal pages in a single print job. */
-export function wrapReceiptBodyCopies(bodyHtml, copies = 1) {
-  const n = Math.max(1, Math.min(99, Math.floor(Number(copies) || 1)))
-  if (n <= 1) return { bodyHtml, extraCss: '' }
-  return {
-    bodyHtml: Array.from({ length: n }, () => `<div class="receipt-copy">${bodyHtml}</div>`).join(''),
-    extraCss: RECEIPT_COPY_EXTRA_CSS,
-  }
-}
-
 /**
  * Open a print window for receipt HTML.
+ * copies: each copy is its own print job, so the thermal printer cuts after every copy.
  * @param {string} html
- * @param {{ width?: number, height?: number }} [opts]
+ * @param {{ width?: number, height?: number, copies?: number }} [opts]
  */
 export function openReceiptPrintWindow(html, opts = {}) {
   const { width = 420, height = 720 } = opts
+  const copies = clampCopies(opts.copies)
+  // Windows app: thermal-size prints go straight to the printer, no dialog. Wide reports keep the window.
+  if (window.posDesktop && width <= 420) {
+    printHtmlSilently(html, copies)
+    return null
+  }
   const win = window.open('', '_blank', `width=${width},height=${height}`)
   if (!win) throw new Error('Pop-up blocked — allow pop-ups to print receipts')
-  win.document.write(html)
+  win.document.write(copies > 1 ? html.replace(AUTO_PRINT_RE, autoPrintScript(copies)) : html)
   win.document.close()
   win.focus()
   return win
+}
+
+// Desktop jobs run one after another so copies (and sale + return bills) come out in order.
+let desktopQueue = Promise.resolve()
+
+/** Windows app only: print a full receipt document on the configured printer without a dialog, once per copy. */
+export function printHtmlSilently(html, copies = 1) {
+  const doc = html.replace(AUTO_PRINT_RE, '')
+  const n = clampCopies(copies)
+  desktopQueue = desktopQueue
+    .then(async () => {
+      for (let i = 0; i < n; i++) {
+        await window.posDesktop.printHtml(doc, { deviceName: getReceiptPrinterName() })
+      }
+    })
+    .catch(err => posNotifyError(`Print failed: ${err.message}`, { title: 'Printer' }))
+  return desktopQueue
 }

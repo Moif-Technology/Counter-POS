@@ -44,6 +44,28 @@
 .cio-amount span { font-size: 14px; font-weight: 700; color: var(--cio); opacity: 0.75; }
 .cio-amount b { font-size: 38px; font-weight: 800; line-height: 1; color: var(--cio); font-variant-numeric: tabular-nums; }
 .cio-amount b.is-empty { opacity: 0.35; }
+.cio-amount:focus-within { border-color: var(--cio); }
+.cio-amount input {
+  flex: 1; min-width: 0; padding: 0; border: none; outline: none; background: none; text-align: right;
+  font-family: inherit; font-size: 38px; font-weight: 800; line-height: 1; color: var(--cio); font-variant-numeric: tabular-nums;
+}
+.cio-amount input::placeholder { color: var(--cio); opacity: 0.35; }
+
+/* Float / petty cash note counts */
+.cio-denoms { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.cio-denom {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 5px 6px 5px 10px; cursor: pointer;
+  border: 1px solid #ececee; border-radius: 10px; background: #fff;
+}
+.cio-denom span { font-size: 13px; font-weight: 800; color: #3f3f46; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cio-denom input {
+  width: 52px; height: 28px; box-sizing: border-box; padding: 0 4px; text-align: center; outline: none;
+  border: 1.5px solid #e4e4e7; border-radius: 8px; background: #fafafa;
+  font-family: inherit; font-size: 13.5px; font-weight: 800; color: #18181b;
+}
+.cio-denom.is-on { border-color: var(--cio); background: var(--cio-bg); }
+.cio-denom.is-on span { color: var(--cio); }
+.cio-denom.is-on input { border-color: var(--cio); background: #fff; }
 
 .cio-list { flex: 1; min-height: 90px; max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; scrollbar-width: thin; }
 .cio-empty {

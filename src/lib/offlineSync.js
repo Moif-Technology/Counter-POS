@@ -2,10 +2,13 @@ import { api } from './api'
 import { usePosStore } from '../store/posStore'
 import { notifyStockChanged } from './stockCheck'
 import { PM, normalizePaymentMode } from './paymentModes'
+import { fmtMoney } from './currencyFormat'
 import {
   useOfflineStore, setOnline, markSynced,
   loadProductCache, saveProductSnapshot, deductCachedStock,
   newClientUuid, nextOfflineBillNo, listQueue, putQueued, removeQueued, addSynced, refreshQueueState,
+  loadCustomerCache, saveCustomerSnapshot, findCachedCustomer,
+  loadSalesLog, logDeviceSale, relabelDeviceSale, deviceNetSoldQty, SALES_LOG_DAYS,
 } from './offlineCache'
 
 const SYNC_INTERVAL_MS = 30000
@@ -15,16 +18,83 @@ export const isNetworkError = (err) => !!err?.offline
 
 export { newClientUuid }
 
+const money = fmtMoney
+
+function billCreditAmount(payload) {
+  const mode = normalizePaymentMode(payload.paymentMode)
+  if (mode === PM.CREDIT) return Number(payload.netAmount) || 0
+  if (mode !== PM.MULTIPAYMENT) return 0
+  return (payload.paymentSplits ?? [])
+    .filter(s => normalizePaymentMode(s.payMode) === PM.CREDIT)
+    .reduce((sum, s) => sum + (Number(s.amount) || 0), 0)
+}
+
+/** Credit already given offline to this customer by bills still waiting to upload. */
+function offlineCreditUsed(customerId) {
+  const { pending, failed } = useOfflineStore.getState()
+  return [...pending, ...failed]
+    .filter(r => Number(r.payload?.customerId) === Number(customerId))
+    .reduce((sum, r) => sum + billCreditAmount(r.payload), 0)
+}
+
 /**
  * Why this bill can't be saved offline, or null when it can.
- * Offline = plain cash / card sales; anything needing the server is refused.
+ * Cash / card / multi-payment: always. Credit: cached customer with a credit limit that
+ * still covers outstanding + offline credit + this bill. Returns: only products sold from
+ * this terminal in the last SALES_LOG_DAYS days. Delivery recall needs the server.
+ * ponytail: outstanding comes from the last customer download, so online credit bills
+ * made since then are not counted; the server stays the final word after sync.
  */
 export function offlineBlockReason(payload) {
   const mode = normalizePaymentMode(payload.paymentMode)
-  if (mode !== PM.CASH && mode !== PM.CREDITCARD) return `${mode} payment is not available offline (cash or card only)`
-  if (payload.isReturn || (payload.cartItems ?? []).some(i => Number(i.qty) < 0)) return 'Returns are not available offline'
-  if (payload.recalledHoldSalesId || payload.recalledDeliverySalesId) return 'Recalled hold / delivery bills are not available offline'
+  if (![PM.CASH, PM.CREDITCARD, PM.CREDIT, PM.MULTIPAYMENT].includes(mode)) return `${mode} payment is not available offline`
+  if (payload.recalledDeliverySalesId) return 'Recalled delivery bills are not available offline'
+
+  const lines = payload.cartItems ?? []
+  const returnLines = lines.filter(i => Number(i.qty) < 0)
+  const credit = billCreditAmount(payload)
+
+  if (credit > 0.005) {
+    if (returnLines.length && lines.some(i => Number(i.qty) > 0)) return 'Cannot mix Return + Sale in CREDIT mode'
+    if (!payload.customerId) return 'Credit bill needs a customer'
+    const c = findCachedCustomer(payload.customerId)
+    if (!c) return 'Customer is not in the offline list (refresh data when back online)'
+    const limit = Number(c.creditLimit) || 0
+    if (!(limit > 0)) return `${c.customerName} has no credit limit set — offline credit needs one (set it in the backoffice)`
+    const os = Number(c.osAmount) || 0
+    const used = offlineCreditUsed(c.customerId)
+    if (os + used + credit > limit + 0.005) {
+      return `Credit limit reached offline for ${c.customerName}: limit ${money(limit)}, outstanding ${money(os)}, offline credit ${money(used)}`
+    }
+  }
+
+  const need = new Map()
+  for (const i of returnLines) {
+    const pid = Number(i.productId)
+    if (!(pid > 0)) return 'Group-item returns are not available offline'
+    need.set(pid, { qty: (need.get(pid)?.qty ?? 0) + Math.abs(Number(i.qty) || 0), name: i.description ?? i.productCode })
+  }
+  for (const [pid, { qty, name }] of need) {
+    const sold = deviceNetSoldQty(pid)
+    if (sold + 0.0001 < qty) {
+      return `Return of ${name}: only ${Math.max(0, sold)} sold from this terminal in the last ${SALES_LOG_DAYS} days`
+    }
+  }
   return null
+}
+
+/** Log a bill this terminal made so it can be returned offline later. */
+export function logSaleOnDevice({ billNo, offlineBillNo = null, payload }) {
+  const { companyId, customerName } = usePosStore.getState()
+  return logDeviceSale(companyId, {
+    billNo, offlineBillNo, at: new Date().toISOString(),
+    customerId: payload.customerId ?? null, customerName: payload.customerId ? customerName : '',
+    items: (payload.cartItems ?? []).map(i => ({
+      productId: i.productId, productCode: i.productCode, description: i.description,
+      qty: Number(i.qty) || 0, unitPrice: i.unitPrice, vatPer: i.vatPer, discount: i.discountAmt ?? i.discount ?? 0,
+      groupId: i.groupId,
+    })),
+  }).catch(() => {})
 }
 
 /** Lightweight reachability probe (navigator.onLine can lie on Android). */
@@ -38,14 +108,27 @@ export async function pingServer() {
   }
 }
 
-/** Download the full product list for this station into the offline cache. */
+/** Download the full product + customer lists for this station into the offline cache. */
 export async function refreshProducts() {
   const { accessToken, companyId, stationId } = usePosStore.getState()
   if (!accessToken) return false
-  const snap = await api.counterPos.productSnapshot(accessToken)
-  const pending = (await listQueue()).filter(r => r.status !== 'failed')
-  await saveProductSnapshot(companyId, stationId, snap, pending)
+  try {
+    const snap = await api.counterPos.productSnapshot(accessToken)
+    const pending = (await listQueue()).filter(r => r.status !== 'failed')
+    await saveProductSnapshot(companyId, stationId, snap, pending)
+  } catch (err) {
+    // Shown in the sync panel: an empty product cache means no offline billing.
+    console.warn('[offline] product download failed', err)
+    useOfflineStore.setState({ lastError: `Product download failed: ${err.message}` })
+    throw err
+  }
   notifyStockChanged()
+  // Customers are best-effort: no customer permission (or an older API) must not fail products.
+  try {
+    const res = await api.counterPos.customerSnapshot(accessToken)
+      .catch(err => (err.status === 404 ? api.counterPos.customerSearch('', 200, accessToken) : Promise.reject(err)))
+    await saveCustomerSnapshot(companyId, res?.customers ?? [])
+  } catch { /* keep the previous customer cache */ }
   return true
 }
 
@@ -64,6 +147,7 @@ export async function queueOfflineBill(payload, clientUuid) {
     payload,
   }
   await putQueued(rec)
+  await logSaleOnDevice({ billNo: rec.offlineBillNo, offlineBillNo: rec.offlineBillNo, payload })
   await deductCachedStock(payload.cartItems)
   await refreshQueueState()
   return rec
@@ -126,7 +210,9 @@ async function doSync() {
           offlineStaffId: rec.staffId,
         }, accessToken, { quiet401: true })
         await removeQueued(rec.clientUuid)
-        await addSynced(rec.offlineBillNo, result?.billNoDisplay ?? `B-${result?.billNo ?? ''}`)
+        const billNoDisplay = result?.billNoDisplay ?? result?.sale?.billNoDisplay ?? `B-${result?.billNo ?? ''}`
+        await addSynced(rec.offlineBillNo, billNoDisplay)
+        await relabelDeviceSale(companyId, rec.offlineBillNo, billNoDisplay).catch(() => {})
         uploaded += 1
       } catch (err) {
         if (err.offline) break
@@ -168,9 +254,12 @@ export async function retryFailedBill(clientUuid) {
  */
 export function startOfflineSync() {
   const tick = async () => {
-    const { pending, online } = useOfflineStore.getState()
-    if (!pending.length && online) return
-    if (await pingServer()) await syncNow()
+    const { pending, online, productCount } = useOfflineStore.getState()
+    if (!pending.length && online && productCount) return
+    if (!(await pingServer())) return
+    await syncNow()
+    // No product list on this till yet (first download failed): keep trying while online.
+    if (!useOfflineStore.getState().productCount) await refreshProducts().catch(() => {})
   }
   const onOnline = () => { tick() }
   const onOffline = () => setOnline(false)
@@ -184,6 +273,8 @@ export function startOfflineSync() {
   ;(async () => {
     const { companyId, stationId } = usePosStore.getState()
     await loadProductCache(companyId, stationId).catch(() => {})
+    await loadCustomerCache(companyId).catch(() => {})
+    await loadSalesLog(companyId).catch(() => {})
     await refreshQueueState().catch(() => {})
     const uploaded = await syncNow().catch(() => 0)
     if (!uploaded) refreshProducts().catch(() => {})

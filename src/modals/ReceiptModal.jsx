@@ -54,6 +54,7 @@ export default function ReceiptModal({ onClose }) {
       return
     }
     if (k === 'ENTER') { handlePrint(); return }
+    if (k === '123') return // layout switch, not a character
     if (focus === 'billNo')        setBillNo(v => v + k)
     else if (focus === 'custName') setCustomerName(v => v + k)
   }

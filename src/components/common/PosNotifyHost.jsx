@@ -1,6 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { CheckCircle, XCircle, AlertTriangle, Info, HelpCircle, Minus, Plus } from 'lucide-react'
 import { usePosNotify } from '../../lib/posNotify'
+import { applyAmountKey } from '../../lib/posNumpadKeys'
+import Numpad from './Numpad'
+import Keyboard from './Keyboard'
 import { colors, shadow, gradient } from './theme'
 
 const BRAND_BTN = {
@@ -111,7 +114,7 @@ function SwalOverlay({ visible, onBackdropClick, children }) {
   )
 }
 
-function SwalCard({ visible, leaving, onClick, children }) {
+function SwalCard({ visible, leaving, onClick, width = 400, children }) {
   return (
     <div
       role="alertdialog"
@@ -120,7 +123,7 @@ function SwalCard({ visible, leaving, onClick, children }) {
       style={{
         background: colors.white,
         borderRadius: 20,
-        width: 'min(400px, calc(100vw - 40px))',
+        width: `min(${width}px, calc(100vw - 40px))`,
         padding: '28px 28px 24px',
         textAlign: 'center',
         boxShadow: '0 20px 60px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04)',
@@ -459,6 +462,7 @@ function TextPromptDialog({ prompt, onResolve }) {
   const [visible, setVisible] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [value, setValue] = useState('')
+  const [abc, setAbc] = useState(false)   // text prompts: numpad by default, ABC swaps in the letter keyboard
   const inputRef = useRef(null)
   const theme = THEMES.question
 
@@ -466,6 +470,7 @@ function TextPromptDialog({ prompt, onResolve }) {
     if (prompt) {
       setLeaving(false)
       setValue(prompt.defaultValue ?? '')
+      setAbc(false)
       const t = requestAnimationFrame(() => {
         setVisible(true)
         inputRef.current?.focus()
@@ -485,10 +490,36 @@ function TextPromptDialog({ prompt, onResolve }) {
     setTimeout(() => onResolve(result), 180)
   }
   const submit = () => { if (canSubmit) close(value) }
+  const decimal = prompt.inputMode === 'decimal'
+  // Keypad on the right: digits for card ref / amounts. Text prompts (card ref) get an ABC key
+  // that swaps in the letter keyboard; its 123 key or Done brings the keypad back.
+  const pressKey = (k) => {
+    setValue(v => decimal ? applyAmountKey(v, k) : k === 'C' ? '' : k === '⌫' ? v.slice(0, -1) : v + k)
+    inputRef.current?.focus()
+  }
+  const switchAbc = (on) => { setAbc(on); inputRef.current?.focus() }
+  const pressLetter = (k) => {
+    if (k === '123') { switchAbc(false); return }
+    if (k === 'ENTER') { submit(); return }
+    setValue(v => k === '⌫' ? v.slice(0, -1) : v + k)
+    inputRef.current?.focus()
+  }
+  const buttons = (
+    <div style={{ display: 'flex', gap: 8 }}>
+      <SwalButton theme={theme} variant="secondary" onClick={() => close(null)}>
+        {prompt.cancelLabel}
+      </SwalButton>
+      <SwalButton theme={theme} variant="primary" onClick={submit}>
+        {prompt.confirmLabel}
+      </SwalButton>
+    </div>
+  )
 
   return (
     <SwalOverlay visible={visible && !leaving} onBackdropClick={() => close(null)}>
-      <SwalCard visible={visible} leaving={leaving} onClick={e => e.stopPropagation()}>
+      <SwalCard visible={visible} leaving={leaving} width={640} onClick={e => e.stopPropagation()}>
+       <div style={{ display: 'flex', gap: 20, alignItems: 'stretch' }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <SwalIcon type="question" />
         <h2 style={{ fontSize: 20, fontWeight: 800, color: colors.text1, marginBottom: 8, lineHeight: 1.25 }}>
           {prompt.title}
@@ -515,14 +546,23 @@ function TextPromptDialog({ prompt, onResolve }) {
             fontFamily: "'JetBrains Mono', monospace",
           }}
         />
-        <div style={{ display: 'flex', gap: 10, opacity: 1 }}>
-          <SwalButton theme={theme} variant="secondary" onClick={() => close(null)}>
-            {prompt.cancelLabel}
-          </SwalButton>
-          <SwalButton theme={theme} variant="primary" onClick={submit}>
-            {prompt.confirmLabel}
-          </SwalButton>
         </div>
+        {!abc && (
+          <div style={{ width: 230, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <Numpad
+              onKey={pressKey} showDot={decimal} showClear showBackspace btnHeight={50} fontSize={18} gap={8}
+              extraRows={decimal ? [] : [[{ label: 'ABC', style: { fontWeight: 800, letterSpacing: 1 }, onClick: () => switchAbc(true) }]]}
+            />
+            {buttons}
+          </div>
+        )}
+       </div>
+       {abc && (
+         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, margin: '-6px -14px 0' }}>
+           <Keyboard onKey={pressLetter} onClose={() => switchAbc(false)} />
+           <div style={{ padding: '0 14px' }}>{buttons}</div>
+         </div>
+       )}
       </SwalCard>
     </SwalOverlay>
   )
@@ -545,11 +585,12 @@ function ConfirmDialog({ confirm, onResolve }) {
 
   const close = (value) => {
     setLeaving(true)
-    setTimeout(() => onResolve(value), 180)
+    // Reset, or the next confirm opens invisible (opacity 0) and still blocks every click.
+    setTimeout(() => { setLeaving(false); onResolve(value) }, 180)
   }
 
   return (
-    <SwalOverlay visible={visible && !leaving} onBackdropClick={() => close(false)}>
+    <SwalOverlay visible={visible && !leaving} onBackdropClick={() => { if (!confirm.locked) close(false) }}>
       <SwalCard visible={visible} leaving={leaving} onClick={e => e.stopPropagation()}>
         <SwalIcon type={confirm.danger ? 'warning' : 'question'} />
         <h2 style={{

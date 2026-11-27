@@ -6,7 +6,7 @@ import {
   parseLegacyHoldScan,
 } from './documentScan'
 
-export const formatHoldBarcode = formatDocBarcode
+export const formatHoldBarcode = (holdNo) => formatDocBarcode(holdNo, 'H')
 
 export function parseHoldBarcodeScan(input) {
   return parseLegacyHoldScan(input) ?? parseDocNumber(input)

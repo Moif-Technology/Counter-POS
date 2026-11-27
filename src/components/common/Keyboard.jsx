@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Delete, CornerDownLeft, ChevronUp } from 'lucide-react'
 import { useUiVariant } from './uiVariant'
 import { NEU_RAISED, neuPress, neuRelease } from './neumorphic'
@@ -7,12 +8,19 @@ const ROWS = [
   ['A','S','D','F','G','H','J','K','L'],
   ['Z','X','C','V','B','N','M'],
 ]
+// "123" switches to these (same three rows, so the keyboard keeps its height).
+const NUM_ROWS = [
+  ['1','2','3','4','5','6','7','8','9','0'],
+  ['-','/','.',',','@','#','&','(',')'],
+  ['+','*','=','%',':','_',"'"],
+]
 
 /*
  * Keyboard — full QWERTY on-screen keyboard for touch screens.
  *
  * Props:
- *   onKey   — (char: string) => void   called with letter, ' ', '⌫', '123' or 'ENTER'
+ *   onKey   — (char: string) => void   called with letter, digit/symbol, ' ', '⌫' or 'ENTER'
+ *             ("123" / "ABC" switch layouts inside the keyboard; onKey still gets '123', callers ignore it)
  *   onClose — () => void               called when Done button pressed
  *   caps    — bool (default true)      show uppercase labels
  *   variant — 'classic' | 'neumorphic' (default: from UiVariantProvider)
@@ -20,7 +28,9 @@ const ROWS = [
 export default function Keyboard({ onKey, onClose, caps = true, variant }) {
   const neu = useUiVariant(variant) === 'neumorphic'
   const Key = neu ? NeuKey : ClassicKey
-  const k = { caps, onKey }
+  const [nums, setNums] = useState(false)
+  const rows = nums ? NUM_ROWS : ROWS
+  const k = { caps, onKey: key => { if (key === '123') setNums(v => !v); onKey(key) } }
 
   return (
     <div style={{
@@ -32,24 +42,24 @@ export default function Keyboard({ onKey, onClose, caps = true, variant }) {
     }}>
       {/* Row 1 — Q…P */}
       <div style={{ display: 'flex', gap: 5 }}>
-        {ROWS[0].map(c => <Key key={c} label={c} {...k} />)}
+        {rows[0].map(c => <Key key={c} label={c} {...k} />)}
       </div>
 
       {/* Row 2 — A…L (centered) */}
       <div style={{ display: 'flex', gap: 5, paddingInline: '3%' }}>
-        {ROWS[1].map(c => <Key key={c} label={c} {...k} />)}
+        {rows[1].map(c => <Key key={c} label={c} {...k} />)}
       </div>
 
       {/* Row 3 — Z…M + backspace */}
       <div style={{ display: 'flex', gap: 5 }}>
         <Key label="⌫" keyVal="⌫" flex={1.4} action {...k} />
-        {ROWS[2].map(c => <Key key={c} label={c} {...k} />)}
+        {rows[2].map(c => <Key key={c} label={c} {...k} />)}
         <Key label="↵" keyVal="ENTER" flex={1.4} action {...k} />
       </div>
 
       {/* Row 4 — Space + Done */}
       <div style={{ display: 'flex', gap: 5 }}>
-        <Key label="123" keyVal="123" flex={1.2} action {...k} />
+        <Key label={nums ? 'ABC' : '123'} keyVal="123" flex={1.2} action {...k} />
         <Key label="SPACE" keyVal=" " flex={5} action={!neu} {...k} />
         {neu ? <NeuDone onClose={onClose} /> : <ClassicDone onClose={onClose} />}
       </div>

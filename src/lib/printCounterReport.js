@@ -87,6 +87,7 @@ export function buildCounterReportHtml(data, meta = {}) {
   const itemDiscount = Number(data.itemDiscountTotal) || 0
   const totalSales = Number(data.grossAmount) || 0
   const taxAmount = Number(data.totalTax) || 0
+  const refundTax = Number(data.totalRefundTax) || 0
   const netCardAmt = cardSales
 
   const billCount = Number(data.billCount) || 0
@@ -110,7 +111,6 @@ export function buildCounterReportHtml(data, meta = {}) {
     ['PETTY CASH OUT', pettyCashOut],
     ['TOTAL', subTotal],
     ['CASH REFUND', cashRefund],
-    ['REFUND (ALL MODES)', refund],
     ['CASH TO BE COLLECTED', cashToCollect],
     ['COLLECTED CASH', collectedCash],
     ['CASH DIFFERENCE', cashDifference],
@@ -121,14 +121,37 @@ export function buildCounterReportHtml(data, meta = {}) {
     ['NET CARD AMT (SALES+TIPS)', netCardAmt],
     ['ONLINE SALES', onlineSales],
     ['RECEIPT CREDIT CARD', receiptCard],
+    ['CARD TO BE COLLECTED', Number(data.cardToBeCollected) || 0],
+    ['COLLECTED CARD', Number(data.collectedCard) || 0],
+    ['CARD DIFFERENCE', Number(data.cardDifference) || 0],
     ['VOUCHER SALES', voucherSales],
     ['COMPLIMENT SALES', complimentSales],
     ['CASH SALES (LESS REFUND)', cashSalesLessRefund],
     ['TOTAL DISCOUNT AMOUNT', totalDiscount],
     ['ITEM DISCOUNT TOTAL', itemDiscount],
-    ['TOTAL SALES', totalSales],
+    ['TOTAL SALE', totalSales],
+    ['REFUND / RETURN', refund],
+    ['NET SALE', totalSales - refund],
     ['TAX AMOUNT', taxAmount],
+    ['RETURN TAX', refundTax],
+    ['NET TAX', taxAmount - refundTax],
   ].map(([label, val]) => amtRow(label, val)).join('')
+
+  // Notes the cashier counted (none = amount typed, block skipped).
+  const denoms = Array.isArray(data.cashDenoms) ? data.cashDenoms : []
+  const noteLabel = v => (Number.isInteger(v) ? String(v) : v.toFixed(2))
+  const cashCountHtml = denoms.length ? `
+  <hr class="dash" />
+  <div class="xr-section">CASH COUNT</div>
+  <table class="xr-table">
+    <thead>
+      <tr><th>Note</th><th class="c">Count</th><th class="r">Amount</th></tr>
+    </thead>
+    <tbody>
+      ${denoms.map(d => countRow(noteLabel(d.value), d.count, d.value * d.count)).join('')}
+      ${countRow('TOTAL', denoms.reduce((s, d) => s + d.count, 0), denoms.reduce((s, d) => s + d.value * d.count, 0))}
+    </tbody>
+  </table>` : ''
 
   const bodyHtml = `
   <div class="store-name">${esc(co.name)}</div>
@@ -158,6 +181,10 @@ export function buildCounterReportHtml(data, meta = {}) {
     <span class="xr-val">${esc(counterNo)}</span>
   </div>
   <div class="xr-row">
+    <span class="xr-lbl">CASHIER</span>
+    <span class="xr-val">${esc(meta.cashierName || '—')}</span>
+  </div>
+  <div class="xr-row">
     <span class="xr-lbl">BILL COUNT</span>
     <span class="xr-val">${billCount}</span>
   </div>
@@ -181,6 +208,7 @@ export function buildCounterReportHtml(data, meta = {}) {
     <span>Amount</span>
   </div>
   ${financialRows}
+  ${cashCountHtml}
 
   <hr class="dash" />
   <div class="xr-section">BILL CANCEL DETAILS</div>

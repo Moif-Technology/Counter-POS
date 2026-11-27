@@ -25,6 +25,10 @@ function fmtDateTime(d) {
   })
 }
 
+// Card figures are null on closes saved before card counting existed.
+const orDash = (v) => (v == null ? '—' : fmt3(v))
+const diffCell = (v) => (v == null ? '—' : <b style={{ color: Number(v) >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt3(v)}</b>)
+
 function CloseDetailModal({ closeId, accessToken, onClose, detailFn = null }) {
   const [detail, setDetail]   = useState(null)
   const [loading, setLoading] = useState(true)
@@ -57,7 +61,10 @@ function CloseDetailModal({ closeId, accessToken, onClose, detailFn = null }) {
     { label: 'Refund',         value: fmt3(detail.totalRefund) },
     { label: 'Round Off',      value: fmt3(detail.totalRoundOff) },
     { label: 'Tax',            value: fmt3(detail.totalTax) },
-    { label: 'Total Sales',    value: fmt3(detail.grossAmount) },
+    { label: 'Return Tax',     value: fmt3(detail.totalRefundTax ?? 0) },
+    { label: 'Net Tax',        value: fmt3((detail.totalTax ?? 0) - (detail.totalRefundTax ?? 0)) },
+    { label: 'Total Sale',     value: fmt3(detail.grossAmount) },
+    { label: 'Net Sale',       value: fmt3((detail.grossAmount ?? 0) - (detail.totalRefund ?? 0)), accent: 'brand' },
     { label: 'Opening Float',  value: fmt3(detail.openingFloat ?? 0), accent: 'green' },
     { label: 'Cash In',        value: fmt3(detail.cashIn), accent: 'green' },
     { label: 'Petty Cash In',  value: fmt3(detail.pettyCashIn ?? 0), accent: 'green' },
@@ -68,6 +75,10 @@ function CloseDetailModal({ closeId, accessToken, onClose, detailFn = null }) {
     { label: 'Cash To Collect', value: fmt3(detail.cashToBeCollected), accent: 'brand' },
     { label: 'Collected Cash', value: fmt3(detail.collectedCash) },
     { label: 'Cash Difference', value: fmt3(detail.cashDifference) },
+    { label: 'Card To Collect', value: orDash(detail.cardToBeCollected) },
+    { label: 'Collected Card',  value: orDash(detail.collectedCard) },
+    { label: 'Card Difference', value: orDash(detail.cardDifference) },
+    { label: 'Net Difference',  value: fmt3(detail.netDifference ?? detail.cashDifference), accent: 'brand' },
     { label: 'Bill Count',     value: detail.billCount },
     { label: 'Bill Range',     value: detail.startBillNo != null ? `${detail.startBillNo} – ${detail.endBillNo}` : '—' },
   ] : []
@@ -230,7 +241,7 @@ export default function CounterCloseViewerModal({ onClose, historyFn = null, clo
 
   return (
     <>
-    <Modal closeOnEsc={false} onClose={onClose} icon={Archive} kicker="Reports" title="Counter Close Viewer" width={860}>
+    <Modal closeOnEsc={false} onClose={onClose} icon={Archive} kicker="Reports" title="Counter Close Viewer" width={1080}>
       <style>{`@keyframes ccv-spin { to { transform: rotate(360deg) } }`}</style>
 
       <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
@@ -259,13 +270,14 @@ export default function CounterCloseViewerModal({ onClose, historyFn = null, clo
             { key: 'closeNo',           label: 'Close No',   render: (v, c) => <b>{v ?? `#${c.closeId}`}</b> },
             { key: 'reportType',        label: 'Type',       width: 52 },
             { key: 'billCount',         label: 'Bills',      width: 52, align: 'right', mono: true },
-            { key: 'grossAmount',       label: 'Gross',      width: 78, align: 'right', mono: true, render: v => <b>{fmt3(v)}</b> },
+            { key: 'grossAmount',       label: 'Gross',      width: 78, align: 'right', mono: true, render: v => fmt3(v) },
+            { key: 'totalRefund',       label: 'Refund',     width: 78, align: 'right', mono: true, render: v => fmt3(v ?? 0) },
+            { key: 'netSale',           label: 'Net Sale',   width: 78, align: 'right', mono: true, render: (_, c) => <b>{fmt3((c.grossAmount ?? 0) - (c.totalRefund ?? 0))}</b> },
             { key: 'cashToBeCollected', label: 'To Collect', width: 78, align: 'right', mono: true, render: v => fmt3(v) },
             { key: 'collectedCash',     label: 'Collected',  width: 78, align: 'right', mono: true, render: v => fmt3(v) },
-            {
-              key: 'cashDifference', label: 'Diff', width: 78, align: 'right', mono: true,
-              render: v => <b style={{ color: Number(v) >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt3(v)}</b>,
-            },
+            { key: 'cashDifference',    label: 'Cash Diff',  width: 78, align: 'right', mono: true, render: diffCell },
+            { key: 'cardDifference',    label: 'Card Diff',  width: 78, align: 'right', mono: true, render: diffCell },
+            { key: 'netDifference',     label: 'Net Diff',   width: 78, align: 'right', mono: true, render: (v, c) => diffCell(v ?? c.cashDifference) },
           ]}
           rows={closes}
           rowKey="closeId"

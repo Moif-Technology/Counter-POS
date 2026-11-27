@@ -11,7 +11,6 @@ import {
   buildReceiptDiscountAdjustmentHtml,
   buildReceiptBarcodeBlockHtml,
   RECEIPT_BARCODE_EXTRA_CSS,
-  wrapReceiptBodyCopies,
   resolveReceiptCompanyMeta,
   resolveCashierName,
 } from './receiptPrintTheme'
@@ -39,7 +38,7 @@ function lineUnitDisplay(it) {
 /**
  * Build thermal delivery note for customer (80mm, shared receipt theme).
  */
-export function buildDeliveryReceiptHtml(delivery, meta = {}, copies = 1) {
+export function buildDeliveryReceiptHtml(delivery, meta = {}) {
   const co = resolveCompanyHeader(meta)
   const deliveryLabel = String(delivery.deliveryNo ?? '')
   const barcodeText = formatDeliveryBarcode(delivery.deliveryNo)
@@ -174,18 +173,15 @@ export function buildDeliveryReceiptHtml(delivery, meta = {}, copies = 1) {
   ${printerNote ? `<div class="printer-note">Printer: ${esc(printerNote)}</div>` : ''}
   `
 
-  const { bodyHtml: printBody, extraCss: copyCss } = wrapReceiptBodyCopies(bodyHtml, copies)
-
   return buildReceiptDocumentHtml({
     title: deliveryLabel,
-    bodyHtml: printBody,
+    bodyHtml,
     extraCss: `
       .section-head {
         text-align: center; font-size: 13px; font-weight: 700;
         margin: 4px 0 6px; letter-spacing: 0.4px; text-transform: uppercase;
       }
       ${RECEIPT_BARCODE_EXTRA_CSS}
-      ${copyCss}
     `,
   })
 }
@@ -193,12 +189,11 @@ export function buildDeliveryReceiptHtml(delivery, meta = {}, copies = 1) {
 export async function printDeliveryReceipt(delivery, meta = {}, copies = 1) {
   if (!delivery?.deliveryNo) throw new Error('No delivery number to print')
   const count = Math.max(1, Math.min(20, Math.floor(Number(copies) || 1)))
-  const html = buildDeliveryReceiptHtml(delivery, meta, count)
   if (IS_ANDROID_POS) {
     await printAndroidDelivery(delivery, meta, count)
     return
   }
-  openReceiptPrintWindow(html)
+  openReceiptPrintWindow(buildDeliveryReceiptHtml(delivery, meta), { copies: count })
 }
 
 export async function printDeliveryReprintByNo(deliveryNo, accessToken, meta = {}) {

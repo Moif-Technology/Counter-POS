@@ -1,6 +1,7 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
+import { readFileSync } from 'node:fs'
 
 /**
  * Dev-only WebSocket relay for customer display.
@@ -55,6 +56,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), tailwindcss(), customerDisplayRelayPlugin()],
     base: './',
+    // Running version for UpdateNotice: bump package.json "version" every release.
+    define: { __APP_VERSION__: JSON.stringify(JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version) },
     server: {
       proxy: {
         '/api': {

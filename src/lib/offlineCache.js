@@ -16,7 +16,8 @@ let dbPromise = null
 function openDb() {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, 1)
+      // v2: re-run the upgrade so a v1 DB opened elsewhere without stores gets them (data kept).
+      const req = indexedDB.open(DB_NAME, 2)
       req.onupgradeneeded = () => {
         const db = req.result
         if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv')
@@ -193,11 +194,113 @@ export async function addSynced(offlineBillNo, billNoDisplay) {
   await idb('kv', 'readwrite', s => { s.put(next, 'synced') })
 }
 
+const seqOf = (no) => Number(String(no ?? '').match(/-OFF-(\d+)$/)?.[1]) || 0
+
 export async function refreshQueueState() {
   const [rows, synced] = await Promise.all([listQueue(), idb('kv', 'readonly', s => s.get('synced'))])
+  // localStorage wiped but the queue survived: never print an offline number twice.
+  const maxSeq = Math.max(0, ...rows.map(r => seqOf(r.offlineBillNo)), ...(synced ?? []).map(x => seqOf(x.offlineBillNo)))
+  try {
+    if ((Number(localStorage.getItem(SEQ_KEY)) || 0) < maxSeq) localStorage.setItem(SEQ_KEY, String(maxSeq))
+  } catch { /* storage blocked */ }
   useOfflineStore.setState({
     pending: rows.filter(r => r.status !== 'failed'),
     failed: rows.filter(r => r.status === 'failed'),
     synced: synced ?? [],
   })
 }
+
+/* ── Customers (credit / delivery / privilege pickers work offline) ─── */
+
+let custMem = { key: null, list: [] }
+const custKey = (companyId) => `customers:${companyId ?? ''}`
+
+export async function saveCustomerSnapshot(companyId, customers) {
+  custMem = { key: custKey(companyId), list: customers ?? [] }
+  await idb('kv', 'readwrite', s => { s.put(custMem.list, custMem.key) })
+}
+
+export async function loadCustomerCache(companyId) {
+  const key = custKey(companyId)
+  if (custMem.key === key && custMem.list.length) return
+  custMem = { key, list: (await idb('kv', 'readonly', s => s.get(key))) ?? [] }
+}
+
+/** Same match as GET /customers/search (code / name / mobile / telephone contains). */
+export function lookupCachedCustomers(q, limit = 30) {
+  const t = String(q ?? '').trim().toLowerCase()
+  const hit = (v) => String(v ?? '').toLowerCase().includes(t)
+  return custMem.list
+    .filter(c => !t || hit(c.customerCode) || hit(c.customerName) || hit(c.mobileNo) || hit(c.telephone))
+    .slice(0, Number(limit) || 30)
+    .map(c => ({ ...c }))
+}
+
+export function findCachedCustomer(customerId) {
+  return custMem.list.find(c => Number(c.customerId) === Number(customerId)) ?? null
+}
+
+/* ── Sales log: bills made on this device (offline returns) ──────────── */
+
+export const SALES_LOG_DAYS = 7
+let logMem = { key: null, list: [] }
+const logKey = (companyId) => `salesLog:${companyId ?? ''}`
+
+export async function loadSalesLog(companyId) {
+  const key = logKey(companyId)
+  if (logMem.key === key) return
+  logMem = { key, list: (await idb('kv', 'readonly', s => s.get(key))) ?? [] }
+}
+
+/** Remember a bill this device made (online or offline); keeps the last SALES_LOG_DAYS. */
+export async function logDeviceSale(companyId, bill) {
+  await loadSalesLog(companyId)
+  const cutoff = Date.now() - SALES_LOG_DAYS * 86400000
+  logMem.list = [bill, ...logMem.list.filter(b => new Date(b.at).getTime() >= cutoff)]
+  await idb('kv', 'readwrite', s => { s.put(logMem.list, logMem.key) })
+}
+
+/** Offline bill reached the server: it can now also be found by its server number. */
+export async function relabelDeviceSale(companyId, offlineBillNo, billNo) {
+  await loadSalesLog(companyId)
+  const b = logMem.list.find(x => x.offlineBillNo === offlineBillNo)
+  if (!b) return
+  b.billNo = billNo
+  await idb('kv', 'readwrite', s => { s.put(logMem.list, logMem.key) })
+}
+
+const billKey = (no) => String(no ?? '').trim().toUpperCase().replace(/^[BR]-/, '')
+
+/** Bill made on this device, by printed number (B-123, 123 or S3-OFF-12). */
+export function findDeviceBill(billNo) {
+  const k = billKey(billNo)
+  return logMem.list.find(b => billKey(b.billNo) === k || (b.offlineBillNo && billKey(b.offlineBillNo) === k)) ?? null
+}
+
+/** Net qty of a product sold from this device in the log window (returns already subtracted). */
+export function deviceNetSoldQty(productId) {
+  let n = 0
+  for (const b of logMem.list) {
+    for (const i of b.items ?? []) if (Number(i.productId) === Number(productId)) n += Number(i.qty) || 0
+  }
+  return n
+}
+
+/* ── Holds parked on this device while offline ──────────────────────── */
+
+const holdsKey = (companyId, stationId) => `holds:${companyId ?? ''}:${stationId ?? ''}`
+export const isLocalHoldId = (id) => String(id ?? '').startsWith('L-')
+
+export async function listLocalHolds(companyId, stationId) {
+  return (await idb('kv', 'readonly', s => s.get(holdsKey(companyId, stationId)))) ?? []
+}
+
+export async function saveLocalHolds(companyId, stationId, holds) {
+  await idb('kv', 'readwrite', s => { s.put(holds, holdsKey(companyId, stationId)) })
+}
+
+/* ── Who / where is billing (set at login; api.js reads it for offline fallbacks) ── */
+
+let scope = {}
+export const setOfflineScope = (s) => { scope = s ?? {} }
+export const offlineScope = () => scope

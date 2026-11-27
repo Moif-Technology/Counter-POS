@@ -2,7 +2,7 @@ import { Download, Settings, Layers, Package, Users, Receipt, Hash } from 'lucid
 import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import { setGvTax } from '../lib/gvtax'
-import { setAutoRoundOff } from '../lib/posSettings'
+import { setAutoRoundOff, setDiscountPromptAmount, setReceiptSettings } from '../lib/posSettings'
 import SyncStepsModal from './SyncStepsModal'
 
 /*
@@ -25,9 +25,11 @@ const STEPS = [
       setGvTax(tax?.gvtax ?? 5)
       s.setCurrencyPrecision(tax?.currencyPrecision ?? 2)
       setAutoRoundOff(tax?.autoRoundOff ?? 0)
+      setReceiptSettings(tax?.receiptSettings)
       if (tax?.receiptHeader) s.setReceiptHeader(tax.receiptHeader)
       const p = pos?.parameters ?? pos?.data?.parameters ?? {}
       s.setCustomerDisplayEnabled(Number(p.customer_display_enabled) === 1)
+      setDiscountPromptAmount(p.discount_prompt_amount)
       s.recalc()
       return `VAT ${tax?.gvtax ?? 5}%`
     },

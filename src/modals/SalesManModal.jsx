@@ -53,6 +53,7 @@ export default function SalesManModal({ onClose, onApply }) {
       return
     }
     if (k === 'ENTER') { handleApply(); return }
+    if (k === '123') return // layout switch, not a character
     if (focus === 'code') setStaffCode(v => v + k)
     else                  setStaffName(v => v + k)
   }

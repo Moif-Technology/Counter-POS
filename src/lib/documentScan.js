@@ -1,6 +1,7 @@
 /**
  * Document numbers & barcode scan helpers (invoice / hold / delivery).
- * Barcodes encode digits only — no H-/D-/B- prefix on the slip.
+ * Slips print B-/R-/H-/D- + number (e.g. B-32), so a product barcode like 32 or 000032 is never
+ * mistaken for a bill. Older slips printed zero-padded digits (000032); those still scan.
  */
 
 export const DOC_TYPE = {
@@ -14,14 +15,14 @@ export function cleanBarcodeScan(raw) {
   return String(raw ?? '').trim().replace(/^\*+|\*+$/g, '')
 }
 
-/** Minimum digits in barcode — short codes (14) fail on many scanners without padding. */
+/** Digits on older zero-padded slips (000014) — still recognised when scanned. */
 export const DOC_BARCODE_MIN_DIGITS = 6
 
-/** Barcode payload — zero-padded numeric (e.g. 000014). Scanners read this; UI shows plain number. */
-export function formatDocBarcode(docNo) {
+/** Barcode payload — prefix + number, e.g. formatDocBarcode(32, 'B') → "B-32". */
+export function formatDocBarcode(docNo, prefix) {
   const n = Number(docNo)
   if (!Number.isFinite(n) || n <= 0) return ''
-  return String(Math.floor(n)).padStart(DOC_BARCODE_MIN_DIGITS, '0')
+  return `${prefix}-${Math.floor(n)}`
 }
 
 /** Plain document number from scan or keypad (digits only). */

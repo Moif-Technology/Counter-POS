@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { usePosStore } from '../../../store/posStore'
 import { api } from '../../../lib/api'
 import { setGvTax } from '../../../lib/gvtax'
-import { setAutoRoundOff } from '../../../lib/posSettings'
+import { setAutoRoundOff, setDiscountPromptAmount, setReceiptSettings } from '../../../lib/posSettings'
 import { focusBarcodeScan } from '../../../lib/posFocus'
 import { posNotifySuccess, posNotifyWarning, posPromptText } from '../../../lib/posNotify'
 import { startOfflineSync } from '../../../lib/offlineSync'
+import { fmtMoney, moneyPlaceholder } from '../../../lib/currencyFormat'
 
 /**
  * Shift start: no float, no bills and no drawer entries yet on this counter session →
@@ -32,7 +33,7 @@ async function askOpeningFloat() {
     const raw = await posPromptText({
       title: 'Opening Float',
       message: 'Cash placed in the drawer at the start of this shift.',
-      placeholder: '0.00',
+      placeholder: moneyPlaceholder(),
       inputMode: 'decimal',
       confirmLabel: 'Save',
       cancelLabel: 'Skip',
@@ -43,7 +44,7 @@ async function askOpeningFloat() {
       counterNo: cno, transactionType: 'CASH_IN', category: 'OPENING_FLOAT',
       amount, remarks: 'Opening Float',
     }, accessToken)
-    posNotifySuccess(`Opening float ${amount.toFixed(2)} saved`, { title: 'Opening Float', duration: 1200 })
+    posNotifySuccess(`Opening float ${fmtMoney(amount)} saved`, { title: 'Opening Float', duration: 1200 })
   } catch (err) {
     if (err?.status !== 409) posNotifyWarning(err?.message ?? 'Opening float not saved', { title: 'Opening Float' })
   } finally {
@@ -84,9 +85,11 @@ export function usePosSession() {
         setGvTax(data?.gvtax ?? 5)
         usePosStore.getState().setCurrencyPrecision(data?.currencyPrecision ?? 2)
         setAutoRoundOff(data?.autoRoundOff ?? 0)
+        setReceiptSettings(data?.receiptSettings)
         if (data?.receiptHeader) usePosStore.getState().setReceiptHeader(data.receiptHeader)
         const pos = posParamsRes?.parameters ?? posParamsRes?.data?.parameters ?? {}
         usePosStore.getState().setCustomerDisplayEnabled(Number(pos.customer_display_enabled) === 1)
+        setDiscountPromptAmount(pos.discount_prompt_amount)
         usePosStore.getState().recalc()
       } catch {
         setGvTax(5)
@@ -99,6 +102,25 @@ export function usePosSession() {
   useEffect(() => {
     if (!cashier) return
     return startOfflineSync()
+  }, [cashier])
+
+  // Superadmin POS toggles (Bill Print / Bill Reprint …) reach an open till without
+  // a re-login: poll the cheap per-company entitlement version, refetch on change.
+  useEffect(() => {
+    if (!cashier) return
+    const sync = async () => {
+      const { accessToken, accessVersion, setAccess } = usePosStore.getState()
+      if (!accessToken || document.hidden) return
+      try {
+        const { version } = await api.auth.accessVersion(accessToken)
+        if (!(Number(version) > accessVersion)) return
+        const { access } = await api.auth.accessRefresh(accessToken)
+        setAccess(access?.features, version, access?.permissions)
+      } catch { /* offline / older API: keep the login-time flags */ }
+    }
+    sync()
+    const timer = setInterval(sync, 30000)
+    return () => clearInterval(timer)
   }, [cashier])
 
   return { fetchNextBillNo }

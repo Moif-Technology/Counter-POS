@@ -37,13 +37,16 @@ export function liteReportFns(ledger) {
     const cashOut = roundAmt(cash.filter(e => e.type === 'OUT').reduce((s, e) => s + e.amount, 0))
     const cashToBeCollected = roundAmt(totalCash + creditReceiptCash + cashIn - cashOut)
     const totalDiscount = roundAmt(bills.reduce((s, b) => s + (b.receipt.discountAmt || 0), 0))
-    const totalTax = roundAmt(bills.reduce((s, b) => s + (b.receipt.taxAmt || 0), 0))
-    const grossAmount = roundAmt(bills.reduce((s, b) => s + b.receipt.netAmount, 0))
+    // Same split as the server: sales tax and return tax; Net Tax = totalTax - totalRefundTax
+    const totalTax = roundAmt(bills.filter(b => b.receipt.netAmount > 0).reduce((s, b) => s + (b.receipt.taxAmt || 0), 0))
+    const totalRefundTax = roundAmt(bills.filter(b => b.receipt.netAmount < 0).reduce((s, b) => s + Math.abs(b.receipt.taxAmt || 0), 0))
+    // Full sale before returns (same as the server); Net Sale = grossAmount - totalRefund
+    const grossAmount = roundAmt(bills.filter(b => b.receipt.netAmount > 0).reduce((s, b) => s + b.receipt.netAmount, 0))
 
     return {
       totalCash, totalCredit, totalCard, creditReceiptCash, creditReceiptCard,
       creditReceiptCount: settlementHistory.length,
-      totalRefund, cashIn, cashOut, cashToBeCollected, totalDiscount, totalTax, grossAmount,
+      totalRefund, cashIn, cashOut, cashToBeCollected, totalDiscount, totalTax, totalRefundTax, grossAmount,
       billCount: bills.length, cashBillCount: countByMode('CASH'), creditBillCount: countByMode('CREDIT'),
       cardBillCount: countByMode('CREDITCARD'), multiBillCount: Math.max(0, multiBillCount),
       startBillNo: bills[0]?.billNo, endBillNo: bills[bills.length - 1]?.billNo,

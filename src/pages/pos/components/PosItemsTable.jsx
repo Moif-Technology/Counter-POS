@@ -124,7 +124,7 @@ export default function PosItemsTable() {
             >
               <span><span className="ph-sl">{row.slNo ?? idx + 1}</span></span>
               <span className="ph-col-barcode ph-ellipsis">{row.barcode ?? row.productCode ?? '—'}</span>
-              <span className="ph-ellipsis">{row.description}</span>
+              <span className="ph-desc" title={row.description}>{row.description}</span>
               <span className="ph-num">
                 <button
                   className="ph-qty-tap"

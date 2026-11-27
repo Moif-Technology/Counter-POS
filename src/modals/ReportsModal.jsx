@@ -13,13 +13,15 @@ import PrivilegeSettingsModal from './PrivilegeSettingsModal'
 import SalesViewerModal from './SalesViewerModal'
 import CounterCloseViewerModal from './CounterCloseViewerModal'
 import CashInOutViewerModal from './CashInOutViewerModal'
+import ControlPanelModal from './ControlPanelModal'
 import {
   BarChart2, Info, Gauge, Users, FileText, Layers, ReceiptText, Lock, ArrowLeftRight,
-  KeyRound, UserCog, Mail, ShieldCheck, CirclePause, Download, Upload, Trash2, Power,
+  KeyRound, UserCog, Mail, ShieldCheck, CirclePause, Download, Upload, Trash2, Power, Settings, RefreshCw,
 } from 'lucide-react'
 import Modal from '../components/common/Modal'
 import { api } from '../lib/api'
-import { usePosStore } from '../store/posStore'
+import { usePosStore, featureOn } from '../store/posStore'
+import { APP_VERSION, checkForUpdate, updatePlatform } from '../lib/appUpdate'
 import './ReportsModal.css'
 
 /*
@@ -43,6 +45,7 @@ const SECTIONS = [
     { no: 4,  key: 4,  label: 'Cashier Change',     icon: UserCog },
     { no: 11, key: 11, label: 'eMail Settings',     icon: Mail },
     { no: 12, key: 12, label: 'Privilege Settings', icon: ShieldCheck },
+    { no: 16, key: 17, label: 'Control Panel',      icon: Settings, feature: 'pos.settings' },
   ] },
   { title: 'Data & System', items: [
     { no: 5,  key: 5,  label: 'Clear Hold Bill',      icon: CirclePause },
@@ -77,7 +80,10 @@ export default function ReportsModal({
   const [salesViewerOpen,       setSalesViewerOpen]       = useState(false)
   const [counterCloseViewerOpen, setCounterCloseViewerOpen] = useState(false)
   const [cashInOutViewerOpen,    setCashInOutViewerOpen]    = useState(false)
-  const subOpen = counterReadingOpen || staffWiseOpen || groupWiseOpen || cashierChangeOpen || clearHoldBillOpen
+  const [controlPanelOpen,       setControlPanelOpen]       = useState(false)
+  const [updState, setUpdState] = useState('')   // '' | checking | latest | update:<ver> | error
+  const features = usePosStore(s => s.features)
+  const subOpen = controlPanelOpen || counterReadingOpen || staffWiseOpen || groupWiseOpen || cashierChangeOpen || clearHoldBillOpen
     || passwordChangeOpen || privilegeSettingsOpen || salesViewerOpen || counterCloseViewerOpen || cashInOutViewerOpen || readingNeeded || downloadOpen || uploadOpen || clearAllOpen || emailOpen
 
   // Cashier Change needs the counter reading (Z-Report) first when the session has bills.
@@ -111,9 +117,26 @@ export default function ReportsModal({
     if (itemKey === 14) { setSalesViewerOpen(true); return }
     if (itemKey === 15) { setCounterCloseViewerOpen(true); return }
     if (itemKey === 16) { setCashInOutViewerOpen(true); return }
+    if (itemKey === 17) { setControlPanelOpen(true); return }
     onSelect?.(itemKey)
     onClose()
   }
+
+  // Installed app only: a newer build opens the update card (UpdateNotice) on top of this.
+  async function checkUpdates() {
+    setUpdState('checking')
+    try {
+      const r = await checkForUpdate({ manual: true })
+      setUpdState(r.status === 'update' ? `update:${r.version}` : 'latest')
+    } catch {
+      setUpdState('error')
+    }
+  }
+  const updMsg = updState === 'checking' ? 'Checking…'
+    : updState === 'latest' ? 'You have the latest version'
+    : updState === 'error' ? 'Could not reach the update server'
+    : updState.startsWith('update:') ? `Version ${updState.slice(7)} is available`
+    : ''
 
   // Escape closes the list (sub-reports handle their own Escape).
   useEffect(() => {
@@ -128,7 +151,7 @@ export default function ReportsModal({
     <Modal closeOnEsc={false} onClose={onClose} icon={BarChart2} kicker="Counter POS" title="Reports" width={820}>
       <div className="rpt">
         <div className="rpt-grid">
-          {ALL.map(item => {
+          {ALL.filter(item => !item.feature || featureOn(features, item.feature)).map(item => {
             const Icon = item.icon
             return (
               <button
@@ -146,6 +169,15 @@ export default function ReportsModal({
       </div>
 
       <div className="rpt-foot">
+        {updatePlatform() && (
+          <div className="rpt-ver">
+            <span className="rpt-ver-no">Version {APP_VERSION}</span>
+            <button type="button" className="rpt-upd" onClick={checkUpdates} disabled={updState === 'checking'}>
+              <RefreshCw size={15} className={updState === 'checking' ? 'is-spin' : undefined} /> Check for updates
+            </button>
+            {updMsg && <span className={`rpt-upd-msg${updState === 'error' ? ' is-err' : ''}`} role="status">{updMsg}</span>}
+          </div>
+        )}
         <button type="button" className="rpt-close" onClick={onClose}>Close</button>
       </div>
     </Modal>
@@ -220,6 +252,7 @@ export default function ReportsModal({
     {cashInOutViewerOpen && (
       <CashInOutViewerModal onClose={() => setCashInOutViewerOpen(false)} reportFn={cashInOutReportFn} />
     )}
+    {controlPanelOpen && <ControlPanelModal onClose={() => setControlPanelOpen(false)} />}
     </>
   )
 }

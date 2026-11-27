@@ -75,6 +75,7 @@
   border: 1.5px solid #e4e4e7; border-radius: 11px; background: #fafafa;
   font-family: inherit; font-size: 22px; font-weight: 800; color: #18181b; font-variant-numeric: tabular-nums;
 }
+.cr-field > span em { font-style: normal; font-size: 10.5px; font-weight: 700; text-transform: none; letter-spacing: 0; color: var(--text-4); }
 .cr-field.is-active > span { color: var(--brand); }
 .cr-field.is-active input { border-color: var(--brand); background: #fff; box-shadow: 0 0 0 3px rgba(120, 8, 41, 0.1); }
 .cr-diff { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0 10px; padding: 10px 14px; border-radius: 11px; background: #f4f4f5; }

@@ -19,7 +19,7 @@
   /* Numpad pieces — used to size the square keys */
   --ph-pay-gap: clamp(6px, 0.6vw, 10px);
   --ph-kgap:    clamp(6px, 0.7vw, 10px);
-  --ph-enter-h: clamp(46px, 5.8vh, 60px);
+  --ph-enter-h: clamp(46px, 6.8vh, 72px);
 
   height: 100vh; height: 100dvh;
   /* touch screens: no double-tap zoom or grey tap flash anywhere on the POS (scrolling still works) */
@@ -33,6 +33,8 @@
 }
 
 .ph-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/* Cart item name: wraps to 2 lines, then "..." (full name on hover + in the item bar) */
+.ph-desc     { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; line-height: 1.25; min-width: 0; padding: 4px 0; }
 .ph-label    { color: var(--text-3); font-weight: 500; }
 .ph-brand    { color: var(--brand); }
 .ph-strong   { color: var(--text-1); font-weight: 700; }
@@ -188,7 +190,8 @@
 }
 .ph-table-row {
   display: grid;
-  grid-template-columns: 7% 13% minmax(0, 1fr) 9% 11% 12% 32px;
+  /* number columns sized to their content so the name gets the rest */
+  grid-template-columns: 34px 13% minmax(0, 1fr) 54px 86px 96px 32px;   /* px, not ch: header font is smaller, ch would misalign it */
   align-items: center; column-gap: 8px;
   min-height: clamp(44px, 5.6vh, 58px);
   padding: 0 12px;
@@ -305,7 +308,7 @@
 .ph-pay-tile.is-active svg { color: var(--pay-on-fg); }
 .ph-keys {
   flex: 1; min-height: calc(4 * 44px + 3 * var(--ph-kgap));
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(44px, 92px));
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(44px, 1fr));   /* rows fill the column: no dead gap above ENTER */
   gap: var(--ph-kgap);
 }
 .ph-key {
@@ -430,18 +433,23 @@
 .ph-txn-count { font-size: 11.5px; font-weight: 600; color: var(--text-3); white-space: nowrap; }
 
 /* Sub total · Discount · Tax · Round off as plain figures with thin dividers; TOTAL in a soft rose box */
-.ph-txn-boxes { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.7fr); gap: 0; align-items: stretch; }
+/* One row, widths 1:1:1:1:1.7 like before, but no box may shrink below its text, so no amount is ever
+   cut off at any screen size / Windows scaling. If the row is too narrow for that, TOTAL wraps onto
+   its own full-width line. */
+.ph-txn-boxes { flex: 1; display: flex; flex-wrap: wrap; row-gap: 6px; align-items: stretch; }
 .ph-txn-stat, .ph-txn-total {
   display: flex; flex-direction: column; justify-content: center; gap: 3px; min-width: 0;
   padding: clamp(6px, 1vh, 10px) 12px; border-radius: 12px;
 }
 .ph-txn-stat { background: transparent; border-radius: 0; padding-left: clamp(8px, 0.9vw, 14px); }
+.ph-txn-stat { flex: 1 1 0; min-width: max-content; }
+.ph-txn-stat:nth-child(4) { margin-right: 8px; }
 .ph-txn-stat:first-child { padding-left: 2px; }
 .ph-txn-stat + .ph-txn-stat { border-left: 1px solid #f0f0f2; }
 .ph-txn-stat span { font-size: 10.5px; font-weight: 600; color: #71717a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ph-txn-stat b { font-size: clamp(15px, 1.1vw, 19px); font-weight: 700; color: #27272a; font-variant-numeric: tabular-nums; }
 /* TOTAL: soft rose box, maroon figure */
-.ph-txn-total { align-items: flex-end; margin-left: 8px; background: var(--brand-bg); border: 1px solid var(--brand-border); color: var(--brand); }
+.ph-txn-total { flex: 1.7 1 0; min-width: max-content; align-items: flex-end; background: var(--brand-bg); border: 1px solid var(--brand-border); color: var(--brand); }
 .ph-txn-total > span { font-size: 10.5px; font-weight: 700; color: var(--brand); opacity: 0.75; letter-spacing: 1px; }
 .ph-txn-total strong { font-size: clamp(24px, 2.1vw, 38px); font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; line-height: 1.05; }
 .ph-txn-paid { display: flex; gap: 10px; font-size: 11px; color: #71717a; white-space: nowrap; }
@@ -549,7 +557,8 @@
   .ph-fn { gap: 4px; padding: 4px; font-size: 10.5px; }
   .ph-fn svg { width: 22px; height: 22px; }
   .ph-col-barcode { display: none; }
-  .ph-table-row { grid-template-columns: 9% minmax(0, 1fr) 10% 13% 14% 30px; }
+  .ph-main { grid-template-columns: 50% minmax(0, 1fr) minmax(0, 1.35fr); }   /* cart gets more room */
+  .ph-table-row { grid-template-columns: 30px minmax(0, 1fr) 48px 70px 78px 28px; column-gap: 6px; padding: 0 8px; }
   .ph-txn-stat b { font-size: 13px; }
   .ph-txn-stat, .ph-txn-total { padding: 6px 9px; }
 }
@@ -579,7 +588,9 @@
   .ph-main { grid-template-columns: minmax(0, 1fr); }
   .ph-txn-head { flex-wrap: wrap; }
   .ph-txn-cust { flex-basis: 100%; }
-  .ph-txn-boxes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ph-txn-boxes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ph-txn-stat, .ph-txn-total { min-width: 0; }
+  .ph-txn-stat:nth-child(4) { margin-right: 0; }
   .ph-txn-total { grid-column: 1 / -1; }
   .ph-pay { grid-template-columns: 1fr 1fr; }
   .ph-itemcard { flex-wrap: wrap; }
@@ -598,9 +609,9 @@
 .ph-txn-total strong { font-size: clamp(20px, 1.7vw, 30px); order: 2; padding-right: 2px; }
 .ph-txn-total { padding-left: 10px; padding-right: 12px; }
 .ph-txn-paid { order: 1; flex-direction: column; gap: 0; font-size: 10.5px; line-height: 1.35; }
-.ph-txn-total { min-width: 0; overflow: hidden; }
+.ph-txn-total { overflow: hidden; }
 @media (max-width: 1180px) {
-  .ph-txn-boxes { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 2.1fr); }
+  .ph-txn-total { flex-grow: 2.1; }
   .ph-txn-total > span { display: none; }
   .ph-txn-total strong { font-size: clamp(18px, 2vw, 24px); }
 }
@@ -643,3 +654,18 @@
 .ph-cust-trigger:hover .ph-cust-ico svg { color: inherit; }
 /* Picked customer: same neutral box, dark icon */
 .ph-cust-trigger.has-customer .ph-cust-ico { color: #3f3f46; }
+
+/* ─── Short screens (1024x768 POS with taskbar/browser bar: ~610px tall) ───
+   Numpad + ENTER need ~250px; shrink the payment/BILLING card and keys so nothing overlaps. */
+@media (max-height: 700px) and (min-width: 901px) {
+  .ph-main { --ph-bottom-h: 112px; --ph-enter-h: 42px; }
+  .ph-checkout { gap: 6px; padding: 6px; }
+  .ph-checkout .ph-pay-tile { min-height: 38px; }
+  .ph-checkout .ph-bill { min-height: 50px; }
+  .ph-pad { --ph-kgap: 6px; }
+  .ph-keys { min-height: calc(4 * 38px + 3 * 6px); grid-template-rows: repeat(4, minmax(38px, 1fr)); }
+  .ph-fn-grid { grid-template-rows: repeat(var(--fn-rows, 5), minmax(46px, 1fr)); grid-auto-rows: minmax(46px, 1fr); gap: 6px; padding: 6px 8px 8px; }
+  .ph-fn { gap: 3px; }
+  .ph-fn svg { width: 20px; height: 20px; }
+  .ph-tabs { padding-top: 6px; }
+}

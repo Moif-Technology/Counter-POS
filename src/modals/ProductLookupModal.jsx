@@ -7,6 +7,7 @@ import { fmtQty } from '../lib/utils'
 import { STOCK_CHANGED_EVENT } from '../lib/stockCheck'
 import Modal from '../components/common/Modal'
 import Keyboard from '../components/common/Keyboard'
+import { applyAmountKey } from '../lib/posNumpadKeys'
 import './ProductLookupModal.css'
 
 const DEBOUNCE_MS = 350
@@ -26,6 +27,7 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
   const [error,    setError]    = useState(null)
   const [searched, setSearched] = useState(false)
   const [kbOpen,   setKbOpen]   = useState(false)
+  const [field,    setField]    = useState('query')   // which box the on-screen keyboard types into
   const queryRef    = useRef()
   const listRef     = useRef()
   const debounceRef = useRef(null)
@@ -142,10 +144,11 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
     fireNow(query, price, group)
   }
 
-  // On-screen keyboard types into Short Description.
+  // On-screen keyboard types into the last focused box: Search, or Max price (digits / dot only).
   const handleKbKey = (k) => {
     if (k === '123') return
     if (k === 'ENTER') { if (selIdx >= 0 && results[selIdx]) pick(results[selIdx]); else fireNow(query, price, group); return }
+    if (field === 'price') { changePrice(applyAmountKey(price, k)); return }
     changeQuery(k === '⌫' ? query.slice(0, -1) : query + k)
   }
 
@@ -172,6 +175,7 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
               value={query}
               onChange={e => changeQuery(e.target.value)}
               onKeyDown={handleQueryKeyDown}
+              onFocus={() => setField('query')}
               placeholder="Search name, barcode or code"
               aria-label="Short description: name, barcode or code"
             />
@@ -185,6 +189,7 @@ export default function ProductLookupModal({ onClose, onSelect, groupId = null, 
             <span>Max price</span>
             <input data-system-keyboard
               value={price}
+              onFocus={() => setField('price')}
               onChange={e => changePrice(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && fireNow(query, price, group)}
               placeholder="Any"

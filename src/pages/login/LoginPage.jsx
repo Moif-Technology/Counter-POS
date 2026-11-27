@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePosStore } from '../../store/posStore'
 import { api } from '../../lib/api'
-import { getEnrollment, clearEnrollment, getOrCreateDeviceToken } from '../../lib/device'
+import { getEnrollment, clearEnrollment, saveEnrollment, getOrCreateDeviceToken } from '../../lib/device'
 import { posNotifyError, posNotifyWarning } from '../../lib/posNotify'
+import { rememberLogin, offlineLogin } from '../../lib/offlineAuth'
 import { LITE_VERSION_ENABLED, LITE_VERSION_PIN } from '../../config/appConfig'
 import BrandLogo from '../../components/common/BrandLogo'
 
@@ -42,40 +43,69 @@ export default function LoginPage() {
     if (!enrollment)    { navigate('/enroll'); return }
 
     setLoading(true)
-    try {
-      const { accessToken, refreshToken, session } = await api.counterPos.pinLogin({
-        pin,
-        companyId:   enrollment.companyId,
-        deviceToken: enrollment.deviceToken ?? getOrCreateDeviceToken(),
-        takeOver,
-      })
-      setConflict(null)
-
-      const cashier = {
-        staffId:   session.user.staffId,
-        staffName: session.user.staffName,
-        staffCode: session.user.staffCode ?? '',
-        role:      session.user.role,
-        roleName:  session.user.roleName,
-      }
+    // Same steps for an online login and for one reopened from the offline cache.
+    const openSession = ({ cashier, counterNo, accessToken, refreshToken, header, features, accessVersion, permissions }) => {
       setSession(
-        cashier,
-        String(session.counterNo ?? enrollment.counterNo ?? 1),
-        accessToken,
-        refreshToken,
-        enrollment.companyId,
-        enrollment.branchId,
-        enrollment.stationId ?? enrollment.branchId,
+        cashier, counterNo, accessToken, refreshToken,
+        enrollment.companyId, enrollment.branchId, enrollment.stationId ?? enrollment.branchId,
       )
-      if (session.company) {
-        usePosStore.getState().setReceiptHeader({
-          companyName: session.company.companyName,
-          branchName: session.company.stationName,
-          companyAddress: session.company.address,
-        })
-      }
+      usePosStore.getState().setAccess(features, accessVersion, permissions ?? [])
+      if (header) usePosStore.getState().setReceiptHeader(header)
       setBillNo('')
       navigate('/pos')
+    }
+    try {
+      let res
+      try {
+        res = await api.counterPos.pinLogin({
+          pin,
+          companyId:   enrollment.companyId,
+          deviceToken: enrollment.deviceToken ?? getOrCreateDeviceToken(),
+          takeOver,
+        })
+      } catch (err) {
+        if (!err.offline) throw err
+        const cached = await offlineLogin(pin, enrollment.companyId)
+        posNotifyWarning(`No internet — signed in offline as ${cached.cashier.staffName}. Bills will sync when the connection is back.`, { title: 'Offline Login' })
+        openSession(cached)
+        return
+      }
+      const { accessToken, refreshToken, session } = res
+      setConflict(null)
+      // Keep the counter card on this screen true to the server (counter no. / names edited in ERP).
+      if (session.station) {
+        saveEnrollment({
+          ...enrollment,
+          companyName: session.company?.companyName ?? enrollment.companyName ?? null,
+          counterNo:   session.station.counterNo ?? enrollment.counterNo,
+          stationName: session.station.stationName ?? enrollment.stationName ?? null,
+          branchName:  session.station.branchName ?? enrollment.branchName ?? null,
+        })
+      }
+
+      const entry = {
+        companyId: enrollment.companyId,
+        cashier: {
+          staffId:   session.user.staffId,
+          staffName: session.user.staffName,
+          staffCode: session.user.staffCode ?? '',
+          role:      session.user.role,
+          roleName:  session.user.roleName,
+        },
+        counterNo: String(session.counterNo ?? enrollment.counterNo ?? 1),
+        accessToken,
+        refreshToken,
+        features: session.features ?? {},
+        permissions: session.permissions ?? [],
+        accessVersion: session.accessVersion ?? 0,
+        header: session.company ? {
+          companyName: session.company.companyName,
+          branchName: session.station?.branchName ?? session.company.stationName,
+          companyAddress: session.company.address,
+        } : null,
+      }
+      await rememberLogin(pin, entry).catch(() => {})
+      openSession(entry)
     } catch (err) {
       // Counter was moved to another terminal (or device removed) — set up again.
       if (err.status === 401 && /not enrolled/i.test(err.message)) {
@@ -145,25 +175,6 @@ export default function LoginPage() {
           ))}
         </div>
 
-        {enrollment && (
-          <div style={{
-            position: 'absolute', bottom: 20,
-            color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: 0.4,
-            textAlign: 'center', lineHeight: 1.6,
-          }}>
-            {enrollment.label || `Branch ${enrollment.branchId}`} · Co. {enrollment.companyId}
-            <br />
-            <button
-              onClick={() => { clearEnrollment(); navigate('/enroll') }}
-              style={{
-                color: 'rgba(255,255,255,0.28)', fontSize: 10,
-                textDecoration: 'underline', marginTop: 2, background: 'none', border: 'none', cursor: 'pointer',
-              }}
-            >
-              Re-enroll device
-            </button>
-          </div>
-        )}
       </div>
 
       {/* ── RIGHT PIN PANEL ──────────────────── */}
@@ -172,6 +183,47 @@ export default function LoginPage() {
         padding: '32px 40px', overflowY: 'auto',
       }}>
         <div style={{ width: '100%', maxWidth: 320, margin: 'auto' }}>
+
+          {/* This terminal's counter — names refresh from the server on every online sign-in */}
+          {enrollment && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22, padding: '10px 12px',
+              borderRadius: 'var(--r-md)', background: 'var(--surface)', border: '1.5px solid var(--border)',
+            }}>
+              <div style={{
+                width: 54, height: 48, flex: 'none', borderRadius: 9, background: 'var(--brand)', color: '#fff',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.6, opacity: 0.85 }}>COUNTER</span>
+                <span style={{ fontSize: 18, fontWeight: 800, lineHeight: 1.1 }}>{enrollment.counterNo ?? '—'}</span>
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                {enrollment.companyName && (
+                  <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.4, color: 'var(--brand)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {enrollment.companyName}
+                  </div>
+                )}
+                <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {enrollment.stationName || `Counter ${enrollment.counterNo ?? ''}`}
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {[enrollment.branchName, enrollment.label && `Terminal "${enrollment.label}"`].filter(Boolean).join(' · ') || 'Counter POS terminal'}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/enroll')}
+                disabled={loading}
+                style={{
+                  flex: 'none', padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
+                  background: 'var(--surface-2)', border: '1.5px solid var(--border)',
+                  color: 'var(--brand)', fontSize: 11.5, fontWeight: 800, lineHeight: 1.2,
+                }}
+              >
+                Change<br />Counter
+              </button>
+            </div>
+          )}
 
           <div style={{ marginBottom: 28 }}>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-1)', lineHeight: 1.1 }}>Staff Sign In</h1>

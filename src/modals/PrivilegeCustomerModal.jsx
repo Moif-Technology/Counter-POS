@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { usePosStore } from '../store/posStore'
 import Modal from '../components/common/Modal'
 import Numpad from '../components/common/Numpad'
+import TouchKeyboard from '../components/common/Keyboard'
 import Table from '../components/common/Table'
 import { posNotifySuccess } from '../lib/posNotify'
 
@@ -17,6 +18,7 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
   const [loading,      setLoading]      = useState(false)
   const [error,        setError]        = useState(null)
   const [focus,        setFocus]        = useState('no')
+  const [kb,           setKb]           = useState(false) // QWERTY for code/name (codes can have letters)
   const debounceRef = useRef(null)
   const accessToken = usePosStore(s => s.accessToken)
 
@@ -66,6 +68,16 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
     if (focus === 'no')   { setCustomerNo(v   => { const n = v + k; scheduleSearch(n); return n }) }
     if (focus === 'code') { setCustomerCode(v => { const n = v + k; scheduleSearch(n); return n }) }
     if (focus === 'name') { setCustomerName(v => { const n = v + k; scheduleSearch(n); return n }) }
+  }
+
+  // Not via pressKey: there 'C' means clear, here it is the letter C.
+  const typeKey = k => {
+    if (k === 'ENTER') return handleApply()
+    if (k === '123') return
+    const [val, set] = focus === 'name' ? [customerName, setCustomerName] : [customerCode, setCustomerCode]
+    const n = k === '⌫' ? val.slice(0, -1) : val + k
+    set(n)
+    scheduleSearch(n)
   }
 
   const handleFieldChange = (setter, val) => {
@@ -140,16 +152,22 @@ export default function PrivilegeCustomerModal({ onClose, onApply, searchFn = nu
               <input
                 value={f.value}
                 onFocus={() => setFocus(f.key)}
+                onClick={() => { setFocus(f.key); setKb(f.key !== 'no') }}
                 onChange={e => handleFieldChange(f.setter, e.target.value)}
                 style={fieldStyle(focus === f.key)}
               />
             </div>
           ))}
-          <div style={{ marginTop: 4 }}>
-            <Numpad onKey={pressKey} showDot showClear showBackspace={false} btnHeight={44} fontSize={16} gap={6} />
-          </div>
+          {/* Hidden while the QWERTY is open (it has its own 123 keys), so both fit on short screens */}
+          {!(kb && focus !== 'no') && (
+            <div style={{ marginTop: 4 }}>
+              <Numpad onKey={pressKey} showDot showClear showBackspace={false} btnHeight={44} fontSize={16} gap={6} />
+            </div>
+          )}
         </div>
       </div>
+
+      {kb && focus !== 'no' && <TouchKeyboard onKey={typeKey} onClose={() => setKb(false)} />}
 
       {/* ── Footer ── */}
       <div style={{

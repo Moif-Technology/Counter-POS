@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { fmtMoney, setCurrencyPrecision } from '../../lib/currencyFormat'
 
 const CHANNEL_KEY = 'moif-customer-display'
 const WS_PORT = 3001
@@ -25,7 +26,7 @@ const INITIAL = {
 }
 
 function fmt(n, cur = 'AED') {
-  return `${cur} ${Number(n || 0).toFixed(2)}`
+  return `${cur} ${fmtMoney(n)}`
 }
 
 // ── Brand colors (mirrors index.css --brand tokens) ──────────────
@@ -50,15 +51,15 @@ function TwoLineDisplay({ data }) {
     if (mode === 'idle') return ['WELCOME'.padEnd(COLS), 'Please wait...'.padEnd(COLS)]
     if (mode === 'saved') {
       const chg = balanceAmount > 0
-        ? `CHG ${c} ${Number(balanceAmount).toFixed(2)}`
+        ? `CHG ${c} ${fmtMoney(balanceAmount)}`
         : 'THANK YOU!'
       return ['BILL SAVED'.padEnd(COLS), chg.substring(0, COLS).padEnd(COLS)]
     }
-    const totalStr = `${c} ${Number(netAmount || 0).toFixed(2)}`
+    const totalStr = `${c} ${fmtMoney(netAmount)}`
     const totalLine = ('TOTAL' + totalStr.padStart(COLS - 5)).substring(0, COLS)
     if (lastItem) {
       const desc = String(lastItem.description || '').substring(0, COLS)
-      const amt = Number(lastItem.lineTotal || 0).toFixed(2)
+      const amt = fmtMoney(lastItem.lineTotal)
       const gap = COLS - desc.length - amt.length
       const l1 = gap >= 1
         ? desc + ' '.repeat(gap) + amt
@@ -228,10 +229,10 @@ function ScanScreen({ data }) {
                   {item.qty}
                 </div>
                 <div style={{ fontSize: 14, fontWeight: 400, color: TEXT_2, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                  {Number(item.unitPriceGross || 0).toFixed(2)}
+                  {fmtMoney(item.unitPriceGross)}
                 </div>
                 <div style={{ fontSize: 14, fontWeight: isLast ? 700 : 500, color: isLast ? BRAND : TEXT_1, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                  {Number(item.lineTotal || 0).toFixed(2)}
+                  {fmtMoney(item.lineTotal)}
                 </div>
               </div>
             )
@@ -352,6 +353,8 @@ export default function CustomerDisplayPage() {
     // (clearAll fires ~80ms after broadcastSaved — keep "thank you" visible for 3s)
     if (savedTimerRef.current && incoming.mode === 'idle') return
 
+    // Separate window: POS sends its precision with each payload.
+    if (incoming.currencyPrecision != null) setCurrencyPrecision(incoming.currencyPrecision)
     setData(prev => ({ ...prev, ...incoming }))
 
     if (incoming.mode === 'saved') {

@@ -5,30 +5,17 @@ import { api } from '../lib/api'
 import { fmt3 } from '../lib/utils'
 import { fmtMoney, moneyPlaceholder } from '../lib/currencyFormat'
 import { printCounterReport } from '../lib/printCounterReport'
-import { getReceiptPrintMetaFromStore } from '../lib/receiptPrintTheme'
+import { getReceiptPrintMetaFromStore, resolveCashierName } from '../lib/receiptPrintTheme'
 import { posConfirm, posNotifyWarning, posNotifySuccess } from '../lib/posNotify'
 import { useOfflineStore } from '../lib/offlineCache'
 import Modal from '../components/common/Modal'
 import Numpad from '../components/common/Numpad'
 import { applyAmountKey } from '../lib/posNumpadKeys'
 import './CounterReadingModal.css'
-
-const DENOMS = [
-  { label: '1000', value: 1000  },
-  { label: '500',  value: 500   },
-  { label: '200',  value: 200   },
-  { label: '100',  value: 100   },
-  { label: '50',   value: 50    },
-  { label: '20',   value: 20    },
-  { label: '10',   value: 10    },
-  { label: '5',    value: 5     },
-  { label: '1',    value: 1     },
-  { label: '.50',  value: 0.50  },
-  { label: '.25',  value: 0.25  },
-  { label: '.10',  value: 0.10  },
-]
+import { DENOMS } from '../lib/denoms'
 
 const COLLECTED = 'collected'   // active field = Collected Amount
+const CARD      = 'card'        // active field = Card Collected
 const initCounts = () => Object.fromEntries(DENOMS.map(d => [d.label, '']))
 
 export default function CounterReadingModal({ onClose, summaryFn = null, closeFn = null }) {
@@ -44,6 +31,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
   const [counts,       setCounts]      = useState(initCounts)
   const [activeDenom,  setActiveDenom] = useState('1000')
   const [manualInput,  setManualInput] = useState('')
+  const [cardInput,    setCardInput]   = useState('')
 
   const fetchSummary = useCallback(async () => {
     setLoading(true)
@@ -81,10 +69,19 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
   const cashToCollect  = Number(summary?.cashToBeCollected) || 0
   const cashDifference = collectedAmount - cashToCollect
 
-  // Numpad types into the active note count, or into Collected Amount
+  // Card machine batch total = card sales + card tips + credit received by card
+  const cardToCollect  = (Number(summary?.totalCard) || 0) + (Number(summary?.totalCardTip) || 0) + (Number(summary?.creditReceiptCard) || 0)
+  const collectedCard  = parseFloat(cardInput) || 0
+  const cardDifference = Math.round((collectedCard - cardToCollect) * 1000) / 1000
+
+  // Numpad types into the active note count, Collected Amount, or Card Collected
   const handleKey = k => {
     if (activeDenom === COLLECTED) {
       setManualInput(m => applyAmountKey(m, k))   // typing starts a fresh amount; empty = use notes total
+      return
+    }
+    if (activeDenom === CARD) {
+      setCardInput(m => applyAmountKey(m, k))
       return
     }
     if (k === '.') return
@@ -94,6 +91,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
   }
 
   const nextDenom = () => {
+    if (activeDenom === COLLECTED) { setActiveDenom(CARD); return }
     const idx = DENOMS.findIndex(d => d.label === activeDenom)
     if (idx >= 0) setActiveDenom(idx < DENOMS.length - 1 ? DENOMS[idx + 1].label : COLLECTED)
   }
@@ -118,19 +116,41 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
         if (!ok) return
       }
     }
+    // Z closes the counter session for good — ask first.
+    if (reportType === 'Z') {
+      const ok = await posConfirm({
+        title: 'Take Z-Report?',
+        message: `This closes the counter for ${resolveCashierName(cashier, 'this cashier')} and cannot be undone. Collected cash ${fmt3(collectedAmount)}, difference ${fmt3(cashDifference)}.`,
+        confirmLabel: 'Yes, take Z-Report',
+        cancelLabel: 'No',
+        danger: true,
+      })
+      if (!ok) return
+    }
     setSubmitting(reportType)
     setError(null)
+    // Notes counted (saved on Z for ERP audit, printed on the slip); empty when the cashier only typed the amount.
+    const cashDenoms = DENOMS
+      .map(d => ({ value: d.value, count: parseInt(counts[d.label], 10) || 0 }))
+      .filter(d => d.count > 0)
     try {
       const doClose = closeFn ?? ((payload) => api.counterPos.counterClose(payload, accessToken))
       const result = await doClose({
         counterNo,
         reportType,
         collectedCash: collectedAmount,
+        collectedCard,
+        cashDenoms,
       })
-      const printPayload = { ...summary, ...result, collectedCash: collectedAmount, cashDifference: collectedAmount - (summary?.cashToBeCollected ?? 0) }
+      const printPayload = {
+        ...summary, ...result,
+        collectedCash: collectedAmount, cashDifference: collectedAmount - (summary?.cashToBeCollected ?? 0),
+        cardToBeCollected: cardToCollect, collectedCard, cardDifference, cashDenoms,
+      }
       try {
         await printCounterReport(printPayload, {
           ...getReceiptPrintMetaFromStore(),
+          cashierName: resolveCashierName(cashier, ''),
           reportType,
           closeNo: result.closeNo ?? '',
           reportAt: new Date(),
@@ -145,6 +165,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
       if (reportType === 'Z') {
         setCounts(initCounts())
         setManualInput('')
+        setCardInput('')
       }
       await fetchSummary()
     } catch (err) {
@@ -165,7 +186,6 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
     ['Cash Refund',       summary?.cashRefund, 'out'],
     ['Net Cash Sales',    summary?.totalCash],
     ['Credits Received',  summary?.creditReceiptCash],
-    ['Refund Amt (All Modes)', summary?.totalRefund],
     ['Total Cash IN',     summary?.cashIn,  'in'],
     ['Petty Cash IN',     summary?.pettyCashIn, 'in'],
     ['Total Cash Out',    summary?.cashOut, 'out'],
@@ -186,6 +206,7 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
     ['Multi Payment Bill', summary?.multiBillCount],
   ]
   const collectedActive = activeDenom === COLLECTED
+  const cardActive = activeDenom === CARD
 
   return (
     <Modal
@@ -235,9 +256,15 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
             ))}
           </div>
 
-          <div className="cr-total"><span>Total Sales</span><b>{v(summary?.grossAmount)}</b></div>
+          <div className="cr-rows">
+            <div className="cr-row"><span>Total Sale</span><b>{v(summary?.grossAmount)}</b></div>
+            <div className="cr-row is-out"><span>Refund / Return</span><b>{v(summary?.totalRefund)}</b></div>
+          </div>
+          <div className="cr-total"><span>Net Sale</span><b>{v((summary?.grossAmount ?? 0) - (summary?.totalRefund ?? 0))}</b></div>
           <div className="cr-rows">
             <div className="cr-row"><span>Tax Amount</span><b>{v(summary?.totalTax)}</b></div>
+            <div className="cr-row is-out"><span>Return Tax</span><b>{v(summary?.totalRefundTax ?? 0)}</b></div>
+            <div className="cr-row"><span>Net Tax</span><b>{v((summary?.totalTax ?? 0) - (summary?.totalRefundTax ?? 0))}</b></div>
             <div className="cr-row"><span>Bill Count</span><b>{c(summary?.billCount)}</b></div>
           </div>
           <div className="cr-bills">
@@ -294,6 +321,24 @@ export default function CounterReadingModal({ onClose, summaryFn = null, closeFn
             <span>Cash Difference</span>
             <b>{cashDifference > 0 ? '+' : ''}{fmtMoney(cashDifference)}</b>
             <small>{cashDifference < 0 ? 'Short' : cashDifference > 0 ? 'Excess' : 'Balanced'}</small>
+          </div>
+          <label className={`cr-field${cardActive ? ' is-active' : ''}`} onClick={() => setActiveDenom(CARD)}>
+            <span>
+              Card Collected
+              <em>Card total {v(cardToCollect)}</em>
+            </span>
+            <input
+              value={cardInput}
+              placeholder={moneyPlaceholder()}
+              onFocus={() => setActiveDenom(CARD)}
+              onChange={e => { const x = e.target.value; if (x === '' || /^\d*\.?\d*$/.test(x)) setCardInput(x) }}
+              onKeyDown={e => e.stopPropagation()}
+            />
+          </label>
+          <div className={`cr-diff${cardDifference < 0 ? ' is-short' : cardDifference > 0 ? ' is-over' : ''}`}>
+            <span>Card Difference</span>
+            <b>{cardDifference > 0 ? '+' : ''}{fmtMoney(cardDifference)}</b>
+            <small>{cardDifference < 0 ? 'Short' : cardDifference > 0 ? 'Excess' : 'Balanced'}</small>
           </div>
           <div className="cr-pad">
             <Numpad onKey={handleKey} showDot showClear showBackspace fontSize={19} gap={7} />

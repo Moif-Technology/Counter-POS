@@ -7,7 +7,6 @@ import {
   escReceipt as esc,
   fmtReceiptDateTime,
   openReceiptPrintWindow,
-  wrapReceiptBodyCopies,
   resolveCashierName,
   resolveReceiptCompanyMeta,
   buildReceiptBarcodeBlockHtml,
@@ -34,7 +33,7 @@ function resolveCompanyHeader(meta) {
  * @param {number} [hold.netAmount]
  * @param {Array} [hold.items]
  */
-export function buildHoldReceiptHtml(hold, meta = {}, copies = 1) {
+export function buildHoldReceiptHtml(hold, meta = {}) {
   const co = resolveCompanyHeader(meta)
   const isReturn = !!hold.isReturn
   const title = isReturn ? 'Held Return' : 'Held Bill'
@@ -130,16 +129,13 @@ export function buildHoldReceiptHtml(hold, meta = {}, copies = 1) {
   ${printerNote ? `<div class="printer-note">Printer: ${esc(printerNote)}</div>` : ''}
   `
 
-  const { bodyHtml: printBody, extraCss: copyCss } = wrapReceiptBodyCopies(bodyHtml, copies)
-
   return buildReceiptDocumentHtml({
     title: holdLabel,
-    bodyHtml: printBody,
+    bodyHtml,
     extraCss: `
       table.hold-items th:nth-child(2), table.hold-items td.c { width: 36px; }
       table.hold-items th:nth-child(3), table.hold-items td.r { width: 22mm; }
       ${RECEIPT_BARCODE_EXTRA_CSS}
-      ${copyCss}
     `,
   })
 }
@@ -148,12 +144,11 @@ export function buildHoldReceiptHtml(hold, meta = {}, copies = 1) {
 export async function printHoldReceipt(hold, meta = {}, copies = 1) {
   if (!hold?.holdNo) throw new Error('No hold number to print')
   const count = Math.max(1, Math.min(20, Math.floor(Number(copies) || 1)))
-  const html = buildHoldReceiptHtml(hold, meta, count)
   if (IS_ANDROID_POS) {
     await printAndroidHold(hold, meta, count)
     return
   }
-  openReceiptPrintWindow(html)
+  openReceiptPrintWindow(buildHoldReceiptHtml(hold, meta), { copies: count })
 }
 
 export async function printHoldReprintByNo(holdNo, accessToken, meta = {}) {

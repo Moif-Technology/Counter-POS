@@ -6,11 +6,14 @@ import EnrollPage from './pages/enroll/EnrollPage'
 import CustomerDisplayPage from './pages/customer-display/CustomerDisplayPage'
 import LiteHomePage from './pages/lite/LiteHomePage'
 import PosNotifyHost from './components/common/PosNotifyHost'
+import { StationLimitHost } from './modals/StationLimitDialog'
+import { SupervisorApprovalHost } from './modals/SupervisorApprovalDialog'
 import ToastHost from './components/common/Toast'
 import { usePosStore } from './store/posStore'
 import { getEnrollment } from './lib/device'
 import { posNotifyWarning } from './lib/posNotify'
 import SingleTabGuard from './components/common/SingleTabGuard'
+import UpdateNotice from './components/common/UpdateNotice'
 import { useEffect } from 'react'
 
 const qc = new QueryClient()
@@ -51,8 +54,11 @@ export default function App() {
   return (
     <QueryClientProvider client={qc}>
       <PosNotifyHost />
+      <StationLimitHost />
+      <SupervisorApprovalHost />
       <ToastHost />
       <SessionEndedListener />
+      <UpdateNotice />
       <SingleTabGuard>
       <BrowserRouter>
         <Routes>

@@ -9,20 +9,24 @@ import { focusBarcodeScan } from '../../../lib/posFocus'
 import { posNotifyError, posNotifySuccess, posNotifyWarning, posPromptText } from '../../../lib/posNotify'
 import { printBillReceipts, printBillFromData } from '../../../lib/printBillReceipt'
 import { notifyStockChanged } from '../../../lib/stockCheck'
-import { isOffline } from '../../../lib/offlineCache'
+import { getReceiptSettings } from '../../../lib/posSettings'
+import { askStationLimit } from '../../../modals/StationLimitDialog'
+import { isOffline, isLocalHoldId } from '../../../lib/offlineCache'
+import { removeLocalHold } from '../../../lib/offlineHolds'
 import {
-  isNetworkError, newClientUuid, offlineBlockReason, queueOfflineBill, offlineReceiptBill,
+  isNetworkError, newClientUuid, offlineBlockReason, queueOfflineBill, offlineReceiptBill, logSaleOnDevice,
 } from '../../../lib/offlineSync'
 
 /**
- * Server unreachable: queue the bill on this terminal (cash / card sales only),
+ * Server unreachable: queue the bill on this terminal (rules in offlineBlockReason),
  * print it with its offline number and clear the screen. Autosync uploads it later.
+ * Resolves true once queued.
  */
 async function saveBillOffline(payload, andPrint) {
   const blocked = offlineBlockReason(payload)
   if (blocked) {
     posNotifyError(`No connection to the server. ${blocked} — bill kept on screen.`, { title: 'Not available offline' })
-    return
+    return false
   }
   const rec = await queueOfflineBill(payload, payload.clientUuid)
   const receipt = offlineReceiptBill(rec)
@@ -37,11 +41,12 @@ async function saveBillOffline(payload, andPrint) {
   notifyStockChanged()
   if (andPrint) {
     try {
-      await printBillFromData(receipt, { companyName: st.shopName, counterNo: st.counterNo })
+      await printBillFromData(receipt, { companyName: st.shopName, counterNo: st.counterNo }, getReceiptSettings().copies)
     } catch (printErr) {
       posNotifyError(printErr.message ?? 'Print failed', { title: 'Print' })
     }
   }
+  return true
 }
 
 /**
@@ -109,23 +114,34 @@ export function useSaveBill({ fetchNextBillNo }) {
         customerId:   fresh.customerId ?? null,
         remarks:      fresh.billComment?.trim() || null,
         isReturn,
-        recalledHoldSalesId: fresh.recalledHoldSalesId ?? null,
+        // A hold parked on this terminal (offline) is not on the server: drop it here once saved.
+        recalledHoldSalesId: isLocalHoldId(fresh.recalledHoldSalesId) ? null : (fresh.recalledHoldSalesId ?? null),
         recalledDeliverySalesId: fresh.recalledDeliverySalesId ?? null,
         // Same id is reused if this save is queued offline, so a lost response can't double-post.
         clientUuid:   newClientUuid(),
       }
+      const localHoldId = isLocalHoldId(fresh.recalledHoldSalesId) ? fresh.recalledHoldSalesId : null
       if (isOffline()) {
-        await saveBillOffline(payload, andPrint)
+        if (await saveBillOffline(payload, andPrint)) await removeLocalHold(localHoldId)
         return
       }
       let result
       try {
         result = await api.counterPos.saveBill(payload, fresh.accessToken)
       } catch (err) {
-        if (!isNetworkError(err)) throw err
-        await saveBillOffline(payload, andPrint)
-        return
+        if (err.code === 'STATION_LIMIT') {
+          // Over this counter's allocation: supervisor override retries, else bill stays on screen.
+          const limitOverride = await askStationLimit(err.shortages ?? [])
+          if (!limitOverride) return
+          result = await api.counterPos.saveBill({ ...payload, limitOverride }, fresh.accessToken)
+        } else {
+          if (!isNetworkError(err)) throw err
+          if (await saveBillOffline(payload, andPrint)) await removeLocalHold(localHoldId)
+          return
+        }
       }
+      await removeLocalHold(localHoldId)
+      logSaleOnDevice({ billNo: result?.isMixed ? result.sale?.billNoDisplay : (result?.billNoDisplay ?? result?.billNo), payload })
 
       if (result?.isMixed) {
         posNotifySuccess(
@@ -152,7 +168,7 @@ export function useSaveBill({ fetchNextBillNo }) {
           ? [result.sale?.salesId, result.return?.salesId]
           : [result.salesId]
         try {
-          await printBillReceipts(ids, accessToken, printMeta)
+          await printBillReceipts(ids, accessToken, printMeta, getReceiptSettings().copies)
         } catch (printErr) {
           posNotifyError(printErr.message ?? 'Print failed', { title: 'Print' })
         }

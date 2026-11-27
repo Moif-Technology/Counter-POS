@@ -9,10 +9,14 @@ export function notifyStockChanged() {
   window.dispatchEvent(new CustomEvent(STOCK_CHANGED_EVENT))
 }
 
+/** Products the cashier already let through short in the current bill (cleared when a new bill starts). */
+const confirmedThisBill = new Set()
+
 /**
  * Zero / short stock guard before a sale line is added.
  * Asks "Stock is X. Proceed?" when the product is out of stock or the cart would take
- * more than is on hand. Returns lines (qty < 0) and NON INVENTORY items pass straight through.
+ * more than is on hand — once per product per bill. Returns lines (qty < 0) and
+ * NON INVENTORY items pass straight through.
  */
 export async function confirmStockForAdd(product, qty) {
   if (!product || product.trackStock === false) return true
@@ -20,18 +24,25 @@ export async function confirmStockForAdd(product, qty) {
   const onHand = Number(product.qtyOnHand)
   if (!Number.isFinite(onHand)) return true
 
-  const inCart = usePosStore.getState().cartItems
+  const cart = usePosStore.getState().cartItems
+  if (!cart.length) confirmedThisBill.clear()   // empty cart = new bill
+  const inCart = cart
     .filter(i => product.productId != null && Number(i.productId) === Number(product.productId))
     .reduce((s, i) => s + Math.max(0, Number(i.qty) || 0), 0)
   const wanted = inCart + Number(qty)
   if (onHand > 0 && wanted <= onHand) return true
 
+  const key = String(product.productId ?? product.barcode ?? product.productCode ?? '')
+  if (key && confirmedThisBill.has(key)) return true
+
   const name = product.description ?? product.productName ?? 'This item'
-  return posConfirm({
+  const ok = await posConfirm({
     title: onHand <= 0 ? 'Out of Stock' : 'Low Stock',
     message: `${name}: stock is ${fmtQty(onHand)}${inCart > 0 ? ` (${fmtQty(inCart)} already in cart)` : ''}. Proceed?`,
     confirmLabel: 'Proceed',
     cancelLabel: 'Cancel',
     danger: true,
   })
+  if (ok && key) confirmedThisBill.add(key)
+  return ok
 }

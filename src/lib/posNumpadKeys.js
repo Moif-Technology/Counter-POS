@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { usePosStore } from '../store/posStore'
+import { usePosStore, MIX_RETURN_MSG, MIX_SALE_MSG } from '../store/posStore'
+import { posNotifyWarning } from './posNotify'
 import { focusBarcodeScan } from './posFocus'
 
 const MAX_QTY_CHARS = 6
@@ -46,12 +47,14 @@ export function applyPosNumpadBackspace() {
  */
 export function togglePosQtyMode() {
   let state = usePosStore.getState()
-  if (state.inputMode === 'qty' && !state.returnMode) {
+  // Return bill in progress (toggle locked): Qty types the next return qty instead of leaving return mode.
+  const returnLocked = state.returnMode && state.returnModeLocked()
+  if (state.inputMode === 'qty' && (!state.returnMode || returnLocked)) {
     finishPosQtyEntry()
     return
   }
   // Qty is for sales only: leave return mode (and any return qty being typed) first.
-  if (state.returnMode) {
+  if (state.returnMode && !returnLocked) {
     state.toggleReturn()
     usePosStore.setState({ inputMode: 'barcode', qtyBuffer: '1' })
     state = usePosStore.getState()
@@ -70,14 +73,16 @@ export function togglePosQtyMode() {
 }
 
 /**
- * Return key — works like Qty, but kept separate from it. Off → return mode on
- * and start typing the return qty (any sale qty being typed is dropped; ENTER
- * finishes). The next item added is returned with it, then return switches
- * itself off (see endOneShotReturn). On → return mode off, back to sale.
+ * Return key — a toggle. Off → return mode on and start typing the return qty
+ * (any sale qty being typed is dropped; ENTER finishes). Every item scanned
+ * while it is on is a return (see resetReturnQty). On → return mode off, back to sale.
  */
 export function togglePosReturnMode() {
   const state = usePosStore.getState()
-  state.toggleReturn()
+  if (!state.toggleReturn()) {
+    posNotifyWarning(state.returnMode ? MIX_RETURN_MSG : MIX_SALE_MSG, { title: 'Return' })
+    return
+  }
   if (usePosStore.getState().returnMode) {
     usePosStore.setState({ inputMode: 'qty', qtyBuffer: '' })
   } else {
@@ -86,9 +91,9 @@ export function togglePosReturnMode() {
   }
 }
 
-/** Return is one item at a time, like Qty: after an item is added, go back to sale (qty 1). */
-export function endOneShotReturn() {
-  if (usePosStore.getState().returnMode) usePosStore.setState({ returnMode: false, qtyBuffer: '1' })
+/** Return stays on until the Return key is pressed again; only the typed return qty is one-shot. */
+export function resetReturnQty() {
+  if (usePosStore.getState().returnMode) usePosStore.setState({ qtyBuffer: '-1', inputMode: 'barcode' })
 }
 
 /** Leave qty entry: keep a valid typed qty (or fall back to the default) and refocus the search box. */

@@ -4,7 +4,7 @@ import {
   Package, ScanBarcode, BarChart2, Wallet, Receipt,
   MessageSquare, Truck, Save, CircleDollarSign, Lock, Ban, User, TrendingUp,
 } from 'lucide-react'
-import { usePosStore } from '../../../store/posStore'
+import { usePosStore, featureOn } from '../../../store/posStore'
 
 /*
  * Tab → buttons, shown as equal boxes (3 across).
@@ -23,8 +23,9 @@ const TABS = [
       { label: 'Product Lookup', icon: Search },
       { label: 'Hold',           icon: Pause },
       { label: 'Recall Hold Bill', icon: FileText },
-      { label: 'Bill Print',     icon: Printer },
-      { label: 'Bill Reprint',   icon: Printer },
+      // `requires`: superadmin POS feature codes (hidden when switched off)
+      { label: 'Bill Print',     icon: Printer, requires: ['pos.settlement', 'pos.settlement.direct', 'pos.billing_no_print'] },
+      { label: 'Bill Reprint',   icon: Printer, requires: ['pos.reprint_bill'] },
       { label: 'Qty Change',     icon: Tag, text: 'Qty Chan' },
       { label: 'Price Change',   icon: CircleDollarSign },
       { label: 'Price Enquiry',  icon: Search },
@@ -100,11 +101,14 @@ function GroupsPage({ actions }) {
 export default function PosFunctionPanel({ actions }) {
   const [tabKey, setTabKey] = useState('Page 1')
   const customerDisplayEnabled = usePosStore(s => s.customerDisplayEnabled)
+  const features = usePosStore(s => s.features)
   const flags = { customerDisplayEnabled }
   const tab = TABS.find(t => t.key === tabKey)
 
   // Rows fill the panel: as many as the page needs (min 4, so short pages keep normal-size keys)
-  const shown = tab?.buttons?.filter(btn => !btn.onlyIf || flags[btn.onlyIf]) ?? []
+  const shown = tab?.buttons?.filter(btn =>
+    (!btn.onlyIf || flags[btn.onlyIf]) && featureOn(features, ...(btn.requires ?? [])),
+  ) ?? []
 
   return (
     <div className="ph-card ph-fnpanel">

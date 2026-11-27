@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { X, Receipt, User, Search, RefreshCw, Loader2, ChevronDown, Printer, Ban } from 'lucide-react'
-import { usePosStore } from '../store/posStore'
+import TouchKeyboard from '../components/common/Keyboard'
+import { X, Receipt, User, Search, RefreshCw, Loader2, ChevronDown, Printer, Keyboard as KeyboardIcon, Ban } from 'lucide-react'
+import { usePosStore, canDo } from '../store/posStore'
 import { api } from '../lib/api'
 import { fmtMoney } from '../lib/currencyFormat'
 import { fmtQty } from '../lib/utils'
@@ -47,6 +48,7 @@ function fmtDateTime(d) {
 function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn = null }) {
   const [open, setOpen]         = useState(false)
   const [query, setQuery]       = useState('')
+  const [kb, setKb]             = useState(false) // on-screen keyboard (touch tills have no system keyboard)
   const [results, setResults]   = useState([])
   const [selected, setSelected] = useState(null)
   const [loading, setLoading]   = useState(false)
@@ -96,6 +98,13 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn 
     debRef.current = setTimeout(() => doSearch(q), 280)
   }
 
+  const typeKey = (k) => {
+    if (k === '123' || k === 'ENTER') return
+    const q = k === '⌫' ? query.slice(0, -1) : query + k
+    setQuery(q)
+    scheduleSearch(q)
+  }
+
   const pick = (c) => {
     setSelected(c)
     onSelect(c ? String(c.customerId) : '')
@@ -133,6 +142,7 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn 
           position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 30,
           background: '#fff', border: '1.5px solid var(--border)', borderRadius: 10,
           boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden',
+          ...(kb && { right: 'auto', width: 560, maxWidth: '90vw' }),
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderBottom: '1px solid var(--border)' }}>
             <Search size={14} color="var(--text-3)" />
@@ -146,6 +156,10 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn 
                 background: 'transparent', color: 'var(--text-1)',
               }}
             />
+            <button type="button" title="On-screen keyboard" onClick={() => setKb(o => !o)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: kb ? 'var(--brand)' : 'var(--text-3)' }}>
+              <KeyboardIcon size={15} />
+            </button>
             {query && (
               <button type="button" onClick={() => { setQuery(''); scheduleSearch('') }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-3)' }}>
@@ -166,7 +180,7 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn 
             All customers
           </div>
 
-          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+          <div style={{ maxHeight: kb ? 140 : 200, overflowY: 'auto' }}>
             {loading && (
               <div style={{ padding: 14, textAlign: 'center', fontSize: 11, color: 'var(--text-4)' }}>
                 <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite', display: 'inline-block' }} />
@@ -196,14 +210,17 @@ function SearchableCustomerFilter({ accessToken, customerId, onSelect, searchFn 
               )
             })}
           </div>
+          {kb && <TouchKeyboard onKey={typeKey} onClose={() => setKb(false)} />}
         </div>
       )}
     </div>
   )
 }
 
-function BillDetailModal({ salesId, accessToken, onClose, onChanged, billDetailFn = null, printFn = null }) {
+export function BillDetailModal({ salesId, accessToken, onClose, onChanged, billDetailFn = null, printFn = null }) {
   const shopName = usePosStore(s => s.shopName)
+  // Live from the role's "Void bill" switch (30s poll).
+  const canCancelBills = usePosStore(s => canDo(s, 'pos.void_bill'))
   const [bill, setBill]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [printing, setPrinting] = useState(false)
@@ -524,6 +541,7 @@ function BillDetailModal({ salesId, accessToken, onClose, onChanged, billDetailF
             ? bill.billNoDisplay + ' — ' + (voidTarget.item.description ?? voidTarget.item.productCode ?? '')
             : bill.billNoDisplay}
           amount={voidTarget.type === 'ITEM' ? voidTarget.item.lineTotal : bill.amount}
+          needsApproval={!canCancelBills}
           onClose={() => setVoidTarget(null)}
           onSubmit={submitVoid}
         />

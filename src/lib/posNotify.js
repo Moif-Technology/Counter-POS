@@ -121,6 +121,7 @@ export function posConfirm({
   confirmLabel = 'Yes',
   cancelLabel = 'Cancel',
   danger = false,
+  locked = false, // true: tapping outside does nothing, only the two buttons answer
 }) {
   return usePosNotify.getState().showConfirm({
     title,
@@ -128,6 +129,7 @@ export function posConfirm({
     confirmLabel,
     cancelLabel,
     danger,
+    locked,
   })
 }
 

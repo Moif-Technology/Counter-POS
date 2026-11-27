@@ -19,16 +19,15 @@ export function getCurrencyPrecision() {
   return currencyPrecision
 }
 
-/** Set from parameter table (currency_precision / currencyPrecession). */
+/** Set from gvtax currencyPrecision (Company Profile → Decimal Places), clamped to 0–3. */
 export function setCurrencyPrecision(value) {
   const n = Number(value)
-  if (!Number.isFinite(n) || n < 0 || n > 6) return
-  currencyPrecision = Math.trunc(n)
+  if (!Number.isFinite(n)) return
+  currencyPrecision = Math.min(3, Math.max(0, Math.trunc(n)))
 }
 
 export function fmtMoney(value) {
-  const n = Number(value)
-  return (Number.isFinite(n) ? n : 0).toFixed(currencyPrecision)
+  return roundMoney(value).toFixed(currencyPrecision)
 }
 
 /** Alias — all money display should use fmtMoney / fmtAmount. */
@@ -37,8 +36,13 @@ export const fmtAmount = fmtMoney
 export function roundMoney(value) {
   const n = Number(value)
   if (!Number.isFinite(n)) return 0
-  const factor = 10 ** currencyPrecision
-  return Math.round(n * factor) / factor
+  // Half away from zero; exponent shift avoids 1.005 * 100 = 100.4999… float error.
+  const p = currencyPrecision
+  const abs = Math.abs(n)
+  const r = String(abs).includes('e')
+    ? Math.round(abs * 10 ** p) / 10 ** p
+    : Number(`${Math.round(Number(`${abs}e${p}`))}e-${p}`)
+  return n < 0 ? -r : r
 }
 
 /** Parse user/API money input to rounded number. */

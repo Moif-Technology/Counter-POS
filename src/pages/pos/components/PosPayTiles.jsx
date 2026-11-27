@@ -4,7 +4,6 @@ import { usePosStore } from '../../../store/posStore'
 import CreditCustomerModal from '../../../modals/CreditCustomerModal'
 import MultiPaymentModal from '../../../modals/MultiPaymentModal'
 import { closeAndFocusBarcode } from '../../../lib/posFocus'
-import { posNotifyWarning } from '../../../lib/posNotify'
 import { PM, isCashTenderMode } from '../../../lib/paymentModes'
 
 const PAY_TILES = [
@@ -15,21 +14,17 @@ const PAY_TILES = [
 ]
 
 /** Payment mode tiles (Cash · Credit Card · Credit · Multi Pay), one row above BILLING. */
-export default function PosPayTiles() {
+export default function PosPayTiles({ onMultiPay }) {
   const [showCreditModal, setShowCreditModal] = useState(false)
   const paymentMode          = usePosStore(s => s.paymentMode)
   const showMultiModal       = usePosStore(s => s.multiPayModalOpen)
-  const openMultiPayModal    = usePosStore(s => s.openMultiPayModal)
   const setMultiPayModalOpen = usePosStore(s => s.setMultiPayModalOpen)
   const setPaymentMode       = usePosStore(s => s.setPaymentMode)
   const setCustomer          = usePosStore(s => s.setCustomer)
 
   const selectPayment = (key) => {
     if (key === PM.CREDIT) { setShowCreditModal(true); return }
-    if (key === PM.MULTIPAYMENT) {
-      if (!openMultiPayModal()) posNotifyWarning('Add items to the cart first', { title: 'Multi Payment' })
-      return
-    }
+    if (key === PM.MULTIPAYMENT) { onMultiPay(); return } // POSPage: discount offer, then the split
     setPaymentMode(key)
     usePosStore.getState().setPaymentSplits(null)
     if (isCashTenderMode(key)) usePosStore.getState().resetBillPaymentDefaults()

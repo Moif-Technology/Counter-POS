@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Monitor, History, Check, AlertTriangle } from 'lucide-react'
 import { api } from '../../lib/api'
-import { getOrCreateDeviceToken, saveEnrollment, getPreviousEnrollment } from '../../lib/device'
+import { getOrCreateDeviceToken, saveEnrollment, getPreviousEnrollment, getEnrollment } from '../../lib/device'
 import { posNotifyError, posNotifyWarning } from '../../lib/posNotify'
 import BrandLogo from '../../components/common/BrandLogo'
 
@@ -22,9 +22,16 @@ const labelStyle = {
 
 export default function EnrollPage() {
   const navigate = useNavigate()
+  // Terminal already on a counter → this is "Change Counter": an admin PIN authorises it
+  // (company = this terminal's). First-time setup uses the admin email + password.
+  const [changeMode] = useState(() => !!getEnrollment())
 
   // Step 1: credentials
   const [creds, setCreds] = useState({ adminUsername: '', adminPassword: '' })
+  const [adminPin, setAdminPin] = useState('')
+  const adminAuth = () => (changeMode ? { adminPin } : creds)
+  // Change Counter: the server finds this terminal by the token it is enrolled with.
+  const deviceTokenNow = () => (changeMode && getEnrollment()?.deviceToken) || getOrCreateDeviceToken()
   // Step 2: station + label
   const [stations, setStations] = useState(null)   // null = not fetched yet
   const [stationId, setStationId] = useState('')
@@ -32,6 +39,7 @@ export default function EnrollPage() {
 
   const [loading, setLoading] = useState(false)
   const [companyId, setCompanyId] = useState(null)
+  const [companyName, setCompanyName] = useState(null)
   const [previous] = useState(getPreviousEnrollment)
   // { stationId, message } when the chosen counter is open on another terminal
   const [conflict, setConflict] = useState(null)
@@ -47,15 +55,14 @@ export default function EnrollPage() {
   // Step 1 submit — verify creds + load station list
   const handleVerify = async (e) => {
     e.preventDefault()
-    const { adminUsername, adminPassword } = creds
-    if (!adminUsername || !adminPassword) {
-      posNotifyWarning('Email and password are required', { title: 'Device Setup' })
+    if (changeMode ? !/^\d{4,6}$/.test(adminPin) : !creds.adminUsername || !creds.adminPassword) {
+      posNotifyWarning(changeMode ? 'Enter the admin PIN (4–6 digits)' : 'Email and password are required', { title: 'Device Setup' })
       return
     }
     setLoading(true)
     try {
       const result = await api.counterPos.enrollListStations({
-        adminUsername, adminPassword, deviceToken: getOrCreateDeviceToken(),
+        ...adminAuth(), deviceToken: deviceTokenNow(),
       })
       if (!result.stations?.length) {
         posNotifyError(
@@ -65,6 +72,7 @@ export default function EnrollPage() {
         return
       }
       setCompanyId(result.companyId)
+      setCompanyName(result.companyName ?? null)
       setStations(result.stations)
       // pre-select the station used last on this terminal, else the only one
       const prev = previous && Number(previous.companyId) === Number(result.companyId)
@@ -95,10 +103,9 @@ export default function EnrollPage() {
     }
     setLoading(true)
     try {
-      const deviceToken = getOrCreateDeviceToken()
+      const deviceToken = deviceTokenNow()
       const result = await api.counterPos.enrollDevice({
-        adminUsername: creds.adminUsername,
-        adminPassword: creds.adminPassword,
+        ...adminAuth(),
         label:         label || null,
         deviceToken,
         stationId:     Number(chosenId),
@@ -109,6 +116,10 @@ export default function EnrollPage() {
         branchId:   result.branchId,
         stationId:  result.stationId ?? result.branchId,
         counterNo:  result.counterNo ?? 1,
+        companyName: companyName
+          ?? (Number(previous?.companyId) === Number(result.companyId) ? previous?.companyName : null) ?? null,
+        stationName: chosen?.stationName ?? null,
+        branchName:  chosen?.branchName ?? null,
         deviceToken,
         label:      result.label,
       })
@@ -150,9 +161,11 @@ export default function EnrollPage() {
             <Monitor size={20} color="#fff" />
           </div>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>Device Setup</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-1)' }}>{changeMode ? 'Change Counter' : 'Device Setup'}</div>
             <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>
-              {step === 1 ? 'Register this terminal to a station' : 'Select station for this terminal'}
+              {step === 2 ? 'Select station for this terminal'
+                : changeMode ? 'An admin PIN is needed to move this terminal to another counter'
+                : 'Register this terminal to a station'}
             </div>
           </div>
         </div>
@@ -160,7 +173,23 @@ export default function EnrollPage() {
         {/* Step 1 — credentials */}
         {step === 1 && (
           <form onSubmit={handleVerify}>
-            {[
+            {changeMode ? (
+              <div style={{ marginBottom: 14 }}>
+                <label style={labelStyle}>ADMIN PIN</label>
+                <input data-system-keyboard
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  autoFocus
+                  maxLength={6}
+                  value={adminPin}
+                  onChange={(e) => setAdminPin(e.target.value.replace(/\D/g, ''))}
+                  placeholder="••••"
+                  aria-label="Admin PIN"
+                  style={{ ...inputStyle, fontSize: 20, letterSpacing: 6, textAlign: 'center' }}
+                />
+              </div>
+            ) : [
               { key: 'adminUsername', label: 'Admin Email',  type: 'text',     placeholder: 'admin@example.com' },
               { key: 'adminPassword', label: 'Password',     type: 'password', placeholder: '••••••••' },
             ].map(({ key, label: lbl, type, placeholder }) => (
@@ -192,6 +221,20 @@ export default function EnrollPage() {
             >
               {loading ? 'Verifying…' : 'NEXT →'}
             </button>
+            {changeMode && (
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                disabled={loading}
+                style={{
+                  width: '100%', marginTop: 8, padding: '12px 0', borderRadius: 10,
+                  background: 'var(--surface-2)', border: '1.5px solid var(--border)',
+                  color: 'var(--text-2)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                Cancel — keep this counter
+              </button>
+            )}
           </form>
         )}
 
@@ -205,7 +248,7 @@ export default function EnrollPage() {
                 border: '1.5px solid rgba(107,0,0,0.3)',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 10.5, fontWeight: 800, letterSpacing: 0.8, color: 'var(--brand)' }}>
-                  <History size={13} /> PREVIOUSLY USED ON THIS TERMINAL
+                  <History size={13} /> {changeMode ? 'CURRENT COUNTER OF THIS TERMINAL' : 'PREVIOUSLY USED ON THIS TERMINAL'}
                 </div>
                 <div style={{ marginTop: 6, fontSize: 14.5, fontWeight: 800, color: 'var(--text-1)' }}>
                   {lastUsed.stationName}
@@ -283,7 +326,7 @@ export default function EnrollPage() {
                           flex: 'none', fontSize: 9.5, fontWeight: 800, letterSpacing: 0.5,
                           padding: '3px 8px', borderRadius: 999,
                           background: 'rgba(107,0,0,0.1)', color: 'var(--brand)',
-                        }}>LAST USED</span>
+                        }}>{changeMode ? 'CURRENT' : 'LAST USED'}</span>
                       )}
                       {selected && <Check size={16} color="var(--brand)" style={{ flex: 'none' }} />}
                     </button>

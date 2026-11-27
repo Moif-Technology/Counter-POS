@@ -2,21 +2,22 @@ import { useEffect, useRef, useState } from 'react'
 import { Layers, CornerDownLeft } from 'lucide-react'
 import Modal from '../components/common/Modal'
 import Numpad from '../components/common/Numpad'
+import TouchKeyboard from '../components/common/Keyboard'
 import { usePosStore } from '../store/posStore'
 import { PM } from '../lib/paymentModes'
-import { fmtMoney, moneyInputRegex, roundMoney } from '../lib/currencyFormat'
+import { fmtMoney, moneyInputRegex, moneyPlaceholder, roundMoney } from '../lib/currencyFormat'
 import './MultiPaymentModal.css'
 import { posNotifySuccess } from '../lib/posNotify'
 
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0 }
 
-/** Existing splits → field values (amounts per mode, voucher number). */
+/** Existing splits → field values (amounts per mode, voucher number, card ref). */
 function fieldsFromSplits(splits) {
-  const f = { voucherNo: '', voucher: '', card: '', online: '', cash: '' }
+  const f = { voucherNo: '', voucher: '', card: '', cardRef: '', online: '', cash: '' }
   for (const s of Array.isArray(splits) ? splits : []) {
     const amt = num(s.amount)
     if (s.payMode === 'VOUCHER') { f.voucher = String(roundMoney(num(f.voucher) + amt)); if (s.refNo) f.voucherNo = s.refNo }
-    else if (s.payMode === PM.CREDITCARD) f.card = String(roundMoney(num(f.card) + amt))
+    else if (s.payMode === PM.CREDITCARD) { f.card = String(roundMoney(num(f.card) + amt)); if (s.refNo) f.cardRef = s.refNo }
     else if (s.payMode === 'ONLINE') f.online = String(roundMoney(num(f.online) + amt))
     else f.cash = String(roundMoney(num(f.cash) + amt))
   }
@@ -41,7 +42,8 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
   const [f, setF] = useState(() => fieldsFromSplits(initialSplits ?? (standalone ? [] : usePosStore.getState().paymentSplits)))
   const [focus, setFocus] = useState('voucherNo')
   const [error, setError] = useState('')
-  const refs = { voucherNo: useRef(), voucher: useRef(), card: useRef(), online: useRef(), cash: useRef() }
+  const [kb, setKb] = useState(false) // QWERTY for voucher no / card ref, opened by the ABC button (approval codes can have letters)
+  const refs = { voucherNo: useRef(), voucher: useRef(), card: useRef(), cardRef: useRef(), online: useRef(), cash: useRef() }
 
   // Cursor starts in Scan Gift Voucher, so a scan (or typing) goes straight in.
   useEffect(() => { refs.voucherNo.current?.focus() }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -52,6 +54,8 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
     { key: 'voucherNo', label: 'Scan Gift Voucher', text: true, placeholder: 'Scan or type voucher no.' },
     { key: 'voucher',   label: 'Gift Voucher' },
     { key: 'card',      label: 'Credit Card' },
+    // Shown once a card amount is typed: bank slip / approval ref, mandatory like a single card bill.
+    ...(num(f.card) > 0 ? [{ key: 'cardRef', label: 'Card Ref No', text: true, placeholder: 'Bank slip / approval no.' }] : []),
     ...(hasOnline ? [{ key: 'online', label: 'Online' }] : []),
     { key: 'cash',      label: 'Cash Paid' },
   ]
@@ -59,8 +63,8 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
   const nonCash = roundMoney(num(f.voucher) + num(f.card) + num(f.online))
   const tendered = roundMoney(nonCash + num(f.cash))
   const balance = roundMoney(bill - tendered)          // > 0 still due, < 0 change
-  const covered = balance <= 0.009
-  const tooMuchNonCash = nonCash > bill + 0.009
+  const covered = balance <= 0                        // all rounded: 0 or ≥ one unit of the precision
+  const tooMuchNonCash = roundMoney(nonCash - bill) > 0
 
   const setField = (key, value) => { setError(''); setF(prev => ({ ...prev, [key]: value })) }
 
@@ -78,6 +82,16 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
     refs[focus].current?.focus()
   }
 
+  // Not via pressKey: there 'C' means clear, here it is the letter C.
+  const typeKey = (k) => {
+    if (k === 'ENTER') return goNext(focus)
+    if (k === '123') return
+    const cur = f[focus] ?? ''
+    setField(focus, k === '⌫' ? cur.slice(0, -1) : (cur + k).slice(0, 50))
+  }
+  const isText = !!FIELDS.find(x => x.key === focus)?.text
+  const kbOpen = kb && isText
+
   const goNext = (key) => {
     const i = FIELDS.findIndex(x => x.key === key)
     const next = FIELDS[i + 1]
@@ -89,13 +103,14 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
     setError('')
     if (tendered <= 0) { setError('Enter the voucher, card or cash amount.'); return }
     if (num(f.voucher) > 0 && !f.voucherNo.trim()) { setError('Scan or type the gift voucher number.'); setFocus('voucherNo'); refs.voucherNo.current?.focus(); return }
+    if (num(f.card) > 0 && !f.cardRef.trim()) { setError('Enter the card ref no (bank slip / approval no.) for the card amount.'); setFocus('cardRef'); refs.cardRef.current?.focus(); return }
     if (tooMuchNonCash) { setError(`Voucher + card can't be more than the bill (${fmtMoney(bill)}).`); return }
     if (!covered) { setError(`Short by ${fmtMoney(balance)} — add cash or card.`); return }
 
     const cashPart = roundMoney(bill - nonCash)          // cash kept on the bill; the rest is change
     const splits = [
       num(f.voucher) > 0 && { payMode: 'VOUCHER',     amount: roundMoney(num(f.voucher)), tip: 0, refNo: f.voucherNo.trim() },
-      num(f.card)    > 0 && { payMode: PM.CREDITCARD, amount: roundMoney(num(f.card)),    tip: 0, refNo: '' },
+      num(f.card)    > 0 && { payMode: PM.CREDITCARD, amount: roundMoney(num(f.card)),    tip: 0, refNo: f.cardRef.trim() },
       num(f.online)  > 0 && { payMode: 'ONLINE',      amount: roundMoney(num(f.online)),  tip: 0, refNo: '' },
       cashPart       > 0 && { payMode: PM.CASH,       amount: cashPart,                   tip: 0, refNo: '' },
     ].filter(Boolean)
@@ -109,7 +124,7 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
     onClose?.()
   }
 
-  const balanceLabel = balance < -0.009 ? 'Change' : 'Balance Amount'
+  const balanceLabel = balance < 0 ? 'Change' : 'Balance Amount'
 
   return (
     <Modal onClose={onClose} icon={Layers} kicker="Settlement" title="Multi Pay" width={760}>
@@ -128,9 +143,10 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
                 ref={refs[key]}
                 className="mpm-box"
                 value={f[key]}
-                placeholder={placeholder ?? '0.00'}
+                placeholder={placeholder ?? moneyPlaceholder()}
                 inputMode={text ? undefined : 'decimal'}
-                onFocus={() => setFocus(key)}
+                maxLength={text ? 50 : undefined}
+                onFocus={() => { if (key !== focus) setKb(false); setFocus(key) }}
                 onChange={e => (text ? setField(key, e.target.value) : typeMoney(key, e.target.value))}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); goNext(key) } }}
                 style={{ textAlign: text ? 'left' : 'right' }}
@@ -138,7 +154,7 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
             </label>
           ))}
 
-          <div className={`mpm-row is-readonly mpm-balance${balance < -0.009 ? ' is-change' : covered ? ' is-done' : ''}`}>
+          <div className={`mpm-row is-readonly mpm-balance${balance < 0 ? ' is-change' : covered ? ' is-done' : ''}`}>
             <span className="mpm-label">{balanceLabel}</span>
             <div className="mpm-box">{fmtMoney(Math.abs(balance))}</div>
           </div>
@@ -148,7 +164,12 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
 
         {/* ── Keypad ── */}
         <div className="mpm-right">
-          <Numpad onKey={pressKey} showDot showClear showBackspace={false} btnHeight={50} fontSize={18} gap={8} />
+          {/* Hidden while the QWERTY is open (it has its own 123 keys), so both fit on short screens */}
+          {!kbOpen && <Numpad onKey={pressKey} showDot showClear showBackspace={false} btnHeight={50} fontSize={18} gap={8} />}
+          {/* Number keys are the default; letters only on request (voucher no / card ref) */}
+          {isText && !kbOpen && (
+            <button type="button" className="mpm-abc" onMouseDown={e => e.preventDefault()} onClick={() => setKb(true)}>ABC</button>
+          )}
           <div className="mpm-foot">
             <button type="button" className="mpm-btn is-primary" onClick={confirm} disabled={!covered || tendered <= 0}>
               <CornerDownLeft size={17} /> Enter
@@ -157,6 +178,7 @@ export default function MultiPaymentModal({ onClose, billAmount, initialSplits, 
           </div>
         </div>
       </div>
+      {kbOpen && <TouchKeyboard onKey={typeKey} onClose={() => setKb(false)} />}
     </Modal>
   )
 }

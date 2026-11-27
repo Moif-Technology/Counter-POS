@@ -4,10 +4,15 @@
  * BEFORE the cart is cleared.
  */
 
+import { printHtmlSilently } from './receiptPrintTheme'
+import { fmtMoney } from './currencyFormat'
+
 const esc = (s) =>
   String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-const money = (n) => (Number(n) || 0).toFixed(2)
+const money = fmtMoney
+// qty / VAT % — not money, keep 2 decimals
+const num2 = (n) => (Number(n) || 0).toFixed(2)
 
 function buildReceiptHtml(bill) {
   const {
@@ -27,8 +32,8 @@ function buildReceiptHtml(bill) {
       <td colspan="3" class="desc">${esc(it.description)}</td>
     </tr>
     <tr class="nums">
-      <td>${money(it.qty)} x ${money(it.unitPrice)}</td>
-      <td class="r">${it.vatPer ? money(it.vatPer) + '%' : ''}</td>
+      <td>${num2(it.qty)} x ${money(it.unitPrice)}</td>
+      <td class="r">${it.vatPer ? num2(it.vatPer) + '%' : ''}</td>
       <td class="r">${money(it.lineTotal)}</td>
     </tr>`).join('')
 
@@ -88,6 +93,7 @@ function buildReceiptHtml(bill) {
 }
 
 export function printReceipt(bill) {
+  if (window.posDesktop) return printHtmlSilently(buildReceiptHtml(bill))
   const frame = document.createElement('iframe')
   frame.setAttribute('aria-hidden', 'true')
   frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;'

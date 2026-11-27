@@ -14,6 +14,27 @@ import { api } from '../lib/api'
 import { PM, normalizePaymentMode, isCashTenderMode, isMultiPaymentMode } from '../lib/paymentModes'
 import { parseDeliveryRemarks } from '../lib/deliveryBarcode'
 import { recallDeliveryToCounter } from '../lib/recallDeliveryToCounter'
+import { setOfflineScope } from '../lib/offlineCache'
+
+/**
+ * Superadmin POS feature toggles (plan + tenant override) from the login session.
+ * Only an explicit `false` hides a control; an empty map (old API, lite mode) allows all.
+ */
+export const featureOn = (features, ...codes) => codes.every(c => features?.[c] !== false)
+
+/** POS permissions are on/off per feature in ERP → Handle Permissions: any of its actions = on. */
+export const hasFeatureOn = (permissions, feature) =>
+  ['view', 'create', 'edit', 'delete'].some(a => (permissions ?? []).includes(`${feature}.${a}`))
+
+/**
+ * Cashier's role has POS `feature` switched on (e.g. 'pos.discount'). Admin role always.
+ * Not allowed → the till asks for an admin / supervisor PIN (lib/supervisorApproval).
+ */
+export const canDo = (s, feature) => String(s.cashier?.role) === '1' || hasFeatureOn(s.permissions, feature)
+
+/** Shown when a sale and a return would end up in one bill (see returnModeLocked). */
+export const MIX_RETURN_MSG = 'Save or clear the return bill first. Sale and return cannot be mixed in one bill.'
+export const MIX_SALE_MSG   = 'Save or clear the current sale first. Sale and return cannot be mixed in one bill.'
 
 export const usePosStore = create((set, get) => ({
   // Session
@@ -21,6 +42,14 @@ export const usePosStore = create((set, get) => ({
   counterNo: '',
   accessToken: null,
   refreshToken: null,
+  features: {},
+  permissions: [],    // role permission codes — refreshed with features (30s poll)
+  accessVersion: 0,
+  setAccess: (features, accessVersion, permissions) => set(s => ({
+    features: features ?? {},
+    accessVersion: Number(accessVersion ?? s.accessVersion) || 0,
+    permissions: Array.isArray(permissions) ? permissions : s.permissions,
+  })),
   companyId: null,
   branchId: null,
   stationId: null,
@@ -116,6 +145,7 @@ export const usePosStore = create((set, get) => ({
   setSession: (cashier, counterNo, accessToken, refreshToken, companyId, branchId, stationId) => {
     saveTokens(accessToken, refreshToken)
     set({ cashier, counterNo, accessToken, refreshToken, companyId, branchId, stationId: stationId ?? branchId })
+    setOfflineScope({ companyId, stationId: stationId ?? branchId, staffId: cashier?.staffId, staffName: cashier?.staffName })
     get().fetchProductGroups()
   },
 
@@ -160,6 +190,7 @@ export const usePosStore = create((set, get) => ({
     clearTokens()
     set({
       cashier: null, counterNo: '', accessToken: null, refreshToken: null,
+      features: {}, permissions: [], accessVersion: 0,
       companyId: null, branchId: null, stationId: null,
       cartItems: [], selectedRowKey: null,
       subTotal: 0, lineDiscountAmt: 0, billDiscountAmt: 0, discountAmt: 0, taxableAmt: 0,
@@ -289,7 +320,7 @@ export const usePosStore = create((set, get) => ({
     return { ok: true }
   },
 
-  /** Return context is only the Return toggle (allows mixed carts). */
+  /** Return context is only the Return toggle (one bill is all sale or all return — see returnModeLocked). */
   isReturnContext: () => get().returnMode,
 
   defaultQtyBuffer: () => {
@@ -309,13 +340,26 @@ export const usePosStore = create((set, get) => ({
     })
   },
 
+  /**
+   * Client rule (2026-11-19): a bill is all sale or all return, never both.
+   * The Return toggle is locked while the cart holds lines of the current kind;
+   * it frees up once the bill is saved, held or cleared.
+   */
+  returnModeLocked: () => {
+    const { returnMode, cartItems } = get()
+    return cartItems.some(i => (returnMode ? Number(i.qty) < 0 : Number(i.qty) > 0))
+  },
+
+  /** false = locked (see returnModeLocked), nothing changed. */
   toggleReturn: () => {
+    if (get().returnModeLocked()) return false
     const returnMode = !get().returnMode
     const base = Math.abs(parseFloat(get().qtyBuffer) || 1)
     set({
       returnMode,
       qtyBuffer: returnMode ? String(-base) : String(base),
     })
+    return true
   },
 
   /** Parse qty buffer; honour returnMode sign. */
@@ -572,8 +616,11 @@ export const usePosStore = create((set, get) => ({
 
   setBillDiscount: (amount) => {
     const n = roundMoney(Number(amount) || 0)
+    const before = get().netAmount
     set({ billDiscountAmt: n >= 0 ? n : 0 })
     get().recalc(get().cartItems)
+    // A Multi Pay split taken on the old net is wrong now; drop it so BILLING asks for it again.
+    if (get().paymentSplits?.length && get().netAmount !== before) set({ paymentSplits: null })
   },
 
   setPayment: (paid) => {
@@ -667,14 +714,25 @@ export const usePosStore = create((set, get) => ({
 
   /** LoadSalesData (Deyno Return) — append a posted bill's lines as negative qty. */
   loadReturnBill: async (billNo) => {
+    if (get().cartItems.some(i => Number(i.qty) > 0)) throw new Error(MIX_SALE_MSG)
     const bill = await api.counterPos.billForReturn(billNo, get().accessToken)
-    const items = Array.isArray(bill?.items) ? bill.items : []
+    // Only what is still returnable (server subtracts earlier returns of this bill).
+    const items = (Array.isArray(bill?.items) ? bill.items : [])
+      .map(it => ({ ...it, qty: it.returnableQty ?? it.qty }))
+      .filter(it => Number(it.qty) > 0)
     if (!items.length) {
-      const err = new Error(`Bill No : ${billNo} Not found`)
+      const err = new Error(bill?.items?.length ? `Bill ${bill.billNoDisplay} is already fully returned` : `Bill No : ${billNo} Not found`)
       err.status = 404
       throw err
     }
     const prev = get().cartItems
+    // The server links one return to one bill and caps it there.
+    const otherBill = prev.find(i => Number(i.returnOfSalesId) > 0)
+    if (otherBill) {
+      throw new Error(Number(otherBill.returnOfSalesId) === Number(bill.salesId)
+        ? `Bill ${bill.billNoDisplay} is already in the cart`
+        : 'Save the current return first: one return can only take items from one bill')
+    }
     const returnLines = items.map((it, idx) => {
       const groupId = Number(it.groupId) > 0 ? Number(it.groupId) : null
       const productId = Number(it.productId) > 0 ? Number(it.productId) : null
@@ -696,6 +754,7 @@ export const usePosStore = create((set, get) => ({
         discountAmt:   Math.abs(Number(it.discount) || 0),
         groupId,
         priceIsGross:  !!(groupId && !productId),
+        returnOfSalesId: Number(bill.salesId),
         _key:          key,
       }
     })

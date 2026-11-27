@@ -30,3 +30,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Electron installer output
+release
+
+# local build/output artifacts
+release-v*/
+brag-output/
+graphify-out/cache/

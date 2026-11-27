@@ -8,6 +8,7 @@ import { printHoldReprintByNo } from '../lib/printHoldReceipt'
 import { printDeliveryReprintByNo } from '../lib/printDeliveryReceipt'
 import { DOC_TYPE } from '../lib/documentScan'
 import { posNotifyError } from '../lib/posNotify'
+import { api } from '../lib/api'
 import Modal from '../components/common/Modal'
 
 const today = new Date()
@@ -23,10 +24,12 @@ export default function BillReprintModal({ onClose }) {
   const accessToken = usePosStore(s => s.accessToken)
   const shopName    = usePosStore(s => s.shopName)
   const storeCounter = usePosStore(s => s.counterNo)
+  const myStationId  = usePosStore(s => s.stationId)
 
   const [docType,     setDocType]     = useState(DOC_TYPE.INVOICE)
   const [docNo,       setDocNo]       = useState('')
-  const [counterNo,   setCounterNo]   = useState(String(storeCounter ?? 1))
+  const [stationSel,  setStationSel]  = useState('all')   // 'all' or a stationId — bills of any counter can be reprinted
+  const [stations,    setStations]    = useState([])
   const [billDate,    setBillDate]    = useState(isoDate(today))
   const [focus,       setFocus]       = useState('docNo')
   const [printing,    setPrinting]    = useState(false)
@@ -37,6 +40,13 @@ export default function BillReprintModal({ onClose }) {
   useEffect(() => {
     docNoRef.current?.focus()
   }, [onClose])
+
+  // ponytail: no counters (offline / old API / no permission) = "All counters" only, reprint still works
+  useEffect(() => {
+    api.counterPos.stations(accessToken)
+      .then(r => setStations(Array.isArray(r?.stations) ? r.stations : []))
+      .catch(() => {})
+  }, [accessToken])
 
   const handleKey = k => {
     if (focus !== 'docNo') return
@@ -56,10 +66,11 @@ export default function BillReprintModal({ onClose }) {
       return
     }
     setPrinting(true)
-    const meta = { companyName: shopName, counterNo: counterNo || storeCounter }
+    const picked = stations.find(st => String(st.stationId) === stationSel)
+    const meta = { companyName: shopName, counterNo: picked?.counterNo ?? storeCounter }
     try {
       if (docType === DOC_TYPE.INVOICE) {
-        await printBillReprintByNo(n, accessToken, meta)
+        await printBillReprintByNo(n, accessToken, meta, picked ? picked.stationId : null)
       } else if (docType === DOC_TYPE.HOLD) {
         await printHoldReprintByNo(n, accessToken, meta)
       } else {
@@ -140,15 +151,19 @@ export default function BillReprintModal({ onClose }) {
             <>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-4)', letterSpacing: 0.7, textTransform: 'uppercase' }}>
-                  Counter No
+                  Counter
                 </label>
                 <select
-                  value={counterNo}
-                  onChange={e => setCounterNo(e.target.value)}
+                  value={stationSel}
+                  onChange={e => setStationSel(e.target.value)}
                   style={{ ...fieldStyle(false), cursor: 'pointer' }}
                 >
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
-                    <option key={n} value={String(n)}>Counter {n}</option>
+                  <option value="all">All counters</option>
+                  {stations.map(st => (
+                    <option key={st.stationId} value={String(st.stationId)}>
+                      {st.stationName || `Counter ${st.counterNo ?? st.stationId}`}
+                      {st.stationId === Number(myStationId) ? ' (this)' : ''}
+                    </option>
                   ))}
                 </select>
               </div>

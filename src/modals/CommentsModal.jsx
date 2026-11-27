@@ -16,6 +16,7 @@ export default function CommentsModal({ onClose, onSave }) {
   }, [onClose])
 
   const handleKbKey = k => {
+    if (k === '123') return // layout switch, not a character
     if (k === '⌫')    { setBillComment(v => v.slice(0, -1)); return }
     if (k === 'ENTER') { setBillComment(v => v + '\n'); return }
     setBillComment(v => v + k)

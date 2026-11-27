@@ -5,7 +5,7 @@ import {
   parseLegacyDeliveryScan,
 } from './documentScan'
 
-export const formatDeliveryBarcode = formatDocBarcode
+export const formatDeliveryBarcode = (deliveryNo) => formatDocBarcode(deliveryNo, 'D')
 
 export function parseDeliveryBarcodeScan(input) {
   return parseLegacyDeliveryScan(input) ?? parseDocNumber(input)

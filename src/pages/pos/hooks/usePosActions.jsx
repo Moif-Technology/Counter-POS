@@ -7,13 +7,15 @@ import { api } from '../../../lib/api'
 import { enrichCartItemsForSave } from '../../../lib/cartLine'
 import { isGroupBrowseMode } from '../../../lib/groupUtils'
 import { closeAndFocusBarcode } from '../../../lib/posFocus'
-import { endOneShotReturn, togglePosQtyMode, togglePosReturnMode } from '../../../lib/posNumpadKeys'
+import { resetReturnQty, togglePosQtyMode, togglePosReturnMode } from '../../../lib/posNumpadKeys'
 import { posAskPrintCopies, posConfirm, posNotifyError, posNotifyInfo, posNotifySuccess, posNotifyWarning } from '../../../lib/posNotify'
 import { holdDataFromPosState, printHoldReceipt } from '../../../lib/printHoldReceipt'
 import { deliveryDataFromPosState, printDeliveryReceipt } from '../../../lib/printDeliveryReceipt'
 import { confirmStockForAdd } from '../../../lib/stockCheck'
 import { openDisplayWindow, isWindowOpen, closeDisplayWindow, setSunmiDisplayPlugin } from '../../../lib/customerDisplay'
 import { IS_ANDROID } from '../../../lib/sunmiCameraScanner'
+import { IS_ANDROID_POS, SunmiPrinter } from '../../../lib/androidPosPrinter'
+import { getReceiptPrinterName } from '../../../lib/posPrinter'
 
 import GroupModal from '../../../modals/GroupModal'
 import GroupPriceModal from '../../../modals/GroupPriceModal'
@@ -34,6 +36,7 @@ import SalesManModal from '../../../modals/SalesManModal'
 import BillDiscountModal from '../../../modals/BillDiscountModal'
 import DeliveryCustomerModal from '../../../modals/DeliveryCustomerModal'
 import DeliverySettlementModal from '../../../modals/DeliverySettlementModal'
+import { requireApproval } from '../../../lib/supervisorApproval'
 
 const SunmiCustomerDisplay = registerPlugin('SunmiCustomerDisplay', {
   web: {
@@ -71,6 +74,7 @@ export function usePosActions({ onSave }) {
   const [holdLoading, setHoldLoading] = useState(false)
   const [deliverySaving, setDeliverySaving] = useState(false)
   const [cdOpen, setCdOpen] = useState(false)
+  const [multiPayAfterDiscount, setMultiPayAfterDiscount] = useState(false)
 
   const close = () => { setModal(null); setGroupPreset(null); setLookupGroup(null) }
 
@@ -219,7 +223,7 @@ export function usePosActions({ onSave }) {
       vatPer:      product.vatPer ?? 0,
     })
     resetAfterLineScan()
-    endOneShotReturn()
+    resetReturnQty()
   }
 
   function handleGroupSelect({ group, unitPrice, mode }) {
@@ -239,6 +243,18 @@ export function usePosActions({ onSave }) {
     setModal('groupPrice')
   }
 
+  /** No Sale: kick the drawer wired to the receipt printer (Windows app / Sunmi only). */
+  async function openCashDrawer() {
+    try {
+      if (window.posDesktop?.openDrawer) await window.posDesktop.openDrawer({ deviceName: getReceiptPrinterName() })
+      else if (IS_ANDROID_POS) await SunmiPrinter.openDrawer()
+      else throw new Error('Cash drawer works in the Windows or Android app only')
+      posNotifySuccess('Cash drawer opened', { title: 'No Sale', duration: 1000 })
+    } catch (e) {
+      posNotifyError(String(e.message).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''), { title: 'No Sale' })
+    }
+  }
+
   const needRow = (title, next) => () => {
     if (!usePosStore.getState().selectedRowKey) { posNotifyWarning('Select a row first', { title }); return }
     next()
@@ -248,6 +264,8 @@ export function usePosActions({ onSave }) {
     next()
   }
   const open = (key) => () => setModal(key)
+  /** Role permission or supervisor code + PIN first (ERP → Handle Permissions). */
+  const guarded = (action, next) => async () => { if (await requireApproval(action)) next() }
 
   const ACTIONS = {
     // Page 1
@@ -276,12 +294,17 @@ export function usePosActions({ onSave }) {
     'Bill Print':     () => onSave?.(true),
     'Bill Reprint':   open('reprint'),
     'Repeat':         () => usePosStore.getState().repeatLastItem(),
-    'Price Change':   needRow('Price Change', open('priceChange')),
+    'Price Change':   needRow('Price Change', guarded('price_change', open('priceChange'))),
     'Qty Change':     needRow('Qty Change', open('qtyChange')),
 
     // Page 2
     'Sub Total':      () => usePosStore.getState().pressSubTotal(),
-    'Discount':       needCart('Discount', open('billDiscount')),
+    'Discount':       needCart('Discount', guarded('discount', open('billDiscount'))),
+    // Multi Pay tile → "give discount?" Yes: Discount screen, then Multi Pay at the new net (also on cancel / no permission).
+    'Discount Then Multi Pay': async () => {
+      if (await requireApproval('discount')) { setMultiPayAfterDiscount(true); setModal('billDiscount') }
+      else usePosStore.getState().openMultiPayModal()
+    },
     'Packet Scan':    open('packetScan'),
     'Price Enquiry':  open('priceEnquiry'),
     'Currency':       open('currency'),
@@ -295,7 +318,7 @@ export function usePosActions({ onSave }) {
     'NP Scale':       () => posNotifyInfo('Weighing scale requires the Android/Sunmi hardware build', { title: 'NP Scale', duration: 1800 }),
     // Lock: back to the PIN screen; the open bill stays in memory.
     'Lock':           () => navigate('/'),
-    'No Sale':        () => posNotifyInfo('No cash drawer is connected to this counter', { title: 'No Sale', duration: 1800 }),
+    'No Sale':        () => openCashDrawer(),
     'Top Move':       () => posNotifyInfo('Not available yet', { title: 'Top Move' }),
 
     // Delivery
@@ -366,7 +389,13 @@ export function usePosActions({ onSave }) {
       {modal === 'currency'     && <CurrencyModal onClose={done()} />}
       {modal === 'creditSettlement' && <CreditSettlementModal onClose={done()} />}
       {modal === 'salesMan'     && <SalesManModal onClose={done()} onApply={done()} />}
-      {modal === 'billDiscount' && <BillDiscountModal onClose={done()} />}
+      {modal === 'billDiscount' && (
+        <BillDiscountModal
+          onClose={multiPayAfterDiscount
+            ? () => { close(); setMultiPayAfterDiscount(false); usePosStore.getState().openMultiPayModal() }
+            : done()}
+        />
+      )}
       {modal === 'delivery' && (
         <DeliveryCustomerModal
           title={deliverySavePending ? 'Save Delivery' : 'Delivery'}
